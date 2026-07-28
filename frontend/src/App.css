@@ -1,0 +1,35 @@
+/* Global element styles */
+
+html {
+  scroll-behavior: smooth;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: white;
+}
+
+/* Warm-toned scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f5f0eb;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4c5b5;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c0ae9a;
+}

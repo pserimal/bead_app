@@ -1,0 +1,101 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.egg-info/
+.pytest_cache/
+
+# Backend
+backend/__pycache__/
+backend/.pytest_cache/
+backend/uploads/
+backend/bead_app.db
+backend/condaenv.*.requirements.txt
+backend/=*
+
+# Frontend
+node_modules/
+dist/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
+
+# Training
+training/__pycache__/
+training/**/__pycache__/
+# Only IMAGE files inside training data directories are NOT tracked.
+# Non-image artifacts (label tool, manifest JSON, .gitkeep) are tracked.
+# Each developer trains their own model locally — see training/README.md.
+training/data/**/*.png
+training/data/**/*.jpg
+training/data/**/*.jpeg
+training/data/**/*.gif
+training/data/**/*.tif
+training/data/**/*.bmp
+training/data/**/*.webp
+training/data/**/*.zip
+training/crops/**/*.png
+training/crops/**/*.jpg
+training/crops/**/*.jpeg
+training/crops/**/*.gif
+training/crops/**/*.tif
+training/crops/**/*.bmp
+training/crops/**/*.webp
+# Trained model checkpoints
+training/checkpoints/*.pt
+
+# Workspace / tooling
+.conda/
+.idea/
+.playwright-mcp/
+.claude/
+.gstack/
+.superpowers/
+
+# Runtime uploads (root-level shared mount; backend/uploads/ also covers docker volume)
+uploads/
+examples/
+
+# Generic dev / OS / tooling artifacts
+*.log
+*.bak
+*.tmp
+*.swp
+*~
+*.orig
+*.rej
+.DS_Store
+Thumbs.db
+.env.local
+.env.development
+.env.production
+.env.*.local
+frontend/.env
+frontend/.env.*
+
+# Python virtualenvs
+.venv/
+venv/
+env/
+ENV/
+
+# IDE / editor dirs
+.vscode/
+.vs/
+
+# Tool caches (pytest already covered above)
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+
+# Coverage DB / SQLite variants (backend/bead_app.db already covered explicitly)
+*.sqlite3
+*.sqlite
+
+# Build output (dist/ already covered above)
+build/

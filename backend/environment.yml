@@ -1,0 +1,22 @@
+name: bead-app
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - fastapi
+  - uvicorn
+  - sqlalchemy
+  - asyncpg
+  - alembic
+  - opencv
+  - pytest
+  - pytest-asyncio
+  - httpx
+  - python-multipart
+  - aiofiles
+  - numpy
+  - pillow
+  - pip
+    - pip:
+     - colour-science
