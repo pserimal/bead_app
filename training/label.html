@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>拼豆格子标注工具</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+/* ── Design tokens: "Bead Workshop" palette ── */
+:root{
+  --surface:     #F9F8F4;
+  --card:        #FFFFFF;
+  --card-alt:    #F3F1EB;
+  --border:      #E8E5DD;
+  --border-strong: #D5D1C7;
+  --text:        #1D1C18;
+  --text-muted:  #6B6860;
+  --text-faint:  #B0ACA4;
+  --accent:      #DC4538;
+  --accent-hover:#C43529;
+  --accent-bg:   #FEF0EE;
+  --blue:        #3D72D8;
+  --blue-bg:     #EDF2FC;
+  --green:       #389E5C;
+  --green-bg:    #EDF7F1;
+  --amber:       #D4802B;
+  --amber-bg:    #FDF4EA;
+  --shadow-sm:   0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:   0 4px 12px rgba(0,0,0,.06);
+  --shadow-lg:   0 12px 40px rgba(0,0,0,.10);
+  --font-body:   'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono:   'JetBrains Mono', 'Cascadia Code', monospace;
+  --side-w:      252px;
+  --radius-sm:   6px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+}
+
+/* ── Reset & base ── */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{
+  font:400 13px/1.5 var(--font-body);
+  color:var(--text);
+  background:var(--surface);
+  display:flex;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── Layout ── */
+#side{
+  position:relative;z-index:2;
+  width:var(--side-w);min-width:var(--side-w);
+  background:var(--card);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  box-shadow:var(--shadow-sm);
+}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1}
+
+/* ── Sidebar header ── */
+#side-header{
+  padding:22px 20px 18px;
+  border-bottom:1px solid var(--border);
+}
+#side-header h1{
+  font:600 15px/1.3 var(--font-body);
+  color:var(--text);
+  letter-spacing:-.02em;
+  margin-bottom:2px;
+}
+#side-header h1::before{
+  content:'';display:inline-block;width:18px;height:18px;
+  background:var(--accent);border-radius:4px;
+  vertical-align:-3px;margin-right:8px;
+  box-shadow:2px 2px 0 rgba(220,69,56,.25);
+}
+#side-header .sub{
+  font:500 10.5px var(--font-mono);
+  color:var(--text-faint);
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  margin-left:26px;
+}
+
+/* ── Sidebar body ── */
+.side-body{flex:1;overflow-y:auto;padding:0 16px 20px}
+.side-body::-webkit-scrollbar{width:4px}
+.side-body::-webkit-scrollbar-track{background:transparent}
+.side-body::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:2px}
+
+/* ── Section groups ── */
+.group{margin-top:18px}
+.group-label{
+  font:600 9.5px/1 var(--font-mono);
+  letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-muted);margin-bottom:8px;
+  display:flex;align-items:center;gap:8px;
+}
+.group-label::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+
+/* ── Buttons ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:8px 14px;border:none;border-radius:var(--radius-sm);cursor:pointer;
+  font:500 12px/1 var(--font-body);transition:all .15s ease;width:100%;
+  white-space:nowrap;
+}
+.btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+/* Primary action */
+.btn-r{
+  background:var(--accent);color:#fff;
+  box-shadow:0 1px 2px rgba(220,69,56,.25);
+}
+.btn-r:hover{background:var(--accent-hover);box-shadow:0 2px 6px rgba(220,69,56,.3)}
+.btn-r:active{transform:scale(.98)}
+
+/* Ghost / secondary */
+.btn-g{
+  background:var(--card);color:var(--text-muted);
+  border:1px solid var(--border);
+}
+.btn-g:hover{background:var(--card-alt);color:var(--text);border-color:var(--border-strong)}
+.btn-g:active{background:var(--border)}
+
+/* Danger */
+.btn-w{
+  background:var(--accent-bg);color:var(--accent);
+  border:1px solid rgba(220,69,56,.15);
+}
+.btn-w:hover{background:#FDE8E6;border-color:rgba(220,69,56,.3)}
+
+/* ── Stats panel ── */
+.stats{
+  display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  background:var(--border);border-radius:var(--radius-sm);overflow:hidden;
+  box-shadow:var(--shadow-sm);
+}
+.stats .row{
+  display:flex;flex-direction:column;gap:0;padding:10px 12px;
+  background:var(--card);text-align:center;
+}
+.stats .val{
+  font:600 20px/1.2 var(--font-mono);
+  letter-spacing:-.03em;
+}
+.stats .val.c-accent{color:var(--accent)}
+.stats .val.c-blue{color:var(--blue)}
+.stats .val.c-amber{color:var(--amber)}
+.stats .val.c-green{color:var(--green)}
+.stats .lab{
+  font:500 9.5px/1 var(--font-body);
+  color:var(--text-faint);
+  text-transform:uppercase;letter-spacing:.06em;
+  margin-top:2px;
+}
+
+/* ── Filter select ── */
+.filt{
+  padding:8px 12px;border-radius:var(--radius-sm);font:500 12px var(--font-body);
+  width:100%;background:var(--card);color:var(--text);
+  border:1px solid var(--border);cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23B0ACA4'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+  padding-right:32px;transition:border-color .15s;
+}
+.filt:hover{border-color:var(--border-strong)}
+.filt:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(61,114,216,.1)}
+
+/* ── Code input row ── */
+.code-row{display:flex;gap:6px;align-items:center}
+.code-row input{
+  flex:1;min-width:0;padding:8px 10px;border-radius:var(--radius-sm);
+  font:500 12px var(--font-mono);
+  background:var(--card);color:var(--text);
+  border:1px solid var(--border);transition:border-color .15s;
+}
+.code-row input::placeholder{color:var(--text-faint)}
+.code-row input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(61,114,216,.1)}
+.code-row .btn{width:auto;padding:8px 12px;white-space:nowrap}
+
+/* ── Recent projects ── */
+#recent-list{display:flex;flex-direction:column;gap:4px}
+.recent-item{
+  display:flex;align-items:center;gap:4px;
+  padding:6px 10px;border:1px solid var(--border);
+  border-radius:var(--radius-sm);background:var(--card);
+  cursor:pointer;font:500 11px var(--font-mono);color:var(--text-muted);
+  transition:all .12s;
+}
+.recent-item:hover{background:var(--card-alt);border-color:var(--border-strong);color:var(--text)}
+.recent-item .rm-btn{color:var(--text-faint);cursor:pointer;font-size:13px;padding:0 4px;line-height:1}
+.recent-item .rm-btn:hover{color:var(--accent)}
+
+/* ── Top bar ── */
+#top{
+  padding:10px 20px;background:var(--card);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;min-height:40px;
+}
+#top .dir{
+  font:600 12px var(--font-mono);color:var(--text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+#top .dir .count{color:var(--text-muted);font-weight:400;margin-left:4px}
+#top .dir .count::before{content:'·';margin-right:4px;color:var(--text-faint)}
+
+/* ── Grid area ── */
+#grid-wrap{flex:1;overflow:auto;padding:12px}
+#grid-wrap::-webkit-scrollbar{width:6px;height:6px}
+#grid-wrap::-webkit-scrollbar-track{background:transparent}
+#grid-wrap::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
+#grid{display:flex;flex-wrap:wrap;gap:2px;line-height:0;align-content:flex-start}
+
+/* ── Cell: the heart of the interface ── */
+.cell{
+  position:relative;display:inline-block;
+  border-radius:3px;cursor:pointer;
+  transition:transform .12s ease, box-shadow .12s ease;
+  /* Default: transparent border-top, colored when labeled */
+  border:2px solid transparent;
+  border-top-width:3px;
+  background:var(--card);
+  box-shadow:0 1px 3px rgba(0,0,0,.05);
+}
+.cell img{
+  display:block;image-rendering:pixelated;
+  border-radius:2px;
+}
+/* Labeled cells: colored top accent via --code-color custom property */
+.cell[style*="--code-color"]{border-top-color:var(--code-color)}
+/* Unlabeled: faint top border */
+.cell:not([style*="--code-color"]){border-top-color:var(--border)}
+
+/* Interaction states */
+.cell:hover{
+  transform:translateY(-2px);
+  box-shadow:0 4px 16px rgba(0,0,0,.10);
+  z-index:2;
+}
+.cell.sel{
+  border-color:var(--blue) !important;
+  box-shadow:0 0 0 3px rgba(61,114,216,.2), 0 4px 16px rgba(61,114,216,.12);
+  transform:translateY(-2px);
+  z-index:3;
+}
+
+/* Cell label overlay */
+.cell .ov{
+  position:absolute;bottom:0;left:0;right:0;text-align:center;
+  font:600 9px/1.4 var(--font-mono);
+  background:rgba(29,28,24,.82);color:#fff;
+  padding:2px 4px;pointer-events:none;letter-spacing:.04em;
+  border-radius:0 0 2px 2px;
+  backdrop-filter:blur(4px);
+}
+.cell .ov.emp{
+  background:rgba(212,128,43,.88);color:#fff;
+}
+
+/* ── Selection box (drag) ── */
+#selbox{
+  position:fixed;border:2px solid var(--blue);
+  background:rgba(61,114,216,.08);
+  pointer-events:none;display:none;z-index:100;border-radius:4px;
+}
+
+/* ── Empty state ── */
+#empty{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;text-align:center;
+  color:var(--text-faint);
+}
+#empty .icon{
+  width:64px;height:64px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--radius-lg);background:var(--card);
+  border:2px dashed var(--border);
+  font-size:28px;color:var(--text-faint);
+}
+#empty .desc{
+  font:500 13px/1.7 var(--font-body);
+  color:var(--text-muted);max-width:280px;
+}
+
+/* ── Keyboard hints ── */
+.hints{
+  margin-top:14px;padding:12px;
+  background:var(--card-alt);border-radius:var(--radius-sm);
+  font:400 10.5px/1.8 var(--font-body);color:var(--text-muted);
+}
+.hints kbd{
+  display:inline-block;padding:0 5px;border-radius:3px;
+  background:var(--card);border:1px solid var(--border);
+  font:500 9.5px var(--font-mono);color:var(--text);
+  margin:0 1px;line-height:1.6;
+}
+
+/* ── Progress overlay ── */
+#progress{
+  position:fixed;top:0;right:0;bottom:0;left:var(--side-w);
+  display:flex;align-items:center;justify-content:center;
+  z-index:200;
+  background:rgba(249,248,244,.8);
+  backdrop-filter:blur(6px);
+}
+#progress-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:28px 36px;min-width:320px;
+  text-align:center;box-shadow:var(--shadow-lg);
+}
+#progress-title{
+  font:600 14px var(--font-body);color:var(--text);margin-bottom:18px;
+}
+.prog-bar{
+  height:6px;background:var(--card-alt);border-radius:3px;
+  overflow:hidden;margin-bottom:10px;
+}
+#progress-fill{
+  height:100%;background:var(--accent);width:0%;
+  border-radius:3px;transition:width .2s ease;
+}
+#progress-text{
+  font:500 12px var(--font-mono);color:var(--text-muted);
+}
+#progress-sub{
+  font:400 11px var(--font-body);color:var(--text-faint);margin-top:6px;
+}
+
+/* ── Utility ── */
+[hidden]{display:none !important}
+
+/* ── Reduced motion ── */
+@media (prefers-reduced-motion:reduce){
+  .cell,.btn,#progress-fill{transition:none !important}
+}
+</style>
+</head>
+<body>
+
+<div id="side">
+  <div id="side-header">
+    <h1>拼豆格子标注</h1>
+    <div class="sub">Bead Cell Annotator</div>
+  </div>
+  <div class="side-body">
+
+    <div class="group">
+      <div class="group-label">最近项目</div>
+      <div id="recent-list"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-label">目录</div>
+      <button class="btn btn-r" onclick="openDir()">打开目录</button>
+    </div>
+
+    <div class="group">
+      <div class="group-label">统计</div>
+      <div class="stats">
+        <div class="row"><span class="val c-accent" id="st-l">0</span><span class="lab">已标</span></div>
+        <div class="row"><span class="val c-green" id="st-t">0</span><span class="lab">总数</span></div>
+        <div class="row"><span class="val c-amber" id="st-e">0</span><span class="lab">空白</span></div>
+        <div class="row"><span class="val c-blue" id="st-s">0</span><span class="lab">选中</span></div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-label">过滤</div>
+      <select id="fmode" class="filt" onchange="onFilter()">
+        <option value="all">显示全部</option>
+        <option value="unlabeled">仅显示未标注</option>
+        <option value="labeled">仅显示已标注</option>
+        <option value="empty">仅显示空白格子</option>
+      </select>
+    </div>
+
+    <div class="group">
+      <div class="group-label">编码筛选</div>
+      <select id="cmode" class="filt" onchange="onFilter()">
+        <option value="all" selected>全部编码</option>
+      </select>
+      <div style="font:400 10px var(--font-body);color:var(--text-faint);margin-top:4px" id="code-count"></div>
+    </div>
+
+    <div class="group">
+      <div class="group-label">标注</div>
+      <div class="code-row">
+        <input id="code-inp" placeholder="编码如 H7、A12" autocomplete="off"
+          onkeydown="if(event.key==='Enter')applyCode()"
+          ondblclick="$('code-inp').value=''">
+        <button class="btn btn-r" onclick="applyCode()">标注</button>
+        <button class="btn btn-g" onclick="$('code-inp').value=''" title="清空" style="width:auto;padding:6px 10px">✕</button>
+      </div>
+      <div style="font:400 10.5px var(--font-body);color:var(--text-faint);margin-top:4px">
+        双击输入框清空 · Enter 确认标注
+      </div>
+      <button class="btn btn-g" onclick="applyEmpty()" style="margin-top:6px">标记为空白格子</button>
+      <button class="btn btn-g" onclick="unlabelSel()" style="margin-top:4px">取消选中标注</button>
+    </div>
+
+    <div class="group">
+      <div class="group-label">选择</div>
+      <button class="btn btn-g" onclick="clearSel()">清除全部选择</button>
+      <button class="btn btn-g" onclick="selFiltered()" style="margin-top:4px">全选过滤结果</button>
+    </div>
+
+    <div class="group">
+      <div class="group-label">排序</div>
+      <button class="btn btn-g" onclick="reinitSort()">重新计算排序</button>
+    </div>
+
+    <div class="group">
+      <button class="btn btn-r" onclick="exportLabels()">导出标注结果 (.zip)</button>
+    </div>
+
+    <div class="hints">
+      <kbd>Shift</kbd> + 点击　范围选择<br>
+      <kbd>Ctrl</kbd> + 点击　切换选中<br>
+      拖拽　框选　<kbd>Esc</kbd>　清除选择<br>
+      <kbd>Del</kbd>　取消标注　<kbd>Enter</kbd>　确认
+    </div>
+  </div>
+</div>
+
+<div id="main">
+  <div id="top">
+    <span class="dir" id="dir-label">未打开目录</span>
+  </div>
+  <div id="empty">
+    <div class="icon">⊞</div>
+    <div class="desc">打开一个包含格子图片的文件夹开始标注。<br>支持 PNG 格式，自动按颜色排序。</div>
+  </div>
+  <div id="grid-wrap"><div id="grid"></div></div>
+</div>
+<div id="selbox"></div>
+<div id="progress" hidden>
+  <div id="progress-card">
+    <div id="progress-title">处理中</div>
+    <div class="prog-bar"><div id="progress-fill"></div></div>
+    <div id="progress-text">0%</div>
+    <div id="progress-sub"></div>
+  </div>
+</div>
+
+<script>
+var _dir=null,_cells=[],_sel=new Set(),_last=-1,_drag=null,_wasDrag=false,_z=3,_EMPTY='EMPTY';
+function $(id){return document.getElementById(id)}
+function _cnt(fn){return _cells.filter(fn).length}
+function _progShow(title,total){$('progress').hidden=false;$('progress-title').textContent=title;$('progress-fill').style.width='0%';$('progress-text').textContent='0/'+total;$('progress-sub').textContent=''}
+function _progUpdate(done,total,sub){
+  var pct=total?Math.round(done/total*100):0;
+  $('progress-fill').style.width=pct+'%';
+  $('progress-text').textContent=done+'/'+total+(sub?' ('+sub+')':'');
+}
+function _progHide(){$('progress').hidden=true}
+
+/* Normalize to base name (always ends with .png, never contains sort suffix) */
+var _stripRE=/_h(-?\d+)_v(\d+)\.png$/;
+function _baseName(name){
+  var m=name.match(_stripRE);
+  var base=m?name.slice(0,m.index):(name.endsWith('.png')?name.slice(0,-4):name);
+  return base+'.png';
+}
+
+/* Reconstruct actual filename on disk from cell data */
+function _diskName(c){
+  var base=c.n.endsWith('.png')?c.n.slice(0,-4):c.n;
+  var sort=(c.hue!=null)?'_h'+Math.round(c.hue)+'_v'+c.bri:'';
+  return base+sort+'.png';
+}
+
+/* Map bead code first letter to accent color */
+function _codeHue(code){
+  if(code===_EMPTY)return 'var(--amber)';
+  var c=code.charCodeAt(0);
+  if(c<=68)return '#DC4538';      /* A-D: coral red */
+  if(c<=72)return '#E8822B';      /* E-H: orange     */
+  if(c<=76)return '#C99A2A';      /* I-L: gold       */
+  if(c<=80)return '#389E5C';      /* M-P: green      */
+  if(c<=84)return '#3D72D8';      /* Q-T: blue       */
+  return '#7B4FC0';               /* U-Z: purple     */
+}
+
+function _idb(){return new Promise(function(ok,no){var r=indexedDB.open('bl',2);r.onupgradeneeded=function(e){var db=r.result;if(!db.objectStoreNames.contains('d'))db.createObjectStore('d');if(!db.objectStoreNames.contains('m'))db.createObjectStore('m')};r.onsuccess=function(){ok(r.result)};r.onerror=function(){no(r.error)}})}
+async function _saveDir(h){var d=await _idb();var t=d.transaction('d','readwrite');t.objectStore('d').put(h,'last');await new Promise(function(r){t.oncomplete=r});d.close()}
+async function _loadDir(){try{var d=await _idb();var t=d.transaction('d','readonly');var h=await new Promise(function(r){var q=t.objectStore('d').get('last');q.onsuccess=function(){r(q.result)};q.onerror=function(){r(null)}});d.close();return h||null}catch(e){return null}}
+async function _saveRecent(name){
+  var d=await _idb();var t=d.transaction('m','readwrite');
+  var rec=await new Promise(function(r){var q=t.objectStore('m').get('recent');q.onsuccess=function(){r(q.result||[])};q.onerror=function(){r([])}});
+  rec=rec.filter(function(x){return x.name!==name});rec.unshift({name:name,ts:Date.now()});
+  rec=rec.slice(0,10);
+  var t2=d.transaction('m','readwrite');t2.objectStore('m').put(rec,'recent');
+  await new Promise(function(r){t2.oncomplete=r});d.close();
+}
+async function _loadRecent(){
+  try{var d=await _idb();var t=d.transaction('m','readonly');var rec=await new Promise(function(r){var q=t.objectStore('m').get('recent');q.onsuccess=function(){r(q.result||[])};q.onerror=function(){r(null)}});d.close();return rec||[]}catch(e){return []}
+}
+async function _dropRecent(name){
+  var rec=await _loadRecent();
+  rec=rec.filter(function(x){return x.name!==name});
+  var d=await _idb();var t=d.transaction('m','readwrite');t.objectStore('m').put(rec,'recent');
+  await new Promise(function(r){t.oncomplete=r});d.close();
+  renderRecent();
+}
+
+async function openDir(){
+  try{_dir=await window.showDirectoryPicker({mode:'readwrite'})}catch(e){if(e.name!=='AbortError')alert('请用Chrome/Edge并授权');return}
+  await _saveDir(_dir);
+  await _saveRecent(_dir.name);
+  renderRecent();
+  await loadCells();
+}
+
+async function renderRecent(){
+  var rec=await _loadRecent();
+  var box=$('recent-list');box.innerHTML='';
+  rec.forEach(function(r){
+    var row=document.createElement('div');row.className='recent-item';
+    var nm=document.createElement('span');nm.textContent=r.name;nm.style.cssText='flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    var x=document.createElement('span');x.className='rm-btn';x.textContent='✕';
+    x.onclick=function(e){e.stopPropagation();_dropRecent(r.name)};
+    row.appendChild(nm);row.appendChild(x);
+    row.onclick=function(){_openByName(r.name)};
+    box.appendChild(row);
+  });
+  if(!rec.length)box.innerHTML='<div style="color:var(--text-faint);padding:4px 8px;font:400 11px var(--font-body)">暂无最近项目</div>';
+}
+async function _openByName(name){
+  try{_dir=await window.showDirectoryPicker({mode:'readwrite'});}catch(e){return}
+  await _saveDir(_dir);
+  await _saveRecent(_dir.name);renderRecent();
+  await loadCells();
+}
+
+async function reinitSort(){
+  if(!_dir)return;
+  if(!confirm('重新初始化排序会移除所有文件的 _h{N}_v{N} 后缀并重新计算（约几秒），继续?'))return;
+  _progShow('重新计算排序',_cells.length);
+  var done=0;
+  for(var i=0;i<_cells.length;i++){
+    var c=_cells[i];
+    if(c.hue!=null){
+      try{
+        await _safeMove(c, _baseName(c.n));
+        c.hue=null;c.bri=null;
+      }catch(e){console.error('reinitSort move failed',e,c.n)}
+    }
+    done++;_progUpdate(done,_cells.length);
+  }
+  await loadCells();
+}
+async function loadCells(){
+  _cells=[];_sel.clear();_last=-1;$('grid').innerHTML='';$('empty').style.display='none';
+  $('dir-label').innerHTML=_dir.name+' <span class="count">读取中…</span>';
+  try{
+    var SORT_RE=/_h(-?\d+)_v(\d+)\.png$/;
+    var lr=/^(EMPTY|[A-Z]\d{1,2})_(\d{4})_marked\.png$/, pr=/^r(\d{3})_c(\d{3})\.png$/;
+    var lc=0,pc=0,files=[];
+    for await(var h of _dir.values()){if(h.kind==='file'&&/\.png$/i.test(h.name))files.push(h)}
+    var needCompute=0;
+    var recent=await _loadRecent();
+    var isFirstOpen=!recent.some(function(r){return r.name===_dir.name});
+    files.forEach(function(f){if(!SORT_RE.test(f.name))needCompute++});
+    if(!isFirstOpen)needCompute=0;
+    _progShow('读取目录',files.length);
+    var done=0;
+    var cells=[];
+    for(var i=0;i<files.length;i++){
+      var fh=files[i],n=fh.name,code=null,row=-1,col=-1,hue=null,bri=null;
+      var sm=n.match(SORT_RE);
+      if(sm){hue=+sm[1];bri=+sm[2];n=n.slice(0,sm.index)+'.png'}
+      var lm=n.match(lr);if(lm){code=lm[1].toUpperCase();lc++}
+      else{var pm=n.match(pr);if(pm){row=+pm[1];col=+pm[2];pc++}}
+      cells.push({n:n,h:fh,c:code,r:row,l:col,hue:hue,bri:bri});
+      done++;_progUpdate(done,files.length);
+    }
+    if(needCompute>0){
+      $('progress-title').textContent='计算并写入排序标记';
+      var done2=0;
+      for(var j=0;j<cells.length;j++){
+        var c=cells[j];
+        if(c.hue!==null)continue;
+        try{var f=await c.h.getFile();var blob=await f.arrayBuffer();
+          var bmp=await createImageBitmap(new Blob([blob]));
+          var cv=document.createElement('canvas');cv.width=8;cv.height=8;
+          var ctx=cv.getContext('2d');ctx.drawImage(bmp,0,0,8,8);
+          var d=ctx.getImageData(0,0,8,8).data;var r=0,g=0,b=0;
+          for(var k=0;k<d.length;k+=4){r+=d[k];g+=d[k+1];b+=d[k+2]}
+          var n64=64;var rgb=[r/n64,g/n64,b/n64];
+          c.hue=_hue(rgb);c.bri=Math.round((rgb[0]+rgb[1]+rgb[2])/3);
+          var newN=c.n.slice(0,-4)+'_h'+Math.round(c.hue)+'_v'+c.bri+'.png';
+          c.h=await c.h.move(newN);c.n=_baseName(newN);
+        }catch(e){console.warn('move failed',e)}
+        done2++;_progUpdate(done2,needCompute);
+      }
+    }
+    _cells=cells;
+    _progHide();
+    updateCodeFilter(); /* populate code dropdown immediately */
+    /* Yield two frames so the browser paints the dropdown before sort+render */
+    await new Promise(function(r){requestAnimationFrame(function(){requestAnimationFrame(r)})});
+  }catch(e){_progHide();$('dir-label').textContent='读取出错: '+e.message;alert('读取出错: '+e.message);return}
+  if(lc>0&&pc===0){
+    $('dir-label').innerHTML=escHtml(_dir.name)+' <span class=count>'+_cells.length+'格 · 全部为预测标签</span>';
+  } else {
+    $('dir-label').innerHTML=escHtml(_dir.name)+' <span class=count>'+_cells.length+' 格</span>';
+  }
+  _cells.sort(function(a,b){
+    /* Labeled cells grouped by code, then by hue/bri */
+    if(a.c&&a.c!==_EMPTY&&b.c&&b.c!==_EMPTY){
+      var al=a.c.charCodeAt(0),bl=b.c.charCodeAt(0);
+      if(al!==bl)return al-bl;
+      var an=parseInt(a.c.slice(1))||0,bn=parseInt(b.c.slice(1))||0;
+      if(an!==bn)return an-bn;
+      if(a.hue!=null&&b.hue!=null)return a.bri-b.bri;
+      return a.n.localeCompare(b.n);
+    }
+    if(a.c&&a.c!==_EMPTY)return -1;
+    if(b.c&&b.c!==_EMPTY)return 1;
+    if(a.hue!=null&&b.hue!=null){
+      if(Math.abs(a.hue-b.hue)>5)return a.hue-b.hue;
+      return a.bri-b.bri;
+    }
+    if(a.hue!=null)return -1;if(b.hue!=null)return 1;
+    return a.n.localeCompare(b.n);
+  });
+  renderGrid();updStats();
+}
+function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function _hue(rgb){
+  var r=rgb[0]/255,g=rgb[1]/255,b=rgb[2]/255;
+  var mx=Math.max(r,g,b),mn=Math.min(r,g,b);
+  if(mx===mn)return 0;
+  var d=mx-mn;
+  var h;
+  if(mx===r)h=((g-b)/d)%6;
+  else if(mx===g)h=(b-r)/d+2;
+  else h=(r-g)/d+4;
+  return h*60;
+}
+
+function renderGrid(){
+  var g=$('grid');g.innerHTML='';
+  _cells.forEach(function(c,i){
+    var w=document.createElement('div');w.className='cell';w.dataset.i=i;
+    if(_sel.has(i))w.classList.add('sel');
+    /* Labeled cells: set accent color via CSS custom property */
+    if(c.c)w.style.setProperty('--code-color',_codeHue(c.c));
+    var img=document.createElement('img');img.src='#';img.width=img.height=48*_z;w.appendChild(img);
+    if(c.c){var o=document.createElement('div');o.className='ov'+(c.c===_EMPTY?' emp':'');o.textContent=c.c===_EMPTY?'✕':c.c;w.appendChild(o)}
+    w.addEventListener('click',function(e){
+      if(_wasDrag){_wasDrag=false;return}
+      if(e.shiftKey&&_last>=0){var lo=Math.min(_last,i),hi=Math.max(_last,i);for(var j=lo;j<=hi;j++)_sel.add(j)}
+      else if(e.ctrlKey||e.metaKey)_sel.has(i)?_sel.delete(i):_sel.add(i);
+      else{if(_sel.size===1&&_sel.has(i))_sel.clear();else{_sel.clear();_sel.add(i)}}
+      _last=i;updSelUI()});
+    w.addEventListener('mousedown',function(e){if(e.button===0)_drag={x:e.clientX,y:e.clientY,shift:e.shiftKey}});
+    g.appendChild(w);_loadImg(c,img);
+  });
+}
+async function _loadImg(c,img){try{var f=await c.h.getFile();img.src=URL.createObjectURL(f)}catch(e){img.alt='?'}}
+
+document.addEventListener('mousemove',function(e){
+  if(!_drag)return;
+  if(Math.abs(e.clientX-_drag.x)<4&&Math.abs(e.clientY-_drag.y)<4)return;
+  _wasDrag=true;
+  var b=$('selbox');b.style.display='block';b.style.left=Math.min(e.clientX,_drag.x)+'px';b.style.top=Math.min(e.clientY,_drag.y)+'px';b.style.width=Math.abs(e.clientX-_drag.x)+'px';b.style.height=Math.abs(e.clientY-_drag.y)+'px';
+});
+document.addEventListener('mouseup',function(e){
+  if(!_drag)return;
+  $('selbox').style.display='none';
+  if(_wasDrag){
+    var rx=Math.min(e.clientX,_drag.x),ry=Math.min(e.clientY,_drag.y),rw=Math.abs(e.clientX-_drag.x),rh=Math.abs(e.clientY-_drag.y);
+    if(!_drag.shift)_sel.clear();
+    document.querySelectorAll('.cell').forEach(function(w){var r=w.getBoundingClientRect();if(r.left<rx+rw&&r.right>rx&&r.top<ry+rh&&r.bottom>ry)_sel.add(+w.dataset.i)});
+    updSelUI()}
+  _drag=null;
+});
+
+var _lastSel=null;
+function updSelUI(){
+  var prev=_lastSel||new Set();
+  var cur=_sel;
+  document.querySelectorAll('.cell').forEach(function(w){
+    var i=+w.dataset.i;
+    var was=prev.has(i),now=cur.has(i);
+    if(was!==now)w.classList.toggle('sel',now);
+  });
+  _lastSel=new Set(cur);
+  updStats();
+}
+function clearSel(){_sel.clear();_last=-1;_lastSel=null;updSelUI()}
+function onFilter(){
+  var m=$('fmode').value;
+  var cf=$('cmode')?$('cmode').value:'all';
+  document.querySelectorAll('.cell').forEach(function(w){var c=_cells[+w.dataset.i];
+    var show=true;
+    if(cf!=='all'&&c.c!==cf)show=false;
+    if(show){
+      if(m==='unlabeled'&&c.c)show=false;
+      else if(m==='labeled'&&!c.c)show=false;
+      else if(m==='empty'&&c.c!==_EMPTY)show=false;
+    }
+    w.style.display=show?'':'none'});
+}
+function selFiltered(){
+  var m=$('fmode').value;
+  var cf=$('cmode')?$('cmode').value:'all';
+  _sel.clear();
+  _cells.forEach(function(c,i){
+    if(cf!=='all'&&c.c!==cf)return;
+    if(m==='labeled'&&c.c)_sel.add(i);
+    if(m==='unlabeled'&&!c.c)_sel.add(i);
+    if(m==='empty'&&c.c===_EMPTY)_sel.add(i);
+    if(m==='all')_sel.add(i)});
+  updSelUI();
+}
+/* Rebuild code filter dropdown from current labels */
+function updateCodeFilter(){
+  var sel=$('cmode');if(!sel)return;
+  var cur=sel.value;
+  var map={};
+  _cells.forEach(function(c){if(c.c&&c.c!==_EMPTY)map[c.c]=(map[c.c]||0)+1});
+  var codes=Object.keys(map).sort(function(a,b){
+    var al=a.charCodeAt(0),bl=b.charCodeAt(0);
+    if(al!==bl)return al-bl;
+    return(parseInt(a.slice(1))||0)-(parseInt(b.slice(1))||0);
+  });
+  sel.innerHTML='<option value="all">全部编码 ('+_cnt(function(c){return c.c&&c.c!==_EMPTY})+')</option>';
+  codes.forEach(function(code){sel.innerHTML+='<option value="'+code+'">'+code+' ('+map[code]+')</option>'});
+  /* Restore previous selection if still valid */
+  if(cur&&(cur==='all'||codes.indexOf(cur)>=0))sel.value=cur;else sel.value='all';
+  $('code-count').textContent=codes.length+' 种编码';
+}
+
+/* Try stored handle first (preserves user gesture), fall back to fresh handle */
+async function _safeMove(c, nm){
+  try{ c.h=await c.h.move(nm); return; }
+  catch(e){
+    if(e.name==='InvalidModificationError'||e.name==='NotFoundError'){
+      c.h=await (await _dir.getFileHandle(_diskName(c))).move(nm); return;
+    }
+    throw e;
+  }
+}
+
+/* Refresh handles for given cell indices. Returns all indices (includes cells
+   where refresh failed — they keep their stored handle as fallback). */
+async function _refreshHandles(indices){
+  if(!indices.length)return indices;
+  for(var k=0;k<indices.length;k++){
+    var c=_cells[indices[k]];
+    try{ c.h=await _dir.getFileHandle(_diskName(c)); }
+    catch(e){/* keep stored handle as fallback */}
+  }
+  return indices;
+}
+
+async function _doLabel(code){
+  if(!_sel.size||!_dir)return;
+  /* Snapshot and clear selection immediately to prevent carry-over */
+  var indices=[];_sel.forEach(function(i){indices.push(i)});
+  _sel.clear();_last=-1;_lastSel=null;updSelUI();
+  if(!indices.length)return;
+  var used=new Set();
+  _cells.forEach(function(c){if(c.c===code)used.add(_diskName(c));});
+  var nextIdx=used.size;
+  /* Refresh all selected handles before batch */
+  indices=await _refreshHandles(indices);
+  _progShow('标注 '+code,indices.length);
+  var done=0,failed=0;
+  for(var _k=0;_k<indices.length;_k++){var idx=indices[_k];var c=_cells[idx];
+    if(c.r<0&&c._o){var pm=c._o.match(/^r(\d{3})_c(\d{3})\.png$/);if(pm){c.r=+pm[1];c.l=+pm[2]}}
+    var sortTag=(c.hue!==null)?'_h'+Math.round(c.hue)+'_v'+c.bri:'';
+    var nm=code+'_'+String(nextIdx).padStart(4,'0')+'_marked'+sortTag+'.png';
+    var safety=0;
+    while(used.has(nm)&&safety++<10000){nextIdx++;nm=code+'_'+String(nextIdx).padStart(4,'0')+'_marked'+sortTag+'.png';}
+    try{
+      if(c.n!==nm){
+        if(!c._o&&c.r<0)c._o=c.n;
+        /* Handle was refreshed upfront — direct move should succeed */
+        try{ c.h=await c.h.move(nm); }
+        catch(e2){
+          try{ c.h=await (await _dir.getFileHandle(_diskName(c))).move(nm); }
+          catch(e3){ console.error('both move attempts failed',e2.message,e3.message,c.n); throw e3; }
+        }
+      }
+      c.n=_baseName(nm);c.c=code;used.add(nm);nextIdx++
+    }catch(e){console.error('label move failed',e,c.n);failed++}
+    done++;_progUpdate(done,indices.length);
+  }
+  _progHide();
+  if(failed)alert('标注完成: '+done+' 个选中, '+failed+' 个失败\n(文件可能已被移动, 建议刷新页面后重试)');
+  _refreshOV();updStats();onFilter();
+}
+function applyEmpty(){_doLabel(_EMPTY)}
+function applyCode(){
+  var v=$('code-inp').value.trim().toUpperCase();
+  if(!v||!/^[A-Z]\d{1,2}$/.test(v)){alert('格式:字母+1~2位数字');return}
+  if(!_sel.size){alert('请先在网格中选中格子');return}
+  _doLabel(v);
+}
+
+async function unlabelSel(){
+  if(!_sel.size||!_dir)return;
+  var uidBase=0;
+  for(var i=0;i<_cells.length;i++){var c=_cells[i];if(!c.c&&c.r<0)uidBase++}
+  var indices=[];_cells.forEach(function(c,i){if(_sel.has(i))indices.push(i)});
+  indices=await _refreshHandles(indices);
+  if(!indices.length){_progHide();alert('所选文件均已失效, 请刷新页面后重试');return}
+  _progShow('取消标注',indices.length);
+  var done=0;var uid=uidBase;
+  for(var _k=0;_k<indices.length;_k++){var idx=indices[_k];var c=_cells[idx];if(!c.c){done++;continue}
+    var sortTag=(c.hue!==null)?'_h'+Math.round(c.hue)+'_v'+c.bri:'';
+    var nm;if(c.r>=0)nm='r'+String(c.r).padStart(3,'0')+'_c'+String(c.l).padStart(3,'0')+sortTag+'.png';
+    else if(c._o&&/^r\d{3}_c\d{3}\.png$/.test(c._o))nm=c._o;
+    else{nm='u_'+String(uid).padStart(4,'0')+sortTag+'.png';uid++}
+    try{
+      /* Handle was refreshed upfront — direct move first */
+      try{ c.h=await c.h.move(nm); }
+      catch(e2){ c.h=await (await _dir.getFileHandle(_diskName(c))).move(nm); }
+      c.n=_baseName(nm);c.c=null
+    }catch(e){console.error('move failed',e,c.n)}
+    done++;_progUpdate(done,indices.length);
+  }
+  _progHide();
+  _refreshOV();updStats();onFilter();
+}
+async function unlabelAll(){
+  if(!_dir)return;
+  var ld=_cells.filter(function(c){return c.c});if(!ld.length)return;
+  if(!confirm('确认清空全部 '+ld.length+' 个标注?'))return;
+  for(var i=0;i<ld.length;i++){var c=ld[i];
+    var sortTag=(c.hue!==null)?'_h'+Math.round(c.hue)+'_v'+c.bri:'';
+    var nm;if(c.r>=0)nm='r'+String(c.r).padStart(3,'0')+'_c'+String(c.l).padStart(3,'0')+sortTag+'.png';
+    else if(c._o&&/^r\d{3}_c\d{3}\.png$/.test(c._o))nm=c._o;
+    else{nm='u_'+String(Math.floor(Math.random()*9999)).padStart(4,'0')+sortTag+'.png'}
+    try{
+      try{ c.h=await c.h.move(nm); }
+      catch(e2){ c.h=await (await _dir.getFileHandle(_diskName(c))).move(nm); }
+      c.n=_baseName(nm);c.c=null
+    }catch(e){console.error('move failed',e,c.n)}
+  }
+  _refreshOV();updStats();onFilter();
+}
+
+async function exportLabels(){
+  if(!_dir)return;
+  var labeled=_cells.filter(function(c){return c.c&&c.c!==_EMPTY});
+  if(!labeled.length){alert('没有已标注的格子');return}
+  if(typeof JSZip==='undefined'){alert('JSZip 未加载, 请检查网络后刷新页面');return}
+  _progShow('导出标注结果',labeled.length);
+  var zip=new JSZip();
+  var manifest='编码,文件名,行,列,色相,亮度\n';
+  var done=0,failed=0;
+  for(var i=0;i<labeled.length;i++){
+    var c=labeled[i];
+    try{
+      var f=await c.h.getFile();
+      var buf=await f.arrayBuffer();
+      zip.file(_diskName(c),buf,{binary:true});
+      manifest+=c.c+','+_diskName(c)+','+(c.r>=0?c.r+1:'')+','+(c.l>=0?c.l+1:'')+','+(c.hue!=null?Math.round(c.hue):'')+','+(c.bri!=null?c.bri:'')+'\n';
+    }catch(e){console.error('export failed for',c.n,e);failed++}
+    done++;_progUpdate(done,labeled.length,c.c);
+  }
+  zip.file('manifest.csv',manifest);
+  _progUpdate(done,labeled.length,'打包中…');
+  var blob=await zip.generateAsync({type:'blob'});
+  _progHide();
+  /* Trigger download */
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download=_dir.name+'_标注结果_'+new Date().toISOString().slice(0,10)+'.zip';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  var msg='导出完成: '+done+' 个文件';
+  if(failed)msg+=', '+failed+' 个失败';
+  if(!failed)alert(msg);else console.warn(msg);
+}
+
+function _refreshOV(){
+  _sel.forEach(function(i){
+    var w=document.querySelector('.cell[data-i="'+i+'"]');
+    if(!w)return;
+    var c=_cells[i];
+    var ov=w.querySelector('.ov');
+    if(c.c){
+      if(!ov){ov=document.createElement('div');ov.className='ov';w.appendChild(ov)}
+      ov.className='ov'+(c.c===_EMPTY?' emp':'');
+      ov.textContent=c.c===_EMPTY?'':c.c;
+      /* Update cell accent color */
+      w.style.setProperty('--code-color',_codeHue(c.c));
+    }else{
+      if(ov)ov.remove();
+      w.style.removeProperty('--code-color');
+    }
+  });
+}
+function updStats(){$('st-l').textContent=_cnt(function(c){return c.c&&c.c!==_EMPTY});$('st-t').textContent=_cells.length;$('st-e').textContent=_cnt(function(c){return c.c===_EMPTY});$('st-s').textContent=_sel.size;updateCodeFilter()}
+
+document.addEventListener('keydown',function(e){if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;if(e.key==='Escape'){clearSel()}if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();unlabelSel()}});
+
+(async function(){
+  renderRecent();
+  try{var h=await _loadDir();if(!h)return;
+    var o={mode:'readwrite'};var p=await h.queryPermission(o);if(p!=='granted'){var r=await h.requestPermission(o);if(r!=='granted')return}
+    _dir=h;await loadCells()}catch(e){console.warn('auto:',e)}
+})();
+</script>
+</body>
+</html>
