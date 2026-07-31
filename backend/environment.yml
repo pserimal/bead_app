@@ -4,19 +4,27 @@ channels:
   - defaults
 dependencies:
   - python=3.10
+  # Web / API
   - fastapi
   - uvicorn
+  - python-multipart
+  - aiofiles
+  - pydantic-settings
+  - requests
+  # DB
   - sqlalchemy
   - asyncpg
   - alembic
+  # Image / CV
   - opencv
+  - numpy
+  - pillow
+  - scipy
+  - colour-science
+  # Tests
   - pytest
   - pytest-asyncio
   - httpx
-  - python-multipart
-  - aiofiles
-  - numpy
-  - pillow
+  # pip installs (torch/torchvision/easyocr) done separately
+  # to avoid conda+pip index mixing in environment.yml
   - pip
-    - pip:
-     - colour-science

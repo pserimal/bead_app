@@ -44,6 +44,7 @@ training/samples/
 training/samples/
 # Trained model checkpoints
 training/checkpoints/*.pt
+training/data/
 
 # Workspace / tooling
 .conda/
@@ -52,6 +53,7 @@ training/checkpoints/*.pt
 .claude/
 .gstack/
 .superpowers/
+.pi-subagents/
 
 # Runtime uploads (root-level shared mount; backend/uploads/ also covers docker volume)
 uploads/
@@ -73,6 +75,7 @@ Thumbs.db
 .env.*.local
 frontend/.env
 frontend/.env.*
+*.db
 
 # Python virtualenvs
 .venv/

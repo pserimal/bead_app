@@ -209,93 +209,142 @@ def _get_wm_font() -> ImageFont.FreeTypeFont | None:
 # Cell generation
 # ═══════════════════════════════════════════════════════════════════════
 
+# Luminance buckets matching the observed real-marked distribution:
+# 37% dark<50, 39% light>180, 24% mid 100-180
+_MARKED_BG_BUCKETS = [
+    *(22,) * 37,      # dark
+    *(215,) * 39,     # light
+    *(145,) * 24,     # mid
+]
 
-def generate_one(rng: random.Random, fonts: list[str]) -> Sample:
-    """Generate a single 48×48 synthetic cell matching real bead diagrams."""
 
-    code = _random_code(rng)
-    bg_hex = rng.choice(_HEX_COLORS)
-    bg_rgb = _hex_to_rgb(bg_hex)
+def generate_one(rng: random.Random, fonts: list[str], style: str = "colored",
+                  target_codes: list[str] | None = None) -> Sample:
+    """Generate a single 48×48 synthetic cell matching real bead diagrams.
+
+    style:
+      - "colored" (legacy): full RGB colored background from Perler library,
+        with neighbor-bleed stripes and social-media watermarks. Use only for
+        backward-compatibility single-source training.
+      - "marked" (default for new training): grayscale output matching the
+        appearance of the labeled marked cells. No stripes, no watermarks,
+        smaller text, sharper edges. See docs/adr/0003.
+
+    target_codes: if given, sample code from this list uniformly instead of
+        random A-Z codes.  Use for generating balanced data for specific
+        codes missing from real training.
+    """
+    if target_codes:
+        code = rng.choice(target_codes)
+    else:
+        code = _random_code(rng)
+    bg_rgb = _sample_bg(rng, style)
     text_rgb = _pick_text_color(bg_rgb)
 
     SZ = RENDER_SIZE  # 96
     pil_img = Image.new("RGB", (SZ, SZ), bg_rgb)
     draw = ImageDraw.Draw(pil_img)
 
-    # ── 1. Full‑edge neighbour‑bleed stripe (60 %) ──
-    if rng.random() < 0.6:
-        other_rgb = _hex_to_rgb(rng.choice(_HEX_COLORS))
-        edge = rng.randint(0, 3)
-        margin = rng.randint(4, 16)
-        if edge == 0:
-            draw.rectangle([(0, 0), (SZ, margin)], fill=other_rgb)
-        elif edge == 1:
-            draw.rectangle([(0, SZ - margin), (SZ, SZ)], fill=other_rgb)
-        elif edge == 2:
-            draw.rectangle([(0, 0), (margin, SZ)], fill=other_rgb)
-        else:
-            draw.rectangle([(SZ - margin, 0), (SZ, SZ)], fill=other_rgb)
+    if style == "colored":
+        # ── 1. Full‑edge neighbour‑bleed stripe (60 %) ──
+        if rng.random() < 0.6:
+            other_rgb = _hex_to_rgb(rng.choice(_HEX_COLORS))
+            edge = rng.randint(0, 3)
+            margin = rng.randint(4, 16)
+            if edge == 0:
+                draw.rectangle([(0, 0), (SZ, margin)], fill=other_rgb)
+            elif edge == 1:
+                draw.rectangle([(0, SZ - margin), (SZ, SZ)], fill=other_rgb)
+            elif edge == 2:
+                draw.rectangle([(0, 0), (margin, SZ)], fill=other_rgb)
+            else:
+                draw.rectangle([(SZ - margin, 0), (SZ, SZ)], fill=other_rgb)
 
-    # ── 2. Large social‑media watermark (30 %) ──
-    wm_font = _get_wm_font()
-    if rng.random() < 0.3 and wm_font is not None:
-        wm_text = rng.choice(["小红书", "成品图", "图纸分享"])
-        BIG = SZ * 5  # 480 — watermark spans many cells
-        wm_canvas = Image.new("RGBA", (BIG, BIG), (0, 0, 0, 0))
-        wm_draw = ImageDraw.Draw(wm_canvas)
+        # ── 2. Large social‑media watermark (30 %) ──
+        wm_font = _get_wm_font()
+        if rng.random() < 0.3 and wm_font is not None:
+            wm_text = rng.choice(["小红书", "成品图", "图纸分享"])
+            BIG = SZ * 5  # 480 — watermark spans many cells
+            wm_canvas = Image.new("RGBA", (BIG, BIG), (0, 0, 0, 0))
+            wm_draw = ImageDraw.Draw(wm_canvas)
 
-        big_font_size = rng.randint(80, 140)
-        try:
-            # Use the same face as _wm_font but at a larger size
-            big_font = ImageFont.truetype(wm_font.path, big_font_size)
-        except Exception:
-            big_font = ImageFont.load_default()
+            big_font_size = rng.randint(80, 140)
+            try:
+                # Use the same face as _wm_font but at a larger size
+                big_font = ImageFont.truetype(wm_font.path, big_font_size)
+            except Exception:
+                big_font = ImageFont.load_default()
 
-        alpha = rng.randint(25, 60)
-        wm_rgba = (
-            (255, 255, 255, alpha)
-            if _luminance(bg_rgb) < 130
-            else (0, 0, 0, alpha)
-        )
-        tx = rng.randint(-BIG // 2 + 20, BIG // 2 - 20)
-        ty = rng.randint(-BIG // 2 + 20, BIG // 2 - 20)
-        wm_draw.text((tx, ty), wm_text, fill=wm_rgba, font=big_font)
+            alpha = rng.randint(25, 60)
+            wm_rgba = (
+                (255, 255, 255, alpha)
+                if _luminance(bg_rgb) < 130
+                else (0, 0, 0, alpha)
+            )
+            tx = rng.randint(-BIG // 2 + 20, BIG // 2 - 20)
+            ty = rng.randint(-BIG // 2 + 20, BIG // 2 - 20)
+            wm_draw.text((tx, ty), wm_text, fill=wm_rgba, font=big_font)
 
-        crop_x = rng.randint(0, BIG - SZ)
-        crop_y = rng.randint(0, BIG - SZ)
-        wm_overlay = wm_canvas.crop(
-            (crop_x, crop_y, crop_x + SZ, crop_y + SZ)
-        )
-        pil_img = Image.alpha_composite(
-            pil_img.convert("RGBA"), wm_overlay
-        ).convert("RGB")
-        draw = ImageDraw.Draw(pil_img)
+            crop_x = rng.randint(0, BIG - SZ)
+            crop_y = rng.randint(0, BIG - SZ)
+            wm_overlay = wm_canvas.crop(
+                (crop_x, crop_y, crop_x + SZ, crop_y + SZ)
+            )
+            pil_img = Image.alpha_composite(
+                pil_img.convert("RGBA"), wm_overlay
+            ).convert("RGB")
+            draw = ImageDraw.Draw(pil_img)
 
     # ── 3. Bead code text (centred, large) ──
-    font_size = rng.randint(36, 50)
+    if style == "marked":
+        # Smaller text in marked style (40-55% of cell width)
+        font_size = rng.randint(24, 38)
+        # Wider positional jitter to match real variation
+        pos_jitter_x = rng.randint(-10, 10)
+        pos_jitter_y = rng.randint(-10, 10)
+    else:
+        font_size = rng.randint(36, 50)
+        pos_jitter_x = rng.randint(-2, 2)
+        pos_jitter_y = rng.randint(-2, 2)
+
     font = ImageFont.truetype(rng.choice(fonts), font_size)
     bbox = draw.textbbox((0, 0), code, font=font)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    cx = (SZ - tw) / 2 - bbox[0] + rng.randint(-2, 2)
-    cy = (SZ - th) / 2 - bbox[1] + rng.randint(-2, 2)
+    cx = (SZ - tw) / 2 - bbox[0] + pos_jitter_x
+    cy = (SZ - th) / 2 - bbox[1] + pos_jitter_y
     draw.text((cx, cy), code, fill=text_rgb, font=font)
 
     # ── 4. Downscale to cell size ──
     pil_img = pil_img.resize((CELL_SIZE, CELL_SIZE), Image.LANCZOS)
 
-    # ── 5. Gaussian blur (always) ──
-    pil_img = pil_img.filter(
-        ImageFilter.GaussianBlur(radius=rng.uniform(0.5, 1.5))
-    )
+    if style == "marked":
+        # Keep natural anti-aliased edges (real marked cells have a mix
+        # of bg, mid, and text intensities — NOT fully binary).
+        arr = np.array(pil_img)
+    else:
+        arr = np.array(pil_img)
+        # ── 5. Gaussian blur (always) ──
+        pil_img = pil_img.filter(
+            ImageFilter.GaussianBlur(radius=rng.uniform(0.5, 1.5))
+        )
+        arr = np.array(pil_img)
 
-    arr = np.array(pil_img)
+    if style == "colored":
+        # Extra OpenCV blur occasionally (simulates camera softness)
+        if rng.random() < 0.3:
+            arr = cv2.GaussianBlur(arr, (3, 3), 0)
 
-    # Extra OpenCV blur occasionally (simulates camera softness)
-    if rng.random() < 0.3:
-        arr = cv2.GaussianBlur(arr, (3, 3), 0)
+    if style == "marked":
+        # Mild gaussian noise only (σ 0-2), simulating marking tool's smoothing
+        if rng.random() < 0.6:
+            sigma = rng.uniform(0, 2)
+            arr = np.clip(
+                arr.astype(np.float32) + np.random.normal(0, sigma, arr.shape),
+                0, 255,
+            ).astype(np.uint8)
 
-    # ── 6. Gaussian noise (40 %) ──
-    if rng.random() < 0.4:
+    # ── 6. Gaussian noise (40 %) ── [colored only]
+    if style == "colored" and rng.random() < 0.4:
         sigma = rng.uniform(0, 4)
         arr = np.clip(
             arr.astype(np.float32) + np.random.normal(0, sigma, arr.shape),
@@ -319,13 +368,32 @@ def generate_one(rng: random.Random, fonts: list[str]) -> Sample:
     return Sample(image=arr, code=code, token_indices=code_to_token_indices(code))
 
 
+def _sample_bg(rng: random.Random, style: str) -> tuple[int, int, int]:
+    """Pick a background color appropriate for the style."""
+    if style == "marked":
+        # Grayscale, picked from one of three observed luminance buckets
+        lum = rng.choice(_MARKED_BG_BUCKETS)
+        # Add small per-channel jitter so it isn't perfectly equal
+        jitter = rng.randint(-3, 3)
+        v = max(0, min(255, lum + jitter))
+        return (v, v, v)
+    # Default: full RGB hex from color library
+    return _hex_to_rgb(rng.choice(_HEX_COLORS))
+
+
 # ═══════════════════════════════════════════════════════════════════════
 # Dataset helpers
 # ═══════════════════════════════════════════════════════════════════════
 
 
-def generate_dataset(n: int, seed: int = 0) -> list[Sample]:
-    """Generate *n* synthetic training samples."""
+def generate_dataset(n: int, seed: int = 0, style: str = "colored",
+                    target_codes: list[str] | None = None) -> list[Sample]:
+    """Generate *n* synthetic training samples.
+
+    When ``target_codes`` is given, codes are sampled exclusively from that
+    list (with uniform probability) instead of random A-Z codes.  Use this
+    to generate balanced data for specific codes missing from real data.
+    """
     rng = random.Random(seed)
     np.random.seed(seed)
     fonts = available_fonts()
@@ -335,7 +403,11 @@ def generate_dataset(n: int, seed: int = 0) -> list[Sample]:
             "fonts-dejavu, fonts-liberation, fonts-freefont (Linux) or "
             "ensure Windows system fonts are accessible."
         )
-    return [generate_one(rng, fonts) for _ in range(n)]
+    samples = []
+    for _ in range(n):
+        s = generate_one(rng, fonts, style=style, target_codes=target_codes)
+        samples.append(s)
+    return samples
 
 
 def save_samples(samples: Iterable[Sample], out_dir: str | Path) -> int:
@@ -380,7 +452,11 @@ if __name__ == "__main__":
     p.add_argument("--n", type=int, default=100)
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", type=str, default="data/synth_preview")
+    p.add_argument("--style", type=str, default="marked",
+                   choices=["colored", "marked"],
+                   help="Output style: 'marked' matches labeled cells (default), "
+                        "'colored' is the legacy full-color path.")
     args = p.parse_args()
-    samples = generate_dataset(args.n, args.seed)
+    samples = generate_dataset(args.n, args.seed, style=args.style)
     n = save_samples(samples, args.out)
-    print(f"saved {n} samples to {args.out}")
+    print(f"saved {n} samples to {args.out} (style={args.style})")
