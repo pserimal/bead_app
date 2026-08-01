@@ -106,9 +106,8 @@ coverage.xml
 build/
 # ── 新架构（2026-08 重写）──
 
-# Wayfinder 本地 tracker 的运行时数据（pgdata/pgjdbc 等；tracker 文档本身提交）
-.scratch/pgdata/
-.scratch/*.jar
+# Wayfinder 本地 tracker 全部数据（本地决策记录，不入库）
+.scratch/
 
 # 模型 artifact：权重不入库（library.json 快照提交，model.pt 由 publish_checkpoint.py 生成）
 artifacts/models/**/model.pt
