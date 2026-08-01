@@ -18,8 +18,8 @@ assignee: assistant
 
 ### 样本与标签
 
-- zip 集：`examples/stand/标注结果/1_标注结果_2026-07-26.zip` 的 7630 个 48×48 cell，标签来自 manifest.csv「编码」列（23 个编码）。
-- dir 集：`examples/stand/cells/` 50 格，标签来自文件名（含 OOD 编码，仅记录不作验收）。
+- zip 集：`../../../training/samples/stand/标注结果/1_标注结果_2026-07-26.zip` 的 7630 个 48×48 cell，标签来自 manifest.csv「编码」列（23 个编码）。
+- dir 集：`../../../training/samples/stand/cells/` 50 格，标签来自文件名（含 OOD 编码，仅记录不作验收）。
 - 关键事实：zip 集与 Experiment 001 训练集同源（逐字节相同）→ 本基线是训练分布内能力，非独立泛化；带网格坐标的 GT 缺失，只能做 cell 级评估。
 
 ### 基线 checkpoint

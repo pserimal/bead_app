@@ -30,7 +30,7 @@ assignee: assistant
 - `training/data/synthetic/`（78M，general + targeted_m）——保留，gitignored，无需处理。
 - `training/samples/1_标注结果_2026-07-29/` + `.zip`（8644 cell，Experiment 001 训练集）——保留。
 - `training/checkpoints/*.pt`（10 个，含 `crnn_real_m.pt`）——保留，gitignored（`training/checkpoints/*.pt`）；`crnn_v2.pt` 不存在，勿依赖 config 默认值。
-- `examples/`（`1.jpg`..`6.jpg` + `examples/stand/`：`1.jpg/2.jpg/3.jpg`、`cells/`、`cut/`、`manifest.json`、`标注结果/1_标注结果_2026-07-26.zip`）——**实际标注数据源在 `examples/` 而非 `training/data/real/`（AGENTS.md 描述过时）**，保留。
+- `examples/`（`1.jpg`..`6.jpg` + `../../../training/samples/stand/`：`1.jpg/2.jpg/3.jpg`、`cells/`、`cut/`、`manifest.json`、`标注结果/1_标注结果_2026-07-26.zip`）——**实际标注数据源在 `examples/` 而非 `training/data/real/`（AGENTS.md 描述过时）**，保留。
 - `training/label.html`（标注工具）——保留。
 - `training/docs/PLAN.md`、`training/docs/experiments/001-real-baseline-and-mixed.md`——保留。
 
@@ -76,7 +76,7 @@ assignee: assistant
 
 - **`backend/bead_app.db`**：已 gitignored，内含旧业务数据；005 决议「不迁移旧业务数据」→ 默认删除，但删除前请用户确认无导出需求。
 - **`backend/uploads/`**（含真实上传图片）与根目录 `uploads/`：gitignored；005 决议旧数据不迁移 → 默认删除，确认后执行。
-- **`training/crops/`**（空目录）与 `training/data/annotations/`（不存在，标注数据实际在 `examples/stand/` 与 `training/samples/`）——AGENTS.md 结构描述已过时，是否新建/重定向目录结构由用户定。
+- **`training/crops/`**（空目录）与 `training/data/annotations/`（不存在，标注数据实际在 `../../../training/samples/stand/` 与 `training/samples/`）——AGENTS.md 结构描述已过时，是否新建/重定向目录结构由用户定。
 - **旧测试**：`backend/tests/` 整体删除前，`test_crop_cells_ocr.py`、`test_confidence_gating.py`、`test_code_regex.py` 中与 `ocr_core` 语义相关的用例是否移植到新服务测试——由用户决定（建议移植 code_regex 与 crop 逻辑相关用例）。
 
 ### 文档更新（与删除同步，具体位置）

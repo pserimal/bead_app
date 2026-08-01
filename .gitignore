@@ -20,6 +20,8 @@ dist/
 frontend/dist/
 frontend/.vite/
 frontend/coverage/
+# 测试用大图（2.2MB，不应入库）
+frontend/public/test.jpg
 
 # Training
 training/__pycache__/

@@ -94,7 +94,7 @@ python -m training.scripts.crop_examples
 - **Run scripts from the repo root** — `python -m training.scripts.X` so `ocr_core` and `training.*` both resolve.
 - **Shared core is `ocr_core/`** (010): charset (`ocr_core.charset`), color codes (`ocr_core.code_library`, artifact snapshot), CRNN arch + checkpoint I/O (`ocr_core.bead_ocr_crnn`). `synth_generator.py` re-exports `CHARS`/`CHAR_TO_IDX` from `ocr_core.charset` for backward compatibility.
 - **Checkpoint format (010 R2)**: `format_version=1` with `model_arch`, `num_classes`, `input_size`, `input_channels`, `blank_index`, `charset_hash` (hard checks at load) + `code_dict_version` (soft warn). Legacy 3-key checkpoints raise `CheckpointFormatError` — migrate via `publish_checkpoint.py`.
-- **Real data lives in `examples/`** (repo root) — `examples/stand/` (1.jpg..3.jpg, cells/, cut/, manifest.json, 标注结果 zips), `examples/1.jpg..6.jpg`. The old `training/data/real/` + `training/data/annotations/` paths were retired with the backend (014).
+- **Real data lives in `examples/`** (repo root) — `samples/stand/` (1.jpg..3.jpg, cells/, cut/, manifest.json, 标注结果 zips), `examples/1.jpg..6.jpg`. The old `training/data/real/` + `training/data/annotations/` paths were retired with the backend (014).
 - **Paths use `Path(__file__).resolve().parent.parent.parent`** to anchor at repo root, then navigate relative to it. Avoid `cwd`-relative paths.
 - **Gitignore**: `training/checkpoints/*.pt`, `training/data/synthetic/`, `artifacts/models/**/model.pt` are ignored. `training/docs/` is excluded via `.git/info/exclude` on some checkouts — use `git add -f` for baseline docs if needed.
 
