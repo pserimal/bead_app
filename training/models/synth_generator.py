@@ -83,11 +83,13 @@ def _random_code(rng: random.Random) -> str:
 # ═══════════════════════════════════════════════════════════════════════
 
 _FONT_CANDIDATES: list[str] = [
-    # Windows (priority: Calibri looks closest to real bead diagrams)
+    # Bold sans-serif first — matches the reference export (`bold sans-serif`,
+    # i.e. Arial Bold on Windows).  Real diagrams use a heavy grotesque face,
+    # not Calibri's rounded look.
+    "C:/Windows/Fonts/arialbd.ttf",
+    "C:/Windows/Fonts/arial.ttf",
     "C:/Windows/Fonts/calibrib.ttf",
     "C:/Windows/Fonts/calibri.ttf",
-    "C:/Windows/Fonts/arial.ttf",
-    "C:/Windows/Fonts/arialbd.ttf",
     "C:/Windows/Fonts/segoeui.ttf",
     "C:/Windows/Fonts/seguisb.ttf",
     "C:/Windows/Fonts/verdana.ttf",

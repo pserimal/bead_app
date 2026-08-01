@@ -5,7 +5,7 @@
 
 ## Core Terms
 
-**bead code**: a 2-3 character alphanumeric identifier printed inside a Perler bead diagram cell (e.g. `H7`, `F1`, `C21`). Each code maps to a color in the Perler color library.
+**bead code**: a 2-3 character alphanumeric identifier printed inside a bead diagram cell (e.g. `H01`, `F2`, `C21`, `MARD-A10`). Each code maps to a color in the bead color library.
 
 **cell**: one square region of a bead board diagram, containing zero or one bead code. Cropped from a board image after grid detection.
 
@@ -13,13 +13,17 @@
 
 **manifest.csv**: the metadata table shipped with a directory of labeled cell images. Columns: `编码` (code), `文件名` (filename), `行`/`列` (board coords, optional), `色相` (hue, optional), `亮度` (brightness, optional).
 
+**board.json**: the metadata file shipped next to a generated board PNG (from `board_generator.py`). Header (source image, brand, rows/cols, cell_size, merge params, generator + attribution) + `cells[]` with 1-based `row`/`col`, `code`, `color_hex`. Unlike manifest.csv it is board-level, not cell-image-directory-level.
+
+**render_code** *(aka native code)*: the bead code as printed inside a diagram cell — the brand code with any library-wide conflict prefix stripped (`H07`, not `COCO-H07`). The library keeps prefixed codes for uniqueness (DB PK); the diagram always prints the render_code (`-` is outside the OCR charset).
+
 **marked image** *(aka "labeled cell image")*: a 48×48 PNG of a single cell that has been preprocessed (background normalized, polarity handled) so that the bead code text is the dominant readable feature. Filename pattern: `<CODE>_<SEQ>_marked[_h<v>].png`.
 
 ## Vocabulary Reality (vs initial assumptions)
 
-The original Perler color library (`artifacts/colors/library.json`, snapshot of the retired `backend/app/data/default_colors.json`) has **65 codes with only 3 letter prefixes** (H, F, G).
+The bead color library (`artifacts/colors/library.json` + server `default_colors.json`, 017) now holds **1950 official codes across 15 brands** (Hama, Perler, Nabbi, Artkal A/C/M/R/S, Yant, Diamond Dotz, Mard), sourced from [maxcleme/beadcolors](https://github.com/maxcleme/beadcolors). Each entry carries a `brand` field; cross-brand code conflicts are disambiguated with brand prefixes (e.g. `MARD-A10`). The old 65-code custom snapshot (3 prefixes H/F/G) was replaced — do not assume codes are limited to H/F/G.
 
-But the **labeled training set** (8644 cells, 23 unique codes) covers **7 letter prefixes**: A, B, C, E, F, H, M. Treat A/B/C/E/M as first-class — do not assume any letter is "rare" or "only in library".
+**ADR 0005 addition (training-side only)**: `artifacts/colors/library.json` was merged with the Zippland 291-color mapping → **3113 codes, 17 brands** (+COCO/漫漫/盼盼/咪小窝). The server `default_colors.json` was NOT synced (still 1950) — the merge exists for synthetic-board generation; see `docs/adr/0005-synthetic-board-generation.md`.
 
 ## CRNN Output Dimensions
 

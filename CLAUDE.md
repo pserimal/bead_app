@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-拼豆助手 (ai_dou) — Perler bead pattern recognition app. Users upload a photo of a bead board, crop the grid region, set rows/cols; the backend OCRs the alphanumeric bead codes printed in each cell, looks each code up in a Perler color library, and produces a read-only bead blueprint.
+拼豆助手 (ai_dou) — Perler bead pattern recognition app. Users upload a photo of a bead board, crop the grid region, set rows/cols; the backend OCRs the alphanumeric bead codes printed in each cell, looks each code up in an official multi-brand bead color library (1950 codes, 15 brands, sourced from [maxcleme/beadcolors](https://github.com/maxcleme/beadcolors)), and produces a read-only bead blueprint.
 
 The repo is organized into four top-level parts:
 
@@ -12,7 +12,16 @@ The repo is organized into four top-level parts:
 - **`server/`** — Spring Boot + Kotlin API service (`:8080`), PostgreSQL-backed; the only external HTTP service
 - **`image_service/`** — internal Python FastAPI CRNN service (`:8001`, internal network only); does the actual OCR
 - **`ocr_core/`** — shared OCR core package (charset, code library, CRNN arch + inference); consumed by both `image_service/` and `training/`
-- **`training/`** — model training + data annotation; produces versioned model artifacts consumed by `image_service/`
+- **`training/`** — model training + data annotation; produces versioned model artifacts consumed by `image_service/`; also hosts `scripts/build_color_library.py` (017: official beadcolors CSV → color library JSON)
+
+## Color library (017)
+
+Official multi-brand bead color data from **[maxcleme/beadcolors](https://github.com/maxcleme/beadcolors)** (`gen/v1/*.csv`, 15 brands) → **1950 codes** with a `brand` field, replacing the old 65-code custom snapshot.
+
+- Generate: `python -m training.scripts.build_color_library --csv-dir <dir> --out <json>` (dedup same code+color; cross-brand conflicts prefixed e.g. `MARD-A10`; sort `brand → code`; JSON keys `brand, code, color_name, color_hex, sort_order`)
+- Snapshots: `artifacts/colors/library.json` (OCR) + `server/src/main/resources/default_colors.json` (Spring seed)
+- DB: `color_library` table with `brand` column (V1 schema); seeded on boot by `ColorSeedRunner`
+- Init policy: `bead.db.recreate-on-start=true` (default) → Flyway clean + migrate + reseed every boot; set `false` to keep data
 
 ## Architecture (one-screen mental model)
 
@@ -25,7 +34,7 @@ The repo is organized into four top-level parts:
         ├─ service/  JobService (008: idempotent events, atomic blueprint, recovery sweep)
         │            PythonTaskDispatcher (009: multipart dispatch → image_service)
         ├─ model/    JPA entities (recognition_job, blueprint, color_library …)
-        └─ config/   Flyway migrations, ColorSeedRunner, RecoveryScheduler, CORS
+        └─ config/   Flyway migrations, ColorSeedRunner, DatabaseInitConfig (recreate-on-start), RecoveryScheduler, CORS
         │
         │  POST /v1/tasks (multipart: image + cropBox + rows/cols)
         ▼
@@ -68,6 +77,18 @@ python -m training.scripts.publish_checkpoint \
 # Baseline / acceptance eval (011)
 python -m training.scripts.eval_cell_baseline --checkpoint <ckpt> --legacy
 
+# Rebuild color library from official beadcolors CSVs (017)
+python -m training.scripts.build_color_library --csv-dir <csv-dir> --out artifacts/colors/library.json
+#   then copy the same output to server/src/main/resources/default_colors.json
+
+# Merge Zippland 291-color mapping (COCO/漫漫/盼盼/咪小窝; MARD skipped — ADR 0005)
+python -m training.scripts.import_zippland_palette --mapping <colorSystemMapping.json> [--dry-run]
+
+# Generate a synthetic bead board with per-cell metadata (ADR 0005)
+python -m training.scripts.generate_board --image photo.jpg --brand mard [--cols 90] [--seed 7]
+#   → training/data/boards/<stem>/{board.png, board.json, board_preview.png}
+#   board.json cells[]: 1-based row/col + code + color_hex (exact labels for cell cropping)
+
 # Eval against real stand crops (grid-level; needs positioned GT)
 python -m training.scripts.eval_stand
 ```
@@ -95,6 +116,8 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build  # 
 - **Model artifact contract (010 R3)**: `artifacts/models/<name>-<version>/{model.pt, charset.json, manifest.json}`; `artifacts/models/current` points to the active one; `image_service` loads via `MODEL_ARTIFACT_DIR`. Legacy 3-key checkpoints are **rejected** by `ocr_core.load_checkpoint` (must migrate via `publish_checkpoint.py`).
 - **Checkpoint metadata hard-checks (010 R2)**: `format_version`, `model_arch`, `num_classes`, `input_size`, `charset_hash` mismatch → `CheckpointFormatError` at load.
 - **Confidence fix (011 F1)**: `ocr_core.inference` normalizes confidence as `exp(score/T)` (per-step log-prob), not `exp(score/len(code))` — the old formula rejected everything at min_conf=0.5.
+- **Board generator renders huge images**: `board_generator` disables PIL's decompression-bomb guard (`Image.MAX_IMAGE_PIXELS = None`) — boards can exceed 178 MP (e.g. 300 cols × tall portrait source). Don't re-add the guard inside that module.
+- **Diagrams print brand-native codes (`render_code`)**: the color library stores conflict prefixes (`COCO-H07`) but boards must print `H07` — `-` is outside the OCR charset. `load_brand_palette` strips prefixes; never print raw library codes into cells.
 - **Frontend proxies `/api` → `http://localhost:8080`** via `vite.config.ts`. Use `apiClient` from `frontend/src/api/client.ts` (baseURL `/api/v1`, 30s timeout, error interceptor mapping `{code, message, details, traceId}`).
 - **Tailwind v4 CSS-based config** — config lives in `frontend/src/index.css`. **ESLint flat config** (`frontend/eslint.config.js`). No Prettier.
 - **No global state library** — React Query (`hooks/useJobs.ts`, `useBlueprints.ts`, `useColorLibrary.ts`); only one React Context (`ToastContext`).
@@ -113,6 +136,9 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build  # 
 | Python image-service entry | `image_service/app/main.py` (+ `worker.py`, `event_sender.py`) |
 | Shared OCR core | `ocr_core/` (`bead_ocr_crnn.py`, `inference.py`, `charset.py`, `code_library.py`) |
 | Checkpoint publish | `training/scripts/publish_checkpoint.py` |
+| Color library build | `training/scripts/build_color_library.py` (017) |
+| Palette merge (Zippland) | `training/scripts/import_zippland_palette.py` (ADR 0005) |
+| Synthetic boards | `training/models/board_generator.py` + `training/scripts/generate_board.py` (ADR 0005) |
 | Baseline + acceptance (011) | `training/scripts/eval_cell_baseline.py`, `training/docs/baseline-2026-07-31.md` |
 | CRNN training | `training/scripts/train_crnn.py` |
 | Real bead images (input data) | `examples/` (stand crops + annotation zips) |

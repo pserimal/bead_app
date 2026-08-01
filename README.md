@@ -1,12 +1,12 @@
 # 🧩 拼豆助手
 
-拼豆助手是一个拼豆图案识别应用。用户上传拼豆图纸图片，框选网格区域、设置行列数；系统对每个格子做 OCR（CRNN 模型）识别编码，对照 Perler 颜色库生成可读的拼豆图纸。
+拼豆助手是一个拼豆图案识别应用。用户上传拼豆图纸图片，框选网格区域、设置行列数；系统对每个格子做 OCR（CRNN 模型）识别编码，对照官方拼豆颜色库生成可读的拼豆图纸。
 
 ## 功能特性
 
 - 🖼️ 单裁剪上传：图片 + 裁剪框 + 行列数（裁剪框支持拖拽缩放/键盘微调/数值输入）
 - 🔤 CRNN 逐格 OCR：识别格子内印刷的字母数字编码（如 H7、F2、C21）
-- 🎨 颜色库映射：65 色 Perler 快照，UNMAPPED 编码明确标注
+- 🎨 颜色库映射：1950 色官方拼豆颜色库（15 品牌，含 brand 字段），UNMAPPED 编码明确标注
 - 📋 识别任务追踪：异步任务、实时进度、事件时间线、心跳与自动重试
 - 🔍 任务历史 + 图纸详情（只读棋盘 + 颜色图例）
 
@@ -99,8 +99,53 @@ ai_dou/
 ├── training/            # CRNN 训练 + 数据标注 + 模型发布
 ├── artifacts/           # 模型 artifact + 颜色库快照
 ├── docker-compose.yml   # 三服务拓扑
+├── training/scripts/build_color_library.py  # 官方 CSV → 颜色库 JSON 生成脚本
 └── docs/                # 项目文档
 ```
+
+## 拼豆颜色编码来源（017）
+
+颜色库数据来自社区维护的开源项目 **[maxcleme/beadcolors](https://github.com/maxcleme/beadcolors)**（15 个品牌、2000+ 色，GPL 许可的 Melty Bead / 钻石画参考数据）。
+
+| 来源 | 说明 |
+|---|---|
+| 官方原始数据 | `https://github.com/maxcleme/beadcolors` 仓库 `gen/v1/*.csv`（15 品牌） |
+| 转换脚本 | `training/scripts/build_color_library.py`（CSV → JSON，含去重/冲突前缀/校验） |
+| 运行时快照 | `artifacts/colors/library.json`（OCR 侧）与 `server/src/main/resources/default_colors.json`（Spring seed，同一份数据） |
+| 数据库 | 启动时由 `ColorSeedRunner` 写入 `color_library` 表（含 `brand` 列） |
+
+### 覆盖品牌（1950 色）
+
+Hama (Midi/Mini/Maxi)、Perler (Standard/Mini/Caps)、Nabbi、Artkal A/C/M/R/S、Yant、Diamond Dotz、Mard。
+
+### 编码规则
+
+- **同码同色合并**：同一编码在不同品牌颜色相同时存一条（如 Hama 三系列 H01=White）
+- **跨品牌冲突加前缀**：同编码不同品牌颜色不同时保留主流品牌原码，冲突品牌加前缀（如 `MARD-A10`），全部 ≤ 8 字符满足 DB 主键
+- **数据排序**：按 `brand → code` 排序；JSON 字段顺序 `brand, code, color_name, color_hex, sort_order`
+- **brand 字段**：标识编码来源品牌（`hama` / `perler` / `artkal_a` / `diamondDotz` / …）
+
+### 重新生成
+
+```bash
+# 将 beadcolors 仓库的 gen/v1 CSV 放入目录后：
+python -m training.scripts.build_color_library \
+  --csv-dir <csv-dir> \
+  --out artifacts/colors/library.json
+```
+
+## 合成拼豆图纸生成（ADR 0005）
+
+训练数据无需人工标注：用真实照片生成整张拼豆图纸，同时保留每格元数据（品牌/编码/坐标），后续切格即可得到精确标签。
+
+- **参考项目**（版权声明见 LICENSE / `docs/adr/0005-synthetic-board-generation.md`）：
+  [liangdabiao/perler-beads-ai](https://github.com/liangdabiao/perler-beads-ai)（Apache-2.0，主参考）与 [Zippland/perler-beads](https://github.com/Zippland/perler-beads)（AGPL-3.0，数据源；两仓库的 291 色映射文件逐字节相同）
+- **色板扩充**：`import_zippland_palette.py` 将 291 色映射合并入颜色库（新增 COCO/漫漫/盼盼/咪小窝 4 品牌 1163 条；MARD 与库内同源跳过），库总量 1950 → 3113
+- **生成**：`python -m training.scripts.generate_board --image photo.jpg --brand mard`
+  → `training/data/boards/<id>/{board.png, board.json, board_preview.png}`
+  `board.json` 含 `cells[]`（1-based 行列 + 编码 + 颜色），标签零标注成本
+- **管线**：主导色分桶提取 → RGB 欧氏映射 → 全局频率合并（阈值 30）→ 渲染（Arial Bold 码 + 网格线 + 可选平铺水印）
+- **当前约定**：生成只用 `mard` 品牌；图纸印刷品牌原生码（无冲突前缀）
 
 ## 识别流程（一次上传）
 
@@ -118,3 +163,17 @@ ai_dou/
 - 用户名: `admin` / 密码: `123456`
 - 数据库: `bead_app`（测试库 `bead_app_test`）
 - 主机: `192.168.5.88:5432`（compose 内为 `db:5432`）
+
+### 启动时自动初始化（017）
+
+开发期默认**每次启动重建全部表并重新 seed**（不保证兼容性）：
+
+```yaml
+# application.yml
+bead:
+  db:
+    recreate-on-start: ${BEAD_DB_RECREATE_ON_START:true}
+```
+
+- `true`（默认）：启动时 Flyway clean（drop 全部表）→ migrate（V1 建表）→ ColorSeedRunner seed 1950 色官方库
+- `false`：保留数据，仅执行增量迁移（`spring.flyway.clean-disabled: false` 已配置以允许 clean）

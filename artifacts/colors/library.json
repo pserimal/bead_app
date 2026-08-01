@@ -13648,5 +13648,8146 @@
     "color_name": "persimmon",
     "color_hex": "#F26A34",
     "sort_order": 1950
+  },
+  {
+    "brand": "coco",
+    "code": "B09",
+    "color_name": "B09",
+    "color_hex": "#000000",
+    "sort_order": 1
+  },
+  {
+    "brand": "manman",
+    "code": "MM-F7",
+    "color_name": "MM-F7",
+    "color_hex": "#000000",
+    "sort_order": 1
+  },
+  {
+    "brand": "panpan",
+    "code": "14",
+    "color_name": "14",
+    "color_hex": "#000000",
+    "sort_order": 1
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "14",
+    "color_name": "14",
+    "color_hex": "#000000",
+    "sort_order": 1
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H07",
+    "color_name": "COCO-H07",
+    "color_hex": "#01ACEB",
+    "sort_order": 2
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D7",
+    "color_name": "MM-D7",
+    "color_hex": "#01ACEB",
+    "sort_order": 2
+  },
+  {
+    "brand": "panpan",
+    "code": "34",
+    "color_name": "34",
+    "color_hex": "#01ACEB",
+    "sort_order": 2
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "34",
+    "color_name": "34",
+    "color_hex": "#01ACEB",
+    "sort_order": 2
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H19",
+    "color_name": "COCO-H19",
+    "color_hex": "#04D1F6",
+    "sort_order": 3
+  },
+  {
+    "brand": "manman",
+    "code": "D36",
+    "color_name": "D36",
+    "color_hex": "#04D1F6",
+    "sort_order": 3
+  },
+  {
+    "brand": "panpan",
+    "code": "163",
+    "color_name": "163",
+    "color_hex": "#04D1F6",
+    "sort_order": 3
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "156",
+    "color_name": "156",
+    "color_hex": "#04D1F6",
+    "sort_order": 3
+  },
+  {
+    "brand": "coco",
+    "code": "G08",
+    "color_name": "G08",
+    "color_hex": "#0B3C43",
+    "sort_order": 4
+  },
+  {
+    "brand": "manman",
+    "code": "DH7",
+    "color_name": "DH7",
+    "color_hex": "#0B3C43",
+    "sort_order": 4
+  },
+  {
+    "brand": "panpan",
+    "code": "206",
+    "color_name": "206",
+    "color_hex": "#0B3C43",
+    "sort_order": 4
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "193",
+    "color_name": "193",
+    "color_hex": "#0B3C43",
+    "sort_order": 4
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H14",
+    "color_name": "COCO-H14",
+    "color_hex": "#0F54C0",
+    "sort_order": 5
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D9",
+    "color_name": "MM-D9",
+    "color_hex": "#0F54C0",
+    "sort_order": 5
+  },
+  {
+    "brand": "panpan",
+    "code": "52",
+    "color_name": "52",
+    "color_hex": "#0F54C0",
+    "sort_order": 5
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "71",
+    "color_name": "71",
+    "color_hex": "#0F54C0",
+    "sort_order": 5
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H18",
+    "color_name": "COCO-H18",
+    "color_hex": "#1557A8",
+    "sort_order": 6
+  },
+  {
+    "brand": "manman",
+    "code": "D32",
+    "color_name": "D32",
+    "color_hex": "#1557A8",
+    "sort_order": 6
+  },
+  {
+    "brand": "panpan",
+    "code": "149",
+    "color_name": "149",
+    "color_hex": "#1557A8",
+    "sort_order": 6
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "149",
+    "color_name": "149",
+    "color_hex": "#1557A8",
+    "sort_order": 6
+  },
+  {
+    "brand": "coco",
+    "code": "G07",
+    "color_name": "G07",
+    "color_hex": "#156A6B",
+    "sort_order": 7
+  },
+  {
+    "brand": "manman",
+    "code": "DH2",
+    "color_name": "DH2",
+    "color_hex": "#156A6B",
+    "sort_order": 7
+  },
+  {
+    "brand": "panpan",
+    "code": "207",
+    "color_name": "207",
+    "color_hex": "#156A6B",
+    "sort_order": 7
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "194",
+    "color_name": "194",
+    "color_hex": "#156A6B",
+    "sort_order": 7
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F12",
+    "color_name": "COCO-F12",
+    "color_hex": "#166F41",
+    "sort_order": 8
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C13",
+    "color_name": "MM-C13",
+    "color_hex": "#166F41",
+    "sort_order": 8
+  },
+  {
+    "brand": "panpan",
+    "code": "106",
+    "color_name": "106",
+    "color_hex": "#166F41",
+    "sort_order": 8
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "111",
+    "color_name": "111",
+    "color_hex": "#166F41",
+    "sort_order": 8
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H17",
+    "color_name": "COCO-H17",
+    "color_hex": "#176DAF",
+    "sort_order": 9
+  },
+  {
+    "brand": "manman",
+    "code": "DH14",
+    "color_name": "DH14",
+    "color_hex": "#176DAF",
+    "sort_order": 9
+  },
+  {
+    "brand": "panpan",
+    "code": "197",
+    "color_name": "197",
+    "color_hex": "#176DAF",
+    "sort_order": 9
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "197",
+    "color_name": "197",
+    "color_hex": "#176DAF",
+    "sort_order": 9
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H20",
+    "color_name": "COCO-H20",
+    "color_hex": "#182A84",
+    "sort_order": 10
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D11",
+    "color_name": "MM-D11",
+    "color_hex": "#182A84",
+    "sort_order": 10
+  },
+  {
+    "brand": "panpan",
+    "code": "75",
+    "color_name": "75",
+    "color_hex": "#182A84",
+    "sort_order": 10
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "80",
+    "color_name": "80",
+    "color_hex": "#182A84",
+    "sort_order": 10
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H12",
+    "color_name": "COCO-H12",
+    "color_hex": "#1887A2",
+    "sort_order": 11
+  },
+  {
+    "brand": "manman",
+    "code": "DH9",
+    "color_name": "DH9",
+    "color_hex": "#1887A2",
+    "sort_order": 11
+  },
+  {
+    "brand": "panpan",
+    "code": "202",
+    "color_name": "202",
+    "color_hex": "#1887A2",
+    "sort_order": 11
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "202",
+    "color_name": "202",
+    "color_hex": "#1887A2",
+    "sort_order": 11
+  },
+  {
+    "brand": "coco",
+    "code": "L07",
+    "color_name": "L07",
+    "color_hex": "#19779D",
+    "sort_order": 12
+  },
+  {
+    "brand": "manman",
+    "code": "T5",
+    "color_name": "T5",
+    "color_hex": "#19779D",
+    "sort_order": 12
+  },
+  {
+    "brand": "panpan",
+    "code": "37",
+    "color_name": "37",
+    "color_hex": "#19779D",
+    "sort_order": 12
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "37",
+    "color_name": "37",
+    "color_hex": "#19779D",
+    "sort_order": 12
+  },
+  {
+    "brand": "coco",
+    "code": "L08",
+    "color_name": "L08",
+    "color_hex": "#1A60C3",
+    "sort_order": 13
+  },
+  {
+    "brand": "manman",
+    "code": "T3",
+    "color_name": "T3",
+    "color_hex": "#1A60C3",
+    "sort_order": 13
+  },
+  {
+    "brand": "panpan",
+    "code": "68",
+    "color_name": "68",
+    "color_hex": "#1A60C3",
+    "sort_order": 13
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "54",
+    "color_name": "54",
+    "color_hex": "#1A60C3",
+    "sort_order": 13
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H23",
+    "color_name": "COCO-H23",
+    "color_hex": "#1C334D",
+    "sort_order": 14
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D26",
+    "color_name": "MM-D26",
+    "color_hex": "#1C334D",
+    "sort_order": 14
+  },
+  {
+    "brand": "panpan",
+    "code": "120",
+    "color_name": "120",
+    "color_hex": "#1C334D",
+    "sort_order": 14
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "120",
+    "color_name": "120",
+    "color_hex": "#1C334D",
+    "sort_order": 14
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F11",
+    "color_name": "COCO-F11",
+    "color_hex": "#1C9C4F",
+    "sort_order": 15
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C5",
+    "color_name": "MM-C5",
+    "color_hex": "#1C9C4F",
+    "sort_order": 15
+  },
+  {
+    "brand": "panpan",
+    "code": "10",
+    "color_name": "10",
+    "color_hex": "#1C9C4F",
+    "sort_order": 15
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "10",
+    "color_name": "10",
+    "color_hex": "#1C9C4F",
+    "sort_order": 15
+  },
+  {
+    "brand": "coco",
+    "code": "B08",
+    "color_name": "B08",
+    "color_hex": "#1D1414",
+    "sort_order": 16
+  },
+  {
+    "brand": "manman",
+    "code": "DH11",
+    "color_name": "DH11",
+    "color_hex": "#1D1414",
+    "sort_order": 16
+  },
+  {
+    "brand": "panpan",
+    "code": "200",
+    "color_name": "200",
+    "color_hex": "#1D1414",
+    "sort_order": 16
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "200",
+    "color_name": "200",
+    "color_hex": "#1D1414",
+    "sort_order": 16
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H24",
+    "color_name": "COCO-H24",
+    "color_hex": "#1D3344",
+    "sort_order": 17
+  },
+  {
+    "brand": "manman",
+    "code": "DH6",
+    "color_name": "DH6",
+    "color_hex": "#1D3344",
+    "sort_order": 17
+  },
+  {
+    "brand": "panpan",
+    "code": "196",
+    "color_name": "196",
+    "color_hex": "#1D3344",
+    "sort_order": 17
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "196",
+    "color_name": "196",
+    "color_hex": "#1D3344",
+    "sort_order": 17
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H11",
+    "color_name": "COCO-H11",
+    "color_hex": "#22C4C6",
+    "sort_order": 18
+  },
+  {
+    "brand": "manman",
+    "code": "D31",
+    "color_name": "D31",
+    "color_hex": "#22C4C6",
+    "sort_order": 18
+  },
+  {
+    "brand": "panpan",
+    "code": "143",
+    "color_name": "143",
+    "color_hex": "#22C4C6",
+    "sort_order": 18
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "132",
+    "color_name": "132",
+    "color_hex": "#22C4C6",
+    "sort_order": 18
+  },
+  {
+    "brand": "coco",
+    "code": "L06",
+    "color_name": "L06",
+    "color_hex": "#238891",
+    "sort_order": 19
+  },
+  {
+    "brand": "manman",
+    "code": "T4",
+    "color_name": "T4",
+    "color_hex": "#238891",
+    "sort_order": 19
+  },
+  {
+    "brand": "panpan",
+    "code": "69",
+    "color_name": "69",
+    "color_hex": "#238891",
+    "sort_order": 19
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "55",
+    "color_name": "55",
+    "color_hex": "#238891",
+    "sort_order": 19
+  },
+  {
+    "brand": "coco",
+    "code": "G06",
+    "color_name": "G06",
+    "color_hex": "#24B88C",
+    "sort_order": 20
+  },
+  {
+    "brand": "manman",
+    "code": "DH15",
+    "color_name": "DH15",
+    "color_hex": "#24B88C",
+    "sort_order": 20
+  },
+  {
+    "brand": "panpan",
+    "code": "191",
+    "color_name": "191",
+    "color_hex": "#24B88C",
+    "sort_order": 20
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "174",
+    "color_name": "174",
+    "color_hex": "#24B88C",
+    "sort_order": 20
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F16",
+    "color_name": "COCO-F16",
+    "color_hex": "#27523A",
+    "sort_order": 21
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C6",
+    "color_name": "MM-C6",
+    "color_hex": "#27523A",
+    "sort_order": 21
+  },
+  {
+    "brand": "panpan",
+    "code": "79",
+    "color_name": "79",
+    "color_hex": "#27523A",
+    "sort_order": 21
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "84",
+    "color_name": "84",
+    "color_hex": "#27523A",
+    "sort_order": 21
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H10",
+    "color_name": "COCO-H10",
+    "color_hex": "#28DDDE",
+    "sort_order": 22
+  },
+  {
+    "brand": "manman",
+    "code": "D28",
+    "color_name": "D28",
+    "color_hex": "#28DDDE",
+    "sort_order": 22
+  },
+  {
+    "brand": "panpan",
+    "code": "122",
+    "color_name": "122",
+    "color_hex": "#28DDDE",
+    "sort_order": 22
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "113",
+    "color_name": "113",
+    "color_hex": "#28DDDE",
+    "sort_order": 22
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F15",
+    "color_name": "COCO-F15",
+    "color_hex": "#2E5132",
+    "sort_order": 23
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C16",
+    "color_name": "MM-C16",
+    "color_hex": "#2E5132",
+    "sort_order": 23
+  },
+  {
+    "brand": "panpan",
+    "code": "130",
+    "color_name": "130",
+    "color_hex": "#2E5132",
+    "sort_order": 23
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-122",
+    "color_name": "MXW-122",
+    "color_hex": "#2E5132",
+    "sort_order": 23
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H22",
+    "color_name": "COCO-H22",
+    "color_hex": "#2F1F90",
+    "sort_order": 24
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D18",
+    "color_name": "MM-D18",
+    "color_hex": "#2F1F90",
+    "sort_order": 24
+  },
+  {
+    "brand": "panpan",
+    "code": "101",
+    "color_name": "101",
+    "color_hex": "#2F1F90",
+    "sort_order": 24
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "108",
+    "color_name": "108",
+    "color_hex": "#2F1F90",
+    "sort_order": 24
+  },
+  {
+    "brand": "coco",
+    "code": "B07",
+    "color_name": "B07",
+    "color_hex": "#2F2B2F",
+    "sort_order": 25
+  },
+  {
+    "brand": "manman",
+    "code": "MM-F6",
+    "color_name": "MM-F6",
+    "color_hex": "#2F2B2F",
+    "sort_order": 25
+  },
+  {
+    "brand": "panpan",
+    "code": "51",
+    "color_name": "51",
+    "color_hex": "#2F2B2F",
+    "sort_order": 25
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "70",
+    "color_name": "70",
+    "color_hex": "#2F2B2F",
+    "sort_order": 25
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H15",
+    "color_name": "COCO-H15",
+    "color_hex": "#2F54AF",
+    "sort_order": 26
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D10",
+    "color_name": "MM-D10",
+    "color_hex": "#2F54AF",
+    "sort_order": 26
+  },
+  {
+    "brand": "panpan",
+    "code": "8",
+    "color_name": "8",
+    "color_hex": "#2F54AF",
+    "sort_order": 26
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "8",
+    "color_name": "8",
+    "color_hex": "#2F54AF",
+    "sort_order": 26
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F17",
+    "color_name": "COCO-F17",
+    "color_hex": "#303A21",
+    "sort_order": 27
+  },
+  {
+    "brand": "manman",
+    "code": "DH12",
+    "color_name": "DH12",
+    "color_hex": "#303A21",
+    "sort_order": 27
+  },
+  {
+    "brand": "panpan",
+    "code": "205",
+    "color_name": "205",
+    "color_hex": "#303A21",
+    "sort_order": 27
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "192",
+    "color_name": "192",
+    "color_hex": "#303A21",
+    "sort_order": 27
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H16",
+    "color_name": "COCO-H16",
+    "color_hex": "#324BCA",
+    "sort_order": 28
+  },
+  {
+    "brand": "manman",
+    "code": "N5",
+    "color_name": "N5",
+    "color_hex": "#324BCA",
+    "sort_order": 28
+  },
+  {
+    "brand": "panpan",
+    "code": "42",
+    "color_name": "42",
+    "color_hex": "#324BCA",
+    "sort_order": 28
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "42",
+    "color_name": "42",
+    "color_hex": "#324BCA",
+    "sort_order": 28
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H21",
+    "color_name": "COCO-H21",
+    "color_hex": "#333A95",
+    "sort_order": 29
+  },
+  {
+    "brand": "manman",
+    "code": "DH1",
+    "color_name": "DH1",
+    "color_hex": "#333A95",
+    "sort_order": 29
+  },
+  {
+    "brand": "panpan",
+    "code": "198",
+    "color_name": "198",
+    "color_hex": "#333A95",
+    "sort_order": 29
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "198",
+    "color_name": "198",
+    "color_hex": "#333A95",
+    "sort_order": 29
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-M14",
+    "color_name": "COCO-M14",
+    "color_hex": "#337680",
+    "sort_order": 30
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P22",
+    "color_name": "MM-P22",
+    "color_hex": "#337680",
+    "sort_order": 30
+  },
+  {
+    "brand": "panpan",
+    "code": "183",
+    "color_name": "183",
+    "color_hex": "#337680",
+    "sort_order": 30
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "183",
+    "color_name": "183",
+    "color_hex": "#337680",
+    "sort_order": 30
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H32",
+    "color_name": "COCO-H32",
+    "color_hex": "#34488E",
+    "sort_order": 31
+  },
+  {
+    "brand": "manman",
+    "code": "MM-G15",
+    "color_name": "MM-G15",
+    "color_hex": "#34488E",
+    "sort_order": 31
+  },
+  {
+    "brand": "panpan",
+    "code": "281",
+    "color_name": "281",
+    "color_hex": "#34488E",
+    "sort_order": 31
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "266",
+    "color_name": "266",
+    "color_hex": "#34488E",
+    "sort_order": 31
+  },
+  {
+    "brand": "coco",
+    "code": "L05",
+    "color_name": "L05",
+    "color_hex": "#35C75B",
+    "sort_order": 32
+  },
+  {
+    "brand": "manman",
+    "code": "N4",
+    "color_name": "N4",
+    "color_hex": "#35C75B",
+    "sort_order": 32
+  },
+  {
+    "brand": "panpan",
+    "code": "23",
+    "color_name": "23",
+    "color_hex": "#35C75B",
+    "sort_order": 32
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "23",
+    "color_name": "23",
+    "color_hex": "#35C75B",
+    "sort_order": 32
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F10",
+    "color_name": "COCO-F10",
+    "color_hex": "#35E352",
+    "sort_order": 33
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C4",
+    "color_name": "MM-C4",
+    "color_hex": "#35E352",
+    "sort_order": 33
+  },
+  {
+    "brand": "panpan",
+    "code": "39",
+    "color_name": "39",
+    "color_hex": "#35E352",
+    "sort_order": 33
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "39",
+    "color_name": "39",
+    "color_hex": "#35E352",
+    "sort_order": 33
+  },
+  {
+    "brand": "coco",
+    "code": "J19",
+    "color_name": "J19",
+    "color_hex": "#361851",
+    "sort_order": 34
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D15",
+    "color_name": "MM-D15",
+    "color_hex": "#361851",
+    "sort_order": 34
+  },
+  {
+    "brand": "panpan",
+    "code": "92",
+    "color_name": "92",
+    "color_hex": "#361851",
+    "sort_order": 34
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "91",
+    "color_name": "91",
+    "color_hex": "#361851",
+    "sort_order": 34
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H13",
+    "color_name": "COCO-H13",
+    "color_hex": "#3677D2",
+    "sort_order": 35
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D8",
+    "color_name": "MM-D8",
+    "color_hex": "#3677D2",
+    "sort_order": 35
+  },
+  {
+    "brand": "panpan",
+    "code": "9",
+    "color_name": "9",
+    "color_hex": "#3677D2",
+    "sort_order": 35
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "9",
+    "color_name": "9",
+    "color_hex": "#3677D2",
+    "sort_order": 35
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H29",
+    "color_name": "COCO-H29",
+    "color_hex": "#3CAED8",
+    "sort_order": 36
+  },
+  {
+    "brand": "manman",
+    "code": "MM-R15",
+    "color_name": "MM-R15",
+    "color_hex": "#3CAED8",
+    "sort_order": 36
+  },
+  {
+    "brand": "panpan",
+    "code": "265",
+    "color_name": "265",
+    "color_hex": "#3CAED8",
+    "sort_order": 36
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "250",
+    "color_name": "250",
+    "color_hex": "#3CAED8",
+    "sort_order": 36
+  },
+  {
+    "brand": "coco",
+    "code": "G05",
+    "color_name": "G05",
+    "color_hex": "#3DAF80",
+    "sort_order": 37
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C10",
+    "color_name": "MM-C10",
+    "color_hex": "#3DAF80",
+    "sort_order": 37
+  },
+  {
+    "brand": "panpan",
+    "code": "44",
+    "color_name": "44",
+    "color_hex": "#3DAF80",
+    "sort_order": 37
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "44",
+    "color_name": "44",
+    "color_hex": "#3DAF80",
+    "sort_order": 37
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H09",
+    "color_name": "COCO-H09",
+    "color_hex": "#3EBCE2",
+    "sort_order": 38
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D25",
+    "color_name": "MM-D25",
+    "color_hex": "#3EBCE2",
+    "sort_order": 38
+  },
+  {
+    "brand": "panpan",
+    "code": "121",
+    "color_name": "121",
+    "color_hex": "#3EBCE2",
+    "sort_order": 38
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-130",
+    "color_name": "MXW-130",
+    "color_hex": "#3EBCE2",
+    "sort_order": 38
+  },
+  {
+    "brand": "coco",
+    "code": "S3",
+    "color_name": "S3",
+    "color_hex": "#3ECFCA",
+    "sort_order": 39
+  },
+  {
+    "brand": "manman",
+    "code": "S3",
+    "color_name": "S3",
+    "color_hex": "#3ECFCA",
+    "sort_order": 39
+  },
+  {
+    "brand": "panpan",
+    "code": "238",
+    "color_name": "238",
+    "color_hex": "#3ECFCA",
+    "sort_order": 39
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "225",
+    "color_name": "225",
+    "color_hex": "#3ECFCA",
+    "sort_order": 39
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H05",
+    "color_name": "COCO-H05",
+    "color_hex": "#41CCFF",
+    "sort_order": 40
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D3",
+    "color_name": "MM-D3",
+    "color_hex": "#41CCFF",
+    "sort_order": 40
+  },
+  {
+    "brand": "panpan",
+    "code": "77",
+    "color_name": "77",
+    "color_hex": "#41CCFF",
+    "sort_order": 40
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "82",
+    "color_name": "82",
+    "color_hex": "#41CCFF",
+    "sort_order": 40
+  },
+  {
+    "brand": "coco",
+    "code": "B06",
+    "color_name": "B06",
+    "color_hex": "#48464E",
+    "sort_order": 41
+  },
+  {
+    "brand": "manman",
+    "code": "MM-F5",
+    "color_name": "MM-F5",
+    "color_hex": "#48464E",
+    "sort_order": 41
+  },
+  {
+    "brand": "panpan",
+    "code": "45",
+    "color_name": "45",
+    "color_hex": "#48464E",
+    "sort_order": 41
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "45",
+    "color_name": "45",
+    "color_hex": "#48464E",
+    "sort_order": 41
+  },
+  {
+    "brand": "coco",
+    "code": "J21",
+    "color_name": "J21",
+    "color_hex": "#494FC7",
+    "sort_order": 42
+  },
+  {
+    "brand": "manman",
+    "code": "Q15",
+    "color_name": "Q15",
+    "color_hex": "#494FC7",
+    "sort_order": 42
+  },
+  {
+    "brand": "panpan",
+    "code": "249",
+    "color_name": "249",
+    "color_hex": "#494FC7",
+    "sort_order": 42
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "234",
+    "color_name": "234",
+    "color_hex": "#494FC7",
+    "sort_order": 42
+  },
+  {
+    "brand": "coco",
+    "code": "S4",
+    "color_name": "S4",
+    "color_hex": "#4A867A",
+    "sort_order": 43
+  },
+  {
+    "brand": "manman",
+    "code": "S5",
+    "color_name": "S5",
+    "color_hex": "#4A867A",
+    "sort_order": 43
+  },
+  {
+    "brand": "panpan",
+    "code": "233",
+    "color_name": "233",
+    "color_hex": "#4A867A",
+    "sort_order": 43
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "233",
+    "color_name": "233",
+    "color_hex": "#4A867A",
+    "sort_order": 43
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F18",
+    "color_name": "COCO-F18",
+    "color_hex": "#4E846D",
+    "sort_order": 44
+  },
+  {
+    "brand": "manman",
+    "code": "Q13",
+    "color_name": "Q13",
+    "color_hex": "#4E846D",
+    "sort_order": 44
+  },
+  {
+    "brand": "panpan",
+    "code": "240",
+    "color_name": "240",
+    "color_hex": "#4E846D",
+    "sort_order": 44
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "240",
+    "color_name": "240",
+    "color_hex": "#4E846D",
+    "sort_order": 44
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H08",
+    "color_name": "COCO-H08",
+    "color_hex": "#50AAF0",
+    "sort_order": 45
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D4",
+    "color_name": "MM-D4",
+    "color_hex": "#50AAF0",
+    "sort_order": 45
+  },
+  {
+    "brand": "panpan",
+    "code": "25",
+    "color_name": "25",
+    "color_hex": "#50AAF0",
+    "sort_order": 45
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "25",
+    "color_name": "25",
+    "color_hex": "#50AAF0",
+    "sort_order": 45
+  },
+  {
+    "brand": "coco",
+    "code": "L13",
+    "color_name": "L13",
+    "color_hex": "#55514C",
+    "sort_order": 46
+  },
+  {
+    "brand": "manman",
+    "code": "-",
+    "color_name": "-",
+    "color_hex": "#55514C",
+    "sort_order": 46
+  },
+  {
+    "brand": "panpan",
+    "code": "152",
+    "color_name": "152",
+    "color_hex": "#55514C",
+    "sort_order": 46
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "152",
+    "color_name": "152",
+    "color_hex": "#55514C",
+    "sort_order": 46
+  },
+  {
+    "brand": "coco",
+    "code": "Z23",
+    "color_name": "Z23",
+    "color_hex": "#5A2121",
+    "sort_order": 47
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E16",
+    "color_name": "MM-E16",
+    "color_hex": "#5A2121",
+    "sort_order": 47
+  },
+  {
+    "brand": "panpan",
+    "code": "117",
+    "color_name": "117",
+    "color_hex": "#5A2121",
+    "sort_order": 47
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "129",
+    "color_name": "129",
+    "color_hex": "#5A2121",
+    "sort_order": 47
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F14",
+    "color_name": "COCO-F14",
+    "color_hex": "#5D722A",
+    "sort_order": 48
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C12",
+    "color_name": "MM-C12",
+    "color_hex": "#5D722A",
+    "sort_order": 48
+  },
+  {
+    "brand": "panpan",
+    "code": "97",
+    "color_name": "97",
+    "color_hex": "#5D722A",
+    "sort_order": 48
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "99",
+    "color_name": "99",
+    "color_hex": "#5D722A",
+    "sort_order": 48
+  },
+  {
+    "brand": "coco",
+    "code": "F09",
+    "color_name": "F09",
+    "color_hex": "#5DE035",
+    "sort_order": 49
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C3",
+    "color_name": "MM-C3",
+    "color_hex": "#5DE035",
+    "sort_order": 49
+  },
+  {
+    "brand": "panpan",
+    "code": "66",
+    "color_name": "66",
+    "color_hex": "#5DE035",
+    "sort_order": 49
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "78",
+    "color_name": "78",
+    "color_hex": "#5DE035",
+    "sort_order": 49
+  },
+  {
+    "brand": "coco",
+    "code": "M06",
+    "color_name": "M06",
+    "color_hex": "#5FD0A7",
+    "sort_order": 50
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P8",
+    "color_name": "MM-P8",
+    "color_hex": "#5FD0A7",
+    "sort_order": 50
+  },
+  {
+    "brand": "panpan",
+    "code": "157",
+    "color_name": "157",
+    "color_hex": "#5FD0A7",
+    "sort_order": 50
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "65",
+    "color_name": "65",
+    "color_hex": "#5FD0A7",
+    "sort_order": 50
+  },
+  {
+    "brand": "coco",
+    "code": "F08",
+    "color_name": "F08",
+    "color_hex": "#63F347",
+    "sort_order": 51
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C2",
+    "color_name": "MM-C2",
+    "color_hex": "#63F347",
+    "sort_order": 51
+  },
+  {
+    "brand": "panpan",
+    "code": "33",
+    "color_name": "33",
+    "color_hex": "#63F347",
+    "sort_order": 51
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "33",
+    "color_name": "33",
+    "color_hex": "#63F347",
+    "sort_order": 51
+  },
+  {
+    "brand": "coco",
+    "code": "Y12",
+    "color_name": "Y12",
+    "color_hex": "#644749",
+    "sort_order": 52
+  },
+  {
+    "brand": "manman",
+    "code": "YX5",
+    "color_name": "YX5",
+    "color_hex": "#644749",
+    "sort_order": 52
+  },
+  {
+    "brand": "panpan",
+    "code": "173",
+    "color_name": "173",
+    "color_hex": "#644749",
+    "sort_order": 52
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "173",
+    "color_name": "173",
+    "color_hex": "#644749",
+    "sort_order": 52
+  },
+  {
+    "brand": "coco",
+    "code": "G04",
+    "color_name": "G04",
+    "color_hex": "#65E2A6",
+    "sort_order": 53
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C9",
+    "color_name": "MM-C9",
+    "color_hex": "#65E2A6",
+    "sort_order": 53
+  },
+  {
+    "brand": "panpan",
+    "code": "11",
+    "color_name": "11",
+    "color_hex": "#65E2A6",
+    "sort_order": 53
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "11",
+    "color_name": "11",
+    "color_hex": "#65E2A6",
+    "sort_order": 53
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-M15",
+    "color_name": "COCO-M15",
+    "color_hex": "#668575",
+    "sort_order": 54
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P23",
+    "color_name": "MM-P23",
+    "color_hex": "#668575",
+    "sort_order": 54
+  },
+  {
+    "brand": "panpan",
+    "code": "184",
+    "color_name": "184",
+    "color_hex": "#668575",
+    "sort_order": 54
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "184",
+    "color_name": "184",
+    "color_hex": "#668575",
+    "sort_order": 54
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H25",
+    "color_name": "COCO-H25",
+    "color_hex": "#67B4BE",
+    "sort_order": 55
+  },
+  {
+    "brand": "manman",
+    "code": "Q11",
+    "color_name": "Q11",
+    "color_hex": "#67B4BE",
+    "sort_order": 55
+  },
+  {
+    "brand": "panpan",
+    "code": "239",
+    "color_name": "239",
+    "color_hex": "#67B4BE",
+    "sort_order": 55
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "239",
+    "color_name": "239",
+    "color_hex": "#67B4BE",
+    "sort_order": 55
+  },
+  {
+    "brand": "coco",
+    "code": "Y03",
+    "color_name": "Y03",
+    "color_hex": "#697D80",
+    "sort_order": 56
+  },
+  {
+    "brand": "manman",
+    "code": "YX2",
+    "color_name": "YX2",
+    "color_hex": "#697D80",
+    "sort_order": 56
+  },
+  {
+    "brand": "panpan",
+    "code": "166",
+    "color_name": "166",
+    "color_hex": "#697D80",
+    "sort_order": 56
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "166",
+    "color_name": "166",
+    "color_hex": "#697D80",
+    "sort_order": 56
+  },
+  {
+    "brand": "coco",
+    "code": "S9",
+    "color_name": "S9",
+    "color_hex": "#6C372F",
+    "sort_order": 57
+  },
+  {
+    "brand": "manman",
+    "code": "MM-S15",
+    "color_name": "MM-S15",
+    "color_hex": "#6C372F",
+    "sort_order": 57
+  },
+  {
+    "brand": "panpan",
+    "code": "226",
+    "color_name": "226",
+    "color_hex": "#6C372F",
+    "sort_order": 57
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "226",
+    "color_name": "226",
+    "color_hex": "#6C372F",
+    "sort_order": 57
+  },
+  {
+    "brand": "coco",
+    "code": "Z22",
+    "color_name": "Z22",
+    "color_hex": "#753832",
+    "sort_order": 58
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E8",
+    "color_name": "MM-E8",
+    "color_hex": "#753832",
+    "sort_order": 58
+  },
+  {
+    "brand": "panpan",
+    "code": "12",
+    "color_name": "12",
+    "color_hex": "#753832",
+    "sort_order": 58
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "12",
+    "color_name": "12",
+    "color_hex": "#753832",
+    "sort_order": 58
+  },
+  {
+    "brand": "coco",
+    "code": "Y15",
+    "color_name": "Y15",
+    "color_hex": "#757D78",
+    "sort_order": 59
+  },
+  {
+    "brand": "manman",
+    "code": "YX7",
+    "color_name": "YX7",
+    "color_hex": "#757D78",
+    "sort_order": 59
+  },
+  {
+    "brand": "panpan",
+    "code": "178",
+    "color_name": "178",
+    "color_hex": "#757D78",
+    "sort_order": 59
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-163",
+    "color_name": "MXW-163",
+    "color_hex": "#757D78",
+    "sort_order": 59
+  },
+  {
+    "brand": "coco",
+    "code": "W5",
+    "color_name": "W5",
+    "color_hex": "#76CEDE",
+    "sort_order": 60
+  },
+  {
+    "brand": "manman",
+    "code": "W5",
+    "color_name": "W5",
+    "color_hex": "#76CEDE",
+    "sort_order": 60
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-108",
+    "color_name": "PP-108",
+    "color_hex": "#76CEDE",
+    "sort_order": 60
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "W5",
+    "color_name": "W5",
+    "color_hex": "#76CEDE",
+    "sort_order": 60
+  },
+  {
+    "brand": "coco",
+    "code": "J20",
+    "color_name": "J20",
+    "color_hex": "#7786E5",
+    "sort_order": 61
+  },
+  {
+    "brand": "manman",
+    "code": "Q14",
+    "color_name": "Q14",
+    "color_hex": "#7786E5",
+    "sort_order": 61
+  },
+  {
+    "brand": "panpan",
+    "code": "244",
+    "color_name": "244",
+    "color_hex": "#7786E5",
+    "sort_order": 61
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "244",
+    "color_name": "244",
+    "color_hex": "#7786E5",
+    "sort_order": 61
+  },
+  {
+    "brand": "coco",
+    "code": "S2",
+    "color_name": "S2",
+    "color_hex": "#77CEE9",
+    "sort_order": 62
+  },
+  {
+    "brand": "manman",
+    "code": "S2",
+    "color_name": "S2",
+    "color_hex": "#77CEE9",
+    "sort_order": 62
+  },
+  {
+    "brand": "panpan",
+    "code": "237",
+    "color_name": "237",
+    "color_hex": "#77CEE9",
+    "sort_order": 62
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "224",
+    "color_name": "224",
+    "color_hex": "#77CEE9",
+    "sort_order": 62
+  },
+  {
+    "brand": "coco",
+    "code": "Z16",
+    "color_name": "Z16",
+    "color_hex": "#78524B",
+    "sort_order": 63
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E22",
+    "color_name": "MM-E22",
+    "color_hex": "#78524B",
+    "sort_order": 63
+  },
+  {
+    "brand": "panpan",
+    "code": "144",
+    "color_name": "144",
+    "color_hex": "#78524B",
+    "sort_order": 63
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "137",
+    "color_name": "137",
+    "color_hex": "#78524B",
+    "sort_order": 63
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H27",
+    "color_name": "COCO-H27",
+    "color_hex": "#7CC4FF",
+    "sort_order": 64
+  },
+  {
+    "brand": "manman",
+    "code": "MM-R14",
+    "color_name": "MM-R14",
+    "color_hex": "#7CC4FF",
+    "sort_order": 64
+  },
+  {
+    "brand": "panpan",
+    "code": "267",
+    "color_name": "267",
+    "color_hex": "#7CC4FF",
+    "sort_order": 64
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "252",
+    "color_name": "252",
+    "color_hex": "#7CC4FF",
+    "sort_order": 64
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-S5",
+    "color_name": "COCO-S5",
+    "color_hex": "#7FCD9D",
+    "sort_order": 65
+  },
+  {
+    "brand": "manman",
+    "code": "MM-S4",
+    "color_name": "MM-S4",
+    "color_hex": "#7FCD9D",
+    "sort_order": 65
+  },
+  {
+    "brand": "panpan",
+    "code": "235",
+    "color_name": "235",
+    "color_hex": "#7FCD9D",
+    "sort_order": 65
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "222",
+    "color_name": "222",
+    "color_hex": "#7FCD9D",
+    "sort_order": 65
+  },
+  {
+    "brand": "coco",
+    "code": "GB5",
+    "color_name": "GB5",
+    "color_hex": "#8490A6",
+    "sort_order": 66
+  },
+  {
+    "brand": "manman",
+    "code": "MM-ZG5",
+    "color_name": "MM-ZG5",
+    "color_hex": "#8490A6",
+    "sort_order": 66
+  },
+  {
+    "brand": "panpan",
+    "code": "258",
+    "color_name": "258",
+    "color_hex": "#8490A6",
+    "sort_order": 66
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-ZG5",
+    "color_name": "MXW-ZG5",
+    "color_hex": "#8490A6",
+    "sort_order": 66
+  },
+  {
+    "brand": "coco",
+    "code": "J08",
+    "color_name": "J08",
+    "color_hex": "#858EDD",
+    "sort_order": 67
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D6",
+    "color_name": "MM-D6",
+    "color_hex": "#858EDD",
+    "sort_order": 67
+  },
+  {
+    "brand": "panpan",
+    "code": "36",
+    "color_name": "36",
+    "color_hex": "#858EDD",
+    "sort_order": 67
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "36",
+    "color_name": "36",
+    "color_hex": "#858EDD",
+    "sort_order": 67
+  },
+  {
+    "brand": "coco",
+    "code": "J15",
+    "color_name": "J15",
+    "color_hex": "#8854B3",
+    "sort_order": 68
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D12",
+    "color_name": "MM-D12",
+    "color_hex": "#8854B3",
+    "sort_order": 68
+  },
+  {
+    "brand": "panpan",
+    "code": "7",
+    "color_name": "7",
+    "color_hex": "#8854B3",
+    "sort_order": 68
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "7",
+    "color_name": "7",
+    "color_hex": "#8854B3",
+    "sort_order": 68
+  },
+  {
+    "brand": "coco",
+    "code": "B05",
+    "color_name": "B05",
+    "color_hex": "#89858C",
+    "sort_order": 69
+  },
+  {
+    "brand": "manman",
+    "code": "MM-F4",
+    "color_name": "MM-F4",
+    "color_hex": "#89858C",
+    "sort_order": 69
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-78",
+    "color_name": "PP-78",
+    "color_hex": "#89858C",
+    "sort_order": 69
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "83",
+    "color_name": "83",
+    "color_hex": "#89858C",
+    "sort_order": 69
+  },
+  {
+    "brand": "coco",
+    "code": "Z20",
+    "color_name": "Z20",
+    "color_hex": "#8A4526",
+    "sort_order": 70
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E15",
+    "color_name": "MM-E15",
+    "color_hex": "#8A4526",
+    "sort_order": 70
+  },
+  {
+    "brand": "panpan",
+    "code": "116",
+    "color_name": "116",
+    "color_hex": "#8A4526",
+    "sort_order": 70
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "115",
+    "color_name": "115",
+    "color_hex": "#8A4526",
+    "sort_order": 70
+  },
+  {
+    "brand": "coco",
+    "code": "Y02",
+    "color_name": "Y02",
+    "color_hex": "#8AA386",
+    "sort_order": 71
+  },
+  {
+    "brand": "manman",
+    "code": "YX12",
+    "color_name": "YX12",
+    "color_hex": "#8AA386",
+    "sort_order": 71
+  },
+  {
+    "brand": "panpan",
+    "code": "172",
+    "color_name": "172",
+    "color_hex": "#8AA386",
+    "sort_order": 71
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "172",
+    "color_name": "172",
+    "color_hex": "#8AA386",
+    "sort_order": 71
+  },
+  {
+    "brand": "coco",
+    "code": "J16",
+    "color_name": "J16",
+    "color_hex": "#8B279B",
+    "sort_order": 72
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D22",
+    "color_name": "MM-D22",
+    "color_hex": "#8B279B",
+    "sort_order": 72
+  },
+  {
+    "brand": "panpan",
+    "code": "102",
+    "color_name": "102",
+    "color_hex": "#8B279B",
+    "sort_order": 72
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "107",
+    "color_name": "107",
+    "color_hex": "#8B279B",
+    "sort_order": 72
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-N04",
+    "color_name": "COCO-N04",
+    "color_hex": "#8BDBFA",
+    "sort_order": 73
+  },
+  {
+    "brand": "manman",
+    "code": "MM-Y4",
+    "color_name": "MM-Y4",
+    "color_hex": "#8BDBFA",
+    "sort_order": 73
+  },
+  {
+    "brand": "panpan",
+    "code": "58",
+    "color_name": "58",
+    "color_hex": "#8BDBFA",
+    "sort_order": 73
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "58",
+    "color_name": "58",
+    "color_hex": "#8BDBFA",
+    "sort_order": 73
+  },
+  {
+    "brand": "coco",
+    "code": "Z17",
+    "color_name": "Z17",
+    "color_hex": "#8D614C",
+    "sort_order": 74
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E14",
+    "color_name": "MM-E14",
+    "color_hex": "#8D614C",
+    "sort_order": 74
+  },
+  {
+    "brand": "panpan",
+    "code": "114",
+    "color_name": "114",
+    "color_hex": "#8D614C",
+    "sort_order": 74
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "123",
+    "color_name": "123",
+    "color_hex": "#8D614C",
+    "sort_order": 74
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F19",
+    "color_name": "COCO-F19",
+    "color_hex": "#8D7A35",
+    "sort_order": 75
+  },
+  {
+    "brand": "manman",
+    "code": "Q7",
+    "color_name": "Q7",
+    "color_hex": "#8D7A35",
+    "sort_order": 75
+  },
+  {
+    "brand": "panpan",
+    "code": "248",
+    "color_name": "248",
+    "color_hex": "#8D7A35",
+    "sort_order": 75
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "248",
+    "color_name": "248",
+    "color_hex": "#8D7A35",
+    "sort_order": 75
+  },
+  {
+    "brand": "coco",
+    "code": "K29",
+    "color_name": "K29",
+    "color_hex": "#937A8D",
+    "sort_order": 76
+  },
+  {
+    "brand": "manman",
+    "code": "MM-Q3",
+    "color_name": "MM-Q3",
+    "color_hex": "#937A8D",
+    "sort_order": 76
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-250",
+    "color_name": "PP-250",
+    "color_hex": "#937A8D",
+    "sort_order": 76
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-235",
+    "color_name": "MXW-235",
+    "color_hex": "#937A8D",
+    "sort_order": 76
+  },
+  {
+    "brand": "coco",
+    "code": "Z21",
+    "color_name": "Z21",
+    "color_hex": "#943630",
+    "sort_order": 77
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E9",
+    "color_name": "MM-E9",
+    "color_hex": "#943630",
+    "sort_order": 77
+  },
+  {
+    "brand": "panpan",
+    "code": "16",
+    "color_name": "16",
+    "color_hex": "#943630",
+    "sort_order": 77
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "16",
+    "color_name": "16",
+    "color_hex": "#943630",
+    "sort_order": 77
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-B10",
+    "color_name": "COCO-B10",
+    "color_hex": "#949FA3",
+    "sort_order": 78
+  },
+  {
+    "brand": "manman",
+    "code": "Q12",
+    "color_name": "Q12",
+    "color_hex": "#949FA3",
+    "sort_order": 78
+  },
+  {
+    "brand": "panpan",
+    "code": "251",
+    "color_name": "251",
+    "color_hex": "#949FA3",
+    "sort_order": 78
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "236",
+    "color_name": "236",
+    "color_hex": "#949FA3",
+    "sort_order": 78
+  },
+  {
+    "brand": "coco",
+    "code": "GB6",
+    "color_name": "GB6",
+    "color_hex": "#94BFE2",
+    "sort_order": 79
+  },
+  {
+    "brand": "manman",
+    "code": "MM-ZG6",
+    "color_name": "MM-ZG6",
+    "color_hex": "#94BFE2",
+    "sort_order": 79
+  },
+  {
+    "brand": "panpan",
+    "code": "259",
+    "color_name": "259",
+    "color_hex": "#94BFE2",
+    "sort_order": 79
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-ZG6",
+    "color_name": "MXW-ZG6",
+    "color_hex": "#94BFE2",
+    "sort_order": 79
+  },
+  {
+    "brand": "coco",
+    "code": "G03",
+    "color_name": "G03",
+    "color_hex": "#95D3C2",
+    "sort_order": 80
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C11",
+    "color_name": "MM-C11",
+    "color_hex": "#95D3C2",
+    "sort_order": 80
+  },
+  {
+    "brand": "panpan",
+    "code": "96",
+    "color_name": "96",
+    "color_hex": "#95D3C2",
+    "sort_order": 80
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "100",
+    "color_name": "100",
+    "color_hex": "#95D3C2",
+    "sort_order": 80
+  },
+  {
+    "brand": "coco",
+    "code": "GB4",
+    "color_name": "GB4",
+    "color_hex": "#96869F",
+    "sort_order": 81
+  },
+  {
+    "brand": "manman",
+    "code": "MM-ZG4",
+    "color_name": "MM-ZG4",
+    "color_hex": "#96869F",
+    "sort_order": 81
+  },
+  {
+    "brand": "panpan",
+    "code": "257",
+    "color_name": "257",
+    "color_hex": "#96869F",
+    "sort_order": 81
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-ZG4",
+    "color_name": "MXW-ZG4",
+    "color_hex": "#96869F",
+    "sort_order": 81
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-C10",
+    "color_name": "COCO-C10",
+    "color_hex": "#971937",
+    "sort_order": 82
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A6",
+    "color_name": "MM-A6",
+    "color_hex": "#971937",
+    "sort_order": 82
+  },
+  {
+    "brand": "panpan",
+    "code": "47",
+    "color_name": "47",
+    "color_hex": "#971937",
+    "sort_order": 82
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "47",
+    "color_name": "47",
+    "color_hex": "#971937",
+    "sort_order": 82
+  },
+  {
+    "brand": "coco",
+    "code": "B04",
+    "color_name": "B04",
+    "color_hex": "#98A6A8",
+    "sort_order": 83
+  },
+  {
+    "brand": "manman",
+    "code": "DH4",
+    "color_name": "DH4",
+    "color_hex": "#98A6A8",
+    "sort_order": 83
+  },
+  {
+    "brand": "panpan",
+    "code": "201",
+    "color_name": "201",
+    "color_hex": "#98A6A8",
+    "sort_order": 83
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "201",
+    "color_name": "201",
+    "color_hex": "#98A6A8",
+    "sort_order": 83
+  },
+  {
+    "brand": "coco",
+    "code": "J18",
+    "color_name": "J18",
+    "color_hex": "#9A009B",
+    "sort_order": 84
+  },
+  {
+    "brand": "manman",
+    "code": "D35",
+    "color_name": "D35",
+    "color_hex": "#9A009B",
+    "sort_order": 84
+  },
+  {
+    "brand": "panpan",
+    "code": "162",
+    "color_name": "162",
+    "color_hex": "#9A009B",
+    "sort_order": 84
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "158",
+    "color_name": "158",
+    "color_hex": "#9A009B",
+    "sort_order": 84
+  },
+  {
+    "brand": "coco",
+    "code": "L09",
+    "color_name": "L09",
+    "color_hex": "#9A56B4",
+    "sort_order": 85
+  },
+  {
+    "brand": "manman",
+    "code": "T2",
+    "color_name": "T2",
+    "color_hex": "#9A56B4",
+    "sort_order": 85
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-70",
+    "color_name": "PP-70",
+    "color_hex": "#9A56B4",
+    "sort_order": 85
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "56",
+    "color_name": "56",
+    "color_hex": "#9A56B4",
+    "sort_order": 85
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-B11",
+    "color_name": "COCO-B11",
+    "color_hex": "#9A9D94",
+    "sort_order": 86
+  },
+  {
+    "brand": "manman",
+    "code": "MM-G11",
+    "color_name": "MM-G11",
+    "color_hex": "#9A9D94",
+    "sort_order": 86
+  },
+  {
+    "brand": "panpan",
+    "code": "278",
+    "color_name": "278",
+    "color_hex": "#9A9D94",
+    "sort_order": 86
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "278",
+    "color_name": "278",
+    "color_hex": "#9A9D94",
+    "sort_order": 86
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F13",
+    "color_name": "COCO-F13",
+    "color_hex": "#9BB13A",
+    "sort_order": 87
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C18",
+    "color_name": "MM-C18",
+    "color_hex": "#9BB13A",
+    "sort_order": 87
+  },
+  {
+    "brand": "panpan",
+    "code": "142",
+    "color_name": "142",
+    "color_hex": "#9BB13A",
+    "sort_order": 87
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "141",
+    "color_name": "141",
+    "color_hex": "#9BB13A",
+    "sort_order": 87
+  },
+  {
+    "brand": "coco",
+    "code": "J17",
+    "color_name": "J17",
+    "color_hex": "#9C32B2",
+    "sort_order": 88
+  },
+  {
+    "brand": "manman",
+    "code": "D34",
+    "color_name": "D34",
+    "color_hex": "#9C32B2",
+    "sort_order": 88
+  },
+  {
+    "brand": "panpan",
+    "code": "161",
+    "color_name": "161",
+    "color_hex": "#9C32B2",
+    "sort_order": 88
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "155",
+    "color_name": "155",
+    "color_hex": "#9C32B2",
+    "sort_order": 88
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-S15",
+    "color_name": "COCO-S15",
+    "color_hex": "#9C87D6",
+    "sort_order": 89
+  },
+  {
+    "brand": "manman",
+    "code": "MM-S10",
+    "color_name": "MM-S10",
+    "color_hex": "#9C87D6",
+    "sort_order": 89
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-236",
+    "color_name": "PP-236",
+    "color_hex": "#9C87D6",
+    "sort_order": 89
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "223",
+    "color_name": "223",
+    "color_hex": "#9C87D6",
+    "sort_order": 89
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F25",
+    "color_name": "COCO-F25",
+    "color_hex": "#9CAB5A",
+    "sort_order": 90
+  },
+  {
+    "brand": "manman",
+    "code": "MM-G12",
+    "color_name": "MM-G12",
+    "color_hex": "#9CAB5A",
+    "sort_order": 90
+  },
+  {
+    "brand": "panpan",
+    "code": "287",
+    "color_name": "287",
+    "color_hex": "#9CAB5A",
+    "sort_order": 90
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "272",
+    "color_name": "272",
+    "color_hex": "#9CAB5A",
+    "sort_order": 90
+  },
+  {
+    "brand": "coco",
+    "code": "Z18",
+    "color_name": "Z18",
+    "color_hex": "#9D5B3E",
+    "sort_order": 91
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E7",
+    "color_name": "MM-E7",
+    "color_hex": "#9D5B3E",
+    "sort_order": 91
+  },
+  {
+    "brand": "panpan",
+    "code": "17",
+    "color_name": "17",
+    "color_hex": "#9D5B3E",
+    "sort_order": 91
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "17",
+    "color_name": "17",
+    "color_hex": "#9D5B3E",
+    "sort_order": 91
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F21",
+    "color_name": "COCO-F21",
+    "color_hex": "#9EE5B9",
+    "sort_order": 92
+  },
+  {
+    "brand": "manman",
+    "code": "MM-R11",
+    "color_name": "MM-R11",
+    "color_hex": "#9EE5B9",
+    "sort_order": 92
+  },
+  {
+    "brand": "panpan",
+    "code": "269",
+    "color_name": "269",
+    "color_hex": "#9EE5B9",
+    "sort_order": 92
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "254",
+    "color_name": "254",
+    "color_hex": "#9EE5B9",
+    "sort_order": 92
+  },
+  {
+    "brand": "coco",
+    "code": "F04",
+    "color_name": "F04",
+    "color_hex": "#9EF780",
+    "sort_order": 93
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C7",
+    "color_name": "MM-C7",
+    "color_hex": "#9EF780",
+    "sort_order": 93
+  },
+  {
+    "brand": "panpan",
+    "code": "26",
+    "color_name": "26",
+    "color_hex": "#9EF780",
+    "sort_order": 93
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "26",
+    "color_name": "26",
+    "color_hex": "#9EF780",
+    "sort_order": 93
+  },
+  {
+    "brand": "coco",
+    "code": "Y11",
+    "color_name": "Y11",
+    "color_hex": "#9F7594",
+    "sort_order": 94
+  },
+  {
+    "brand": "manman",
+    "code": "YX4",
+    "color_name": "YX4",
+    "color_hex": "#9F7594",
+    "sort_order": 94
+  },
+  {
+    "brand": "panpan",
+    "code": "176",
+    "color_name": "176",
+    "color_hex": "#9F7594",
+    "sort_order": 94
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-161",
+    "color_name": "MXW-161",
+    "color_hex": "#9F7594",
+    "sort_order": 94
+  },
+  {
+    "brand": "coco",
+    "code": "S1",
+    "color_name": "S1",
+    "color_hex": "#9FE4DF",
+    "sort_order": 95
+  },
+  {
+    "brand": "manman",
+    "code": "S1",
+    "color_name": "S1",
+    "color_hex": "#9FE4DF",
+    "sort_order": 95
+  },
+  {
+    "brand": "panpan",
+    "code": "231",
+    "color_name": "231",
+    "color_hex": "#9FE4DF",
+    "sort_order": 95
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "231",
+    "color_name": "231",
+    "color_hex": "#9FE4DF",
+    "sort_order": 95
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H04",
+    "color_name": "COCO-H04",
+    "color_hex": "#A0E2FB",
+    "sort_order": 96
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D2",
+    "color_name": "MM-D2",
+    "color_hex": "#A0E2FB",
+    "sort_order": 96
+  },
+  {
+    "brand": "panpan",
+    "code": "63",
+    "color_name": "63",
+    "color_hex": "#A0E2FB",
+    "sort_order": 96
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-75",
+    "color_name": "MXW-75",
+    "color_hex": "#A0E2FB",
+    "sort_order": 96
+  },
+  {
+    "brand": "coco",
+    "code": "J13",
+    "color_name": "J13",
+    "color_hex": "#A45EC7",
+    "sort_order": 97
+  },
+  {
+    "brand": "manman",
+    "code": "D27",
+    "color_name": "D27",
+    "color_hex": "#A45EC7",
+    "sort_order": 97
+  },
+  {
+    "brand": "panpan",
+    "code": "124",
+    "color_name": "124",
+    "color_hex": "#A45EC7",
+    "sort_order": 97
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "125",
+    "color_name": "125",
+    "color_hex": "#A45EC7",
+    "sort_order": 97
+  },
+  {
+    "brand": "coco",
+    "code": "M23",
+    "color_name": "M23",
+    "color_hex": "#A56268",
+    "sort_order": 98
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P21",
+    "color_name": "MM-P21",
+    "color_hex": "#A56268",
+    "sort_order": 98
+  },
+  {
+    "brand": "panpan",
+    "code": "181",
+    "color_name": "181",
+    "color_hex": "#A56268",
+    "sort_order": 98
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "181",
+    "color_name": "181",
+    "color_hex": "#A56268",
+    "sort_order": 98
+  },
+  {
+    "brand": "coco",
+    "code": "Y09",
+    "color_name": "Y09",
+    "color_hex": "#A58767",
+    "sort_order": 99
+  },
+  {
+    "brand": "manman",
+    "code": "YX10",
+    "color_name": "YX10",
+    "color_hex": "#A58767",
+    "sort_order": 99
+  },
+  {
+    "brand": "panpan",
+    "code": "170",
+    "color_name": "170",
+    "color_hex": "#A58767",
+    "sort_order": 99
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "170",
+    "color_name": "170",
+    "color_hex": "#A58767",
+    "sort_order": 99
+  },
+  {
+    "brand": "coco",
+    "code": "Z19",
+    "color_name": "Z19",
+    "color_hex": "#A94023",
+    "sort_order": 100
+  },
+  {
+    "brand": "manman",
+    "code": "DH13",
+    "color_name": "DH13",
+    "color_hex": "#A94023",
+    "sort_order": 100
+  },
+  {
+    "brand": "panpan",
+    "code": "199",
+    "color_name": "199",
+    "color_hex": "#A94023",
+    "sort_order": 100
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "199",
+    "color_name": "199",
+    "color_hex": "#A94023",
+    "sort_order": 100
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H28",
+    "color_name": "COCO-H28",
+    "color_hex": "#A9E5E5",
+    "sort_order": 101
+  },
+  {
+    "brand": "manman",
+    "code": "MM-R12",
+    "color_name": "MM-R12",
+    "color_hex": "#A9E5E5",
+    "sort_order": 101
+  },
+  {
+    "brand": "panpan",
+    "code": "271",
+    "color_name": "271",
+    "color_hex": "#A9E5E5",
+    "sort_order": 101
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "256",
+    "color_name": "256",
+    "color_hex": "#A9E5E5",
+    "sort_order": 101
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H03",
+    "color_name": "COCO-H03",
+    "color_hex": "#A9F9FC",
+    "sort_order": 102
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D1",
+    "color_name": "MM-D1",
+    "color_hex": "#A9F9FC",
+    "sort_order": 102
+  },
+  {
+    "brand": "panpan",
+    "code": "30",
+    "color_name": "30",
+    "color_hex": "#A9F9FC",
+    "sort_order": 102
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "30",
+    "color_name": "30",
+    "color_hex": "#A9F9FC",
+    "sort_order": 102
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-M13",
+    "color_name": "COCO-M13",
+    "color_hex": "#AACBEF",
+    "sort_order": 103
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P17",
+    "color_name": "MM-P17",
+    "color_hex": "#AACBEF",
+    "sort_order": 103
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-193",
+    "color_name": "PP-193",
+    "color_hex": "#AACBEF",
+    "sort_order": 103
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-176",
+    "color_name": "MXW-176",
+    "color_hex": "#AACBEF",
+    "sort_order": 103
+  },
+  {
+    "brand": "coco",
+    "code": "GB8",
+    "color_name": "GB8",
+    "color_hex": "#AB91C0",
+    "sort_order": 104
+  },
+  {
+    "brand": "manman",
+    "code": "MM-ZG8",
+    "color_name": "MM-ZG8",
+    "color_hex": "#AB91C0",
+    "sort_order": 104
+  },
+  {
+    "brand": "panpan",
+    "code": "261",
+    "color_name": "261",
+    "color_hex": "#AB91C0",
+    "sort_order": 104
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-ZG8",
+    "color_name": "MXW-ZG8",
+    "color_hex": "#AB91C0",
+    "sort_order": 104
+  },
+  {
+    "brand": "coco",
+    "code": "J11",
+    "color_name": "J11",
+    "color_hex": "#AC7BDE",
+    "sort_order": 105
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D14",
+    "color_name": "MM-D14",
+    "color_hex": "#AC7BDE",
+    "sort_order": 105
+  },
+  {
+    "brand": "panpan",
+    "code": "27",
+    "color_name": "27",
+    "color_hex": "#AC7BDE",
+    "sort_order": 105
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "27",
+    "color_name": "27",
+    "color_hex": "#AC7BDE",
+    "sort_order": 105
+  },
+  {
+    "brand": "coco",
+    "code": "S8",
+    "color_name": "S8",
+    "color_hex": "#AD6F3C",
+    "sort_order": 106
+  },
+  {
+    "brand": "manman",
+    "code": "MM-S13",
+    "color_name": "MM-S13",
+    "color_hex": "#AD6F3C",
+    "sort_order": 106
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-234",
+    "color_name": "PP-234",
+    "color_hex": "#AD6F3C",
+    "sort_order": 106
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "221",
+    "color_name": "221",
+    "color_hex": "#AD6F3C",
+    "sort_order": 106
+  },
+  {
+    "brand": "coco",
+    "code": "F06",
+    "color_name": "F06",
+    "color_hex": "#ADE946",
+    "sort_order": 107
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C15",
+    "color_name": "MM-C15",
+    "color_hex": "#ADE946",
+    "sort_order": 107
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-129",
+    "color_name": "PP-129",
+    "color_hex": "#ADE946",
+    "sort_order": 107
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-117",
+    "color_name": "MXW-117",
+    "color_hex": "#ADE946",
+    "sort_order": 107
+  },
+  {
+    "brand": "coco",
+    "code": "J07",
+    "color_name": "J07",
+    "color_hex": "#AEB4F2",
+    "sort_order": 108
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D5",
+    "color_name": "MM-D5",
+    "color_hex": "#AEB4F2",
+    "sort_order": 108
+  },
+  {
+    "brand": "panpan",
+    "code": "46",
+    "color_name": "46",
+    "color_hex": "#AEB4F2",
+    "sort_order": 108
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "46",
+    "color_name": "46",
+    "color_hex": "#AEB4F2",
+    "sort_order": 108
+  },
+  {
+    "brand": "coco",
+    "code": "M03",
+    "color_name": "M03",
+    "color_hex": "#AFDCAB",
+    "sort_order": 109
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P4",
+    "color_name": "MM-P4",
+    "color_hex": "#AFDCAB",
+    "sort_order": 109
+  },
+  {
+    "brand": "panpan",
+    "code": "73",
+    "color_name": "73",
+    "color_hex": "#AFDCAB",
+    "sort_order": 109
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-66",
+    "color_name": "MXW-66",
+    "color_hex": "#AFDCAB",
+    "sort_order": 109
+  },
+  {
+    "brand": "coco",
+    "code": "Y06",
+    "color_name": "Y06",
+    "color_hex": "#B0A782",
+    "sort_order": 110
+  },
+  {
+    "brand": "manman",
+    "code": "YX1",
+    "color_name": "YX1",
+    "color_hex": "#B0A782",
+    "sort_order": 110
+  },
+  {
+    "brand": "panpan",
+    "code": "169",
+    "color_name": "169",
+    "color_hex": "#B0A782",
+    "sort_order": 110
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "169",
+    "color_name": "169",
+    "color_hex": "#B0A782",
+    "sort_order": 110
+  },
+  {
+    "brand": "coco",
+    "code": "M02",
+    "color_name": "M02",
+    "color_hex": "#B0A9AC",
+    "sort_order": 111
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P2",
+    "color_name": "MM-P2",
+    "color_hex": "#B0A9AC",
+    "sort_order": 111
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-55",
+    "color_name": "PP-55",
+    "color_hex": "#B0A9AC",
+    "sort_order": 111
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-69",
+    "color_name": "MXW-69",
+    "color_hex": "#B0A9AC",
+    "sort_order": 111
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F24",
+    "color_name": "COCO-F24",
+    "color_hex": "#B0E792",
+    "sort_order": 112
+  },
+  {
+    "brand": "manman",
+    "code": "MM-G7",
+    "color_name": "MM-G7",
+    "color_hex": "#B0E792",
+    "sort_order": 112
+  },
+  {
+    "brand": "panpan",
+    "code": "286",
+    "color_name": "286",
+    "color_hex": "#B0E792",
+    "sort_order": 112
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-271",
+    "color_name": "MXW-271",
+    "color_hex": "#B0E792",
+    "sort_order": 112
+  },
+  {
+    "brand": "coco",
+    "code": "Y08",
+    "color_name": "Y08",
+    "color_hex": "#B38281",
+    "sort_order": 113
+  },
+  {
+    "brand": "manman",
+    "code": "YX14",
+    "color_name": "YX14",
+    "color_hex": "#B38281",
+    "sort_order": 113
+  },
+  {
+    "brand": "panpan",
+    "code": "177",
+    "color_name": "177",
+    "color_hex": "#B38281",
+    "sort_order": 113
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-162",
+    "color_name": "MXW-162",
+    "color_hex": "#B38281",
+    "sort_order": 113
+  },
+  {
+    "brand": "coco",
+    "code": "Y07",
+    "color_name": "Y07",
+    "color_hex": "#B4A497",
+    "sort_order": 114
+  },
+  {
+    "brand": "manman",
+    "code": "YX13",
+    "color_name": "YX13",
+    "color_hex": "#B4A497",
+    "sort_order": 114
+  },
+  {
+    "brand": "panpan",
+    "code": "171",
+    "color_name": "171",
+    "color_hex": "#B4A497",
+    "sort_order": 114
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "171",
+    "color_name": "171",
+    "color_hex": "#B4A497",
+    "sort_order": 114
+  },
+  {
+    "brand": "coco",
+    "code": "K24",
+    "color_name": "K24",
+    "color_hex": "#B5006D",
+    "sort_order": 115
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A21",
+    "color_name": "MM-A21",
+    "color_hex": "#B5006D",
+    "sort_order": 115
+  },
+  {
+    "brand": "panpan",
+    "code": "127",
+    "color_name": "127",
+    "color_hex": "#B5006D",
+    "sort_order": 115
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-124",
+    "color_name": "MXW-124",
+    "color_hex": "#B5006D",
+    "sort_order": 115
+  },
+  {
+    "brand": "coco",
+    "code": "B03",
+    "color_name": "B03",
+    "color_hex": "#B6B1BA",
+    "sort_order": 116
+  },
+  {
+    "brand": "manman",
+    "code": "MM-F3",
+    "color_name": "MM-F3",
+    "color_hex": "#B6B1BA",
+    "sort_order": 116
+  },
+  {
+    "brand": "panpan",
+    "code": "13",
+    "color_name": "13",
+    "color_hex": "#B6B1BA",
+    "sort_order": 116
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "13",
+    "color_name": "13",
+    "color_hex": "#B6B1BA",
+    "sort_order": 116
+  },
+  {
+    "brand": "coco",
+    "code": "Z14",
+    "color_name": "Z14",
+    "color_hex": "#B7714A",
+    "sort_order": 117
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E17",
+    "color_name": "MM-E17",
+    "color_hex": "#B7714A",
+    "sort_order": 117
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-115",
+    "color_name": "PP-115",
+    "color_hex": "#B7714A",
+    "sort_order": 117
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-114",
+    "color_name": "MXW-114",
+    "color_hex": "#B7714A",
+    "sort_order": 117
+  },
+  {
+    "brand": "coco",
+    "code": "K28",
+    "color_name": "K28",
+    "color_hex": "#B785A1",
+    "sort_order": 118
+  },
+  {
+    "brand": "manman",
+    "code": "MM-Q4",
+    "color_name": "MM-Q4",
+    "color_hex": "#B785A1",
+    "sort_order": 118
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-252",
+    "color_name": "PP-252",
+    "color_hex": "#B785A1",
+    "sort_order": 118
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-237",
+    "color_name": "MXW-237",
+    "color_hex": "#B785A1",
+    "sort_order": 118
+  },
+  {
+    "brand": "coco",
+    "code": "J12",
+    "color_name": "J12",
+    "color_hex": "#B843C5",
+    "sort_order": 119
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D13",
+    "color_name": "MM-D13",
+    "color_hex": "#B843C5",
+    "sort_order": 119
+  },
+  {
+    "brand": "panpan",
+    "code": "32",
+    "color_name": "32",
+    "color_hex": "#B843C5",
+    "sort_order": 119
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "32",
+    "color_name": "32",
+    "color_hex": "#B843C5",
+    "sort_order": 119
+  },
+  {
+    "brand": "coco",
+    "code": "Z24",
+    "color_name": "Z24",
+    "color_hex": "#B88558",
+    "sort_order": 120
+  },
+  {
+    "brand": "manman",
+    "code": "Q8",
+    "color_name": "Q8",
+    "color_hex": "#B88558",
+    "sort_order": 120
+  },
+  {
+    "brand": "panpan",
+    "code": "247",
+    "color_name": "247",
+    "color_hex": "#B88558",
+    "sort_order": 120
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "247",
+    "color_name": "247",
+    "color_hex": "#B88558",
+    "sort_order": 120
+  },
+  {
+    "brand": "coco",
+    "code": "J14",
+    "color_name": "J14",
+    "color_hex": "#B90095",
+    "sort_order": 121
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D21",
+    "color_name": "MM-D21",
+    "color_hex": "#B90095",
+    "sort_order": 121
+  },
+  {
+    "brand": "panpan",
+    "code": "103",
+    "color_name": "103",
+    "color_hex": "#B90095",
+    "sort_order": 121
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-106",
+    "color_name": "MXW-106",
+    "color_hex": "#B90095",
+    "sort_order": 121
+  },
+  {
+    "brand": "coco",
+    "code": "J06",
+    "color_name": "J06",
+    "color_hex": "#B9BAE1",
+    "sort_order": 122
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D19",
+    "color_name": "MM-D19",
+    "color_hex": "#B9BAE1",
+    "sort_order": 122
+  },
+  {
+    "brand": "panpan",
+    "code": "105",
+    "color_name": "105",
+    "color_hex": "#B9BAE1",
+    "sort_order": 122
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "104",
+    "color_name": "104",
+    "color_hex": "#B9BAE1",
+    "sort_order": 122
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H31",
+    "color_name": "COCO-H31",
+    "color_hex": "#BBCFED",
+    "sort_order": 123
+  },
+  {
+    "brand": "manman",
+    "code": "MM-G14",
+    "color_name": "MM-G14",
+    "color_hex": "#BBCFED",
+    "sort_order": 123
+  },
+  {
+    "brand": "panpan",
+    "code": "280",
+    "color_name": "280",
+    "color_hex": "#BBCFED",
+    "sort_order": 123
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-265",
+    "color_name": "MXW-265",
+    "color_hex": "#BBCFED",
+    "sort_order": 123
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-C09",
+    "color_name": "COCO-C09",
+    "color_hex": "#BC0028",
+    "sort_order": 124
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A17",
+    "color_name": "MM-A17",
+    "color_hex": "#BC0028",
+    "sort_order": 124
+  },
+  {
+    "brand": "panpan",
+    "code": "81",
+    "color_name": "81",
+    "color_hex": "#BC0028",
+    "sort_order": 124
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-92",
+    "color_name": "MXW-92",
+    "color_hex": "#BC0028",
+    "sort_order": 124
+  },
+  {
+    "brand": "coco",
+    "code": "Y01",
+    "color_name": "Y01",
+    "color_hex": "#BCC6B8",
+    "sort_order": 125
+  },
+  {
+    "brand": "manman",
+    "code": "YX11",
+    "color_name": "YX11",
+    "color_hex": "#BCC6B8",
+    "sort_order": 125
+  },
+  {
+    "brand": "panpan",
+    "code": "168",
+    "color_name": "168",
+    "color_hex": "#BCC6B8",
+    "sort_order": 125
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "168",
+    "color_name": "168",
+    "color_hex": "#BCC6B8",
+    "sort_order": 125
+  },
+  {
+    "brand": "coco",
+    "code": "K27",
+    "color_name": "K27",
+    "color_hex": "#BD9DA1",
+    "sort_order": 126
+  },
+  {
+    "brand": "manman",
+    "code": "MM-Q2",
+    "color_name": "MM-Q2",
+    "color_hex": "#BD9DA1",
+    "sort_order": 126
+  },
+  {
+    "brand": "panpan",
+    "code": "253",
+    "color_name": "253",
+    "color_hex": "#BD9DA1",
+    "sort_order": 126
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-238",
+    "color_name": "MXW-238",
+    "color_hex": "#BD9DA1",
+    "sort_order": 126
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H06",
+    "color_name": "COCO-H06",
+    "color_hex": "#BEDDFF",
+    "sort_order": 127
+  },
+  {
+    "brand": "manman",
+    "code": "IC3",
+    "color_name": "IC3",
+    "color_hex": "#BEDDFF",
+    "sort_order": 127
+  },
+  {
+    "brand": "panpan",
+    "code": "212",
+    "color_name": "212",
+    "color_hex": "#BEDDFF",
+    "sort_order": 127
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "212",
+    "color_name": "212",
+    "color_hex": "#BEDDFF",
+    "sort_order": 127
+  },
+  {
+    "brand": "coco",
+    "code": "K33",
+    "color_name": "K33",
+    "color_hex": "#C1444A",
+    "sort_order": 128
+  },
+  {
+    "brand": "manman",
+    "code": "Q05",
+    "color_name": "Q05",
+    "color_hex": "#C1444A",
+    "sort_order": 128
+  },
+  {
+    "brand": "panpan",
+    "code": "243",
+    "color_name": "243",
+    "color_hex": "#C1444A",
+    "sort_order": 128
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "243",
+    "color_name": "243",
+    "color_hex": "#C1444A",
+    "sort_order": 128
+  },
+  {
+    "brand": "coco",
+    "code": "GB3",
+    "color_name": "GB3",
+    "color_hex": "#C1BD8D",
+    "sort_order": 129
+  },
+  {
+    "brand": "manman",
+    "code": "MM-ZG3",
+    "color_name": "MM-ZG3",
+    "color_hex": "#C1BD8D",
+    "sort_order": 129
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-256",
+    "color_name": "PP-256",
+    "color_hex": "#C1BD8D",
+    "sort_order": 129
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-ZG3",
+    "color_name": "MXW-ZG3",
+    "color_hex": "#C1BD8D",
+    "sort_order": 129
+  },
+  {
+    "brand": "coco",
+    "code": "G02",
+    "color_name": "G02",
+    "color_hex": "#C2F0CC",
+    "sort_order": 130
+  },
+  {
+    "brand": "manman",
+    "code": "DH10",
+    "color_name": "DH10",
+    "color_hex": "#C2F0CC",
+    "sort_order": 130
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-192",
+    "color_name": "PP-192",
+    "color_hex": "#C2F0CC",
+    "sort_order": 130
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "175",
+    "color_name": "175",
+    "color_hex": "#C2F0CC",
+    "sort_order": 130
+  },
+  {
+    "brand": "coco",
+    "code": "J05",
+    "color_name": "J05",
+    "color_hex": "#C4D4F6",
+    "sort_order": 131
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D24",
+    "color_name": "MM-D24",
+    "color_hex": "#C4D4F6",
+    "sort_order": 131
+  },
+  {
+    "brand": "panpan",
+    "code": "119",
+    "color_name": "119",
+    "color_hex": "#C4D4F6",
+    "sort_order": 131
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "128",
+    "color_name": "128",
+    "color_hex": "#C4D4F6",
+    "sort_order": 131
+  },
+  {
+    "brand": "coco",
+    "code": "Y10",
+    "color_name": "Y10",
+    "color_hex": "#C5B2BC",
+    "sort_order": 132
+  },
+  {
+    "brand": "manman",
+    "code": "YX9",
+    "color_name": "YX9",
+    "color_hex": "#C5B2BC",
+    "sort_order": 132
+  },
+  {
+    "brand": "panpan",
+    "code": "164",
+    "color_name": "164",
+    "color_hex": "#C5B2BC",
+    "sort_order": 132
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "164",
+    "color_name": "164",
+    "color_hex": "#C5B2BC",
+    "sort_order": 132
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F22",
+    "color_name": "COCO-F22",
+    "color_hex": "#C5E254",
+    "sort_order": 133
+  },
+  {
+    "brand": "manman",
+    "code": "MM-R09",
+    "color_name": "MM-R09",
+    "color_hex": "#C5E254",
+    "sort_order": 133
+  },
+  {
+    "brand": "panpan",
+    "code": "268",
+    "color_name": "268",
+    "color_hex": "#C5E254",
+    "sort_order": 133
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-253",
+    "color_name": "MXW-253",
+    "color_hex": "#C5E254",
+    "sort_order": 133
+  },
+  {
+    "brand": "coco",
+    "code": "F03",
+    "color_name": "F03",
+    "color_hex": "#C5ED9C",
+    "sort_order": 134
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C17",
+    "color_name": "MM-C17",
+    "color_hex": "#C5ED9C",
+    "sort_order": 134
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-141",
+    "color_name": "PP-141",
+    "color_hex": "#C5ED9C",
+    "sort_order": 134
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "133",
+    "color_name": "133",
+    "color_hex": "#C5ED9C",
+    "sort_order": 134
+  },
+  {
+    "brand": "coco",
+    "code": "K25",
+    "color_name": "K25",
+    "color_hex": "#C63478",
+    "sort_order": 135
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A12",
+    "color_name": "MM-A12",
+    "color_hex": "#C63478",
+    "sort_order": 135
+  },
+  {
+    "brand": "panpan",
+    "code": "41",
+    "color_name": "41",
+    "color_hex": "#C63478",
+    "sort_order": 135
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "41",
+    "color_name": "41",
+    "color_hex": "#C63478",
+    "sort_order": 135
+  },
+  {
+    "brand": "coco",
+    "code": "Y14",
+    "color_name": "Y14",
+    "color_hex": "#C77362",
+    "sort_order": 136
+  },
+  {
+    "brand": "manman",
+    "code": "YX3",
+    "color_name": "YX3",
+    "color_hex": "#C77362",
+    "sort_order": 136
+  },
+  {
+    "brand": "panpan",
+    "code": "165",
+    "color_name": "165",
+    "color_hex": "#C77362",
+    "sort_order": 136
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "165",
+    "color_name": "165",
+    "color_hex": "#C77362",
+    "sort_order": 136
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H26",
+    "color_name": "COCO-H26",
+    "color_hex": "#C8E2FF",
+    "sort_order": 137
+  },
+  {
+    "brand": "manman",
+    "code": "MM-R13",
+    "color_name": "MM-R13",
+    "color_hex": "#C8E2FF",
+    "sort_order": 137
+  },
+  {
+    "brand": "panpan",
+    "code": "263",
+    "color_name": "263",
+    "color_hex": "#C8E2FF",
+    "sort_order": 137
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "263",
+    "color_name": "263",
+    "color_hex": "#C8E2FF",
+    "sort_order": 137
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-S12",
+    "color_name": "COCO-S12",
+    "color_hex": "#C9675E",
+    "sort_order": 138
+  },
+  {
+    "brand": "manman",
+    "code": "MM-S14",
+    "color_name": "MM-S14",
+    "color_hex": "#C9675E",
+    "sort_order": 138
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-225",
+    "color_name": "PP-225",
+    "color_hex": "#C9675E",
+    "sort_order": 138
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "220",
+    "color_name": "220",
+    "color_hex": "#C9675E",
+    "sort_order": 138
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-A12",
+    "color_name": "COCO-A12",
+    "color_hex": "#CACAD4",
+    "sort_order": 139
+  },
+  {
+    "brand": "manman",
+    "code": "MM-G2",
+    "color_name": "MM-G2",
+    "color_hex": "#CACAD4",
+    "sort_order": 139
+  },
+  {
+    "brand": "panpan",
+    "code": "277",
+    "color_name": "277",
+    "color_hex": "#CACAD4",
+    "sort_order": 139
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "277",
+    "color_name": "277",
+    "color_hex": "#CACAD4",
+    "sort_order": 139
+  },
+  {
+    "brand": "coco",
+    "code": "F02",
+    "color_name": "F02",
+    "color_hex": "#CAEB7B",
+    "sort_order": 140
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C14",
+    "color_name": "MM-C14",
+    "color_hex": "#CAEB7B",
+    "sort_order": 140
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-128",
+    "color_name": "PP-128",
+    "color_hex": "#CAEB7B",
+    "sort_order": 140
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-119",
+    "color_name": "MXW-119",
+    "color_hex": "#CAEB7B",
+    "sort_order": 140
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F20",
+    "color_name": "COCO-F20",
+    "color_hex": "#CCE1AF",
+    "sort_order": 141
+  },
+  {
+    "brand": "manman",
+    "code": "MM-R10",
+    "color_name": "MM-R10",
+    "color_hex": "#CCE1AF",
+    "sort_order": 141
+  },
+  {
+    "brand": "panpan",
+    "code": "262",
+    "color_name": "262",
+    "color_hex": "#CCE1AF",
+    "sort_order": 141
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "262",
+    "color_name": "262",
+    "color_hex": "#CCE1AF",
+    "sort_order": 141
+  },
+  {
+    "brand": "coco",
+    "code": "K34",
+    "color_name": "K34",
+    "color_hex": "#CD9391",
+    "sort_order": 142
+  },
+  {
+    "brand": "manman",
+    "code": "MM-R04",
+    "color_name": "MM-R04",
+    "color_hex": "#CD9391",
+    "sort_order": 142
+  },
+  {
+    "brand": "panpan",
+    "code": "275",
+    "color_name": "275",
+    "color_hex": "#CD9391",
+    "sort_order": 142
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "260",
+    "color_name": "260",
+    "color_hex": "#CD9391",
+    "sort_order": 142
+  },
+  {
+    "brand": "coco",
+    "code": "S6",
+    "color_name": "S6",
+    "color_hex": "#CDE55D",
+    "sort_order": 143
+  },
+  {
+    "brand": "manman",
+    "code": "MM-S11",
+    "color_name": "MM-S11",
+    "color_hex": "#CDE55D",
+    "sort_order": 143
+  },
+  {
+    "brand": "panpan",
+    "code": "227",
+    "color_name": "227",
+    "color_hex": "#CDE55D",
+    "sort_order": 143
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "227",
+    "color_name": "227",
+    "color_hex": "#CDE55D",
+    "sort_order": 143
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H01",
+    "color_name": "COCO-H01",
+    "color_hex": "#CDE8FF",
+    "sort_order": 144
+  },
+  {
+    "brand": "manman",
+    "code": "D30",
+    "color_name": "D30",
+    "color_hex": "#CDE8FF",
+    "sort_order": 144
+  },
+  {
+    "brand": "panpan",
+    "code": "140",
+    "color_name": "140",
+    "color_hex": "#CDE8FF",
+    "sort_order": 144
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-142",
+    "color_name": "MXW-142",
+    "color_hex": "#CDE8FF",
+    "sort_order": 144
+  },
+  {
+    "brand": "coco",
+    "code": "B01",
+    "color_name": "B01",
+    "color_hex": "#CECDD5",
+    "sort_order": 145
+  },
+  {
+    "brand": "manman",
+    "code": "MM-F11",
+    "color_name": "MM-F11",
+    "color_hex": "#CECDD5",
+    "sort_order": 145
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-123",
+    "color_name": "PP-123",
+    "color_hex": "#CECDD5",
+    "sort_order": 145
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-121",
+    "color_name": "MXW-121",
+    "color_hex": "#CECDD5",
+    "sort_order": 145
+  },
+  {
+    "brand": "coco",
+    "code": "B02",
+    "color_name": "B02",
+    "color_hex": "#CFD7D3",
+    "sort_order": 146
+  },
+  {
+    "brand": "manman",
+    "code": "MM-F12",
+    "color_name": "MM-F12",
+    "color_hex": "#CFD7D3",
+    "sort_order": 146
+  },
+  {
+    "brand": "panpan",
+    "code": "146",
+    "color_name": "146",
+    "color_hex": "#CFD7D3",
+    "sort_order": 146
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "145",
+    "color_name": "145",
+    "color_hex": "#CFD7D3",
+    "sort_order": 146
+  },
+  {
+    "brand": "coco",
+    "code": "Y05",
+    "color_name": "Y05",
+    "color_hex": "#D0CCAA",
+    "sort_order": 147
+  },
+  {
+    "brand": "manman",
+    "code": "YX6",
+    "color_name": "YX6",
+    "color_hex": "#D0CCAA",
+    "sort_order": 147
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-174",
+    "color_name": "PP-174",
+    "color_hex": "#D0CCAA",
+    "sort_order": 147
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "159",
+    "color_name": "159",
+    "color_hex": "#D0CCAA",
+    "sort_order": 147
+  },
+  {
+    "brand": "coco",
+    "code": "Y13",
+    "color_name": "Y13",
+    "color_hex": "#D19066",
+    "sort_order": 148
+  },
+  {
+    "brand": "manman",
+    "code": "YX8",
+    "color_name": "YX8",
+    "color_hex": "#D19066",
+    "sort_order": 148
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-175",
+    "color_name": "PP-175",
+    "color_hex": "#D19066",
+    "sort_order": 148
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "160",
+    "color_name": "160",
+    "color_hex": "#D19066",
+    "sort_order": 148
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-S13",
+    "color_name": "COCO-S13",
+    "color_hex": "#D293BE",
+    "sort_order": 149
+  },
+  {
+    "brand": "manman",
+    "code": "MM-S9",
+    "color_name": "MM-S9",
+    "color_hex": "#D293BE",
+    "sort_order": 149
+  },
+  {
+    "brand": "panpan",
+    "code": "229",
+    "color_name": "229",
+    "color_hex": "#D293BE",
+    "sort_order": 149
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "229",
+    "color_name": "229",
+    "color_hex": "#D293BE",
+    "sort_order": 149
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-C08",
+    "color_name": "COCO-C08",
+    "color_hex": "#D30022",
+    "sort_order": 150
+  },
+  {
+    "brand": "manman",
+    "code": "DH8",
+    "color_name": "DH8",
+    "color_hex": "#D30022",
+    "sort_order": 150
+  },
+  {
+    "brand": "panpan",
+    "code": "204",
+    "color_name": "204",
+    "color_hex": "#D30022",
+    "sort_order": 150
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-191",
+    "color_name": "MXW-191",
+    "color_hex": "#D30022",
+    "sort_order": 150
+  },
+  {
+    "brand": "coco",
+    "code": "K23",
+    "color_name": "K23",
+    "color_hex": "#D33793",
+    "sort_order": 151
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A16",
+    "color_name": "MM-A16",
+    "color_hex": "#D33793",
+    "sort_order": 151
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-83",
+    "color_name": "PP-83",
+    "color_hex": "#D33793",
+    "sort_order": 151
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "94",
+    "color_name": "94",
+    "color_hex": "#D33793",
+    "sort_order": 151
+  },
+  {
+    "brand": "coco",
+    "code": "K32",
+    "color_name": "K32",
+    "color_hex": "#D37C46",
+    "sort_order": 152
+  },
+  {
+    "brand": "manman",
+    "code": "Q10",
+    "color_name": "Q10",
+    "color_hex": "#D37C46",
+    "sort_order": 152
+  },
+  {
+    "brand": "panpan",
+    "code": "246",
+    "color_name": "246",
+    "color_hex": "#D37C46",
+    "sort_order": 152
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "246",
+    "color_name": "246",
+    "color_hex": "#D37C46",
+    "sort_order": 152
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H30",
+    "color_name": "COCO-H30",
+    "color_hex": "#D3DFFA",
+    "sort_order": 153
+  },
+  {
+    "brand": "manman",
+    "code": "MM-G13",
+    "color_name": "MM-G13",
+    "color_hex": "#D3DFFA",
+    "sort_order": 153
+  },
+  {
+    "brand": "panpan",
+    "code": "279",
+    "color_name": "279",
+    "color_hex": "#D3DFFA",
+    "sort_order": 153
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "264",
+    "color_name": "264",
+    "color_hex": "#D3DFFA",
+    "sort_order": 153
+  },
+  {
+    "brand": "coco",
+    "code": "L01",
+    "color_name": "L01",
+    "color_hex": "#D50D21",
+    "sort_order": 154
+  },
+  {
+    "brand": "manman",
+    "code": "MM-T1",
+    "color_name": "MM-T1",
+    "color_hex": "#D50D21",
+    "sort_order": 154
+  },
+  {
+    "brand": "panpan",
+    "code": "67",
+    "color_name": "67",
+    "color_hex": "#D50D21",
+    "sort_order": 154
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-52",
+    "color_name": "MXW-52",
+    "color_hex": "#D50D21",
+    "sort_order": 154
+  },
+  {
+    "brand": "coco",
+    "code": "J04",
+    "color_name": "J04",
+    "color_hex": "#D5B9F8",
+    "sort_order": 155
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D17",
+    "color_name": "MM-D17",
+    "color_hex": "#D5B9F8",
+    "sort_order": 155
+  },
+  {
+    "brand": "panpan",
+    "code": "93",
+    "color_name": "93",
+    "color_hex": "#D5B9F8",
+    "sort_order": 155
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "90",
+    "color_name": "90",
+    "color_hex": "#D5B9F8",
+    "sort_order": 155
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-H02",
+    "color_name": "COCO-H02",
+    "color_hex": "#D5FDFF",
+    "sort_order": 156
+  },
+  {
+    "brand": "manman",
+    "code": "D29",
+    "color_name": "D29",
+    "color_hex": "#D5FDFF",
+    "sort_order": 156
+  },
+  {
+    "brand": "panpan",
+    "code": "139",
+    "color_name": "139",
+    "color_hex": "#D5FDFF",
+    "sort_order": 156
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "136",
+    "color_name": "136",
+    "color_hex": "#D5FDFF",
+    "sort_order": 156
+  },
+  {
+    "brand": "coco",
+    "code": "GB2",
+    "color_name": "GB2",
+    "color_hex": "#D6AA87",
+    "sort_order": 157
+  },
+  {
+    "brand": "manman",
+    "code": "MM-ZG2",
+    "color_name": "MM-ZG2",
+    "color_hex": "#D6AA87",
+    "sort_order": 157
+  },
+  {
+    "brand": "panpan",
+    "code": "255",
+    "color_name": "255",
+    "color_hex": "#D6AA87",
+    "sort_order": 157
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-ZG2",
+    "color_name": "MXW-ZG2",
+    "color_hex": "#D6AA87",
+    "sort_order": 157
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-N03",
+    "color_name": "COCO-N03",
+    "color_hex": "#D7FAA0",
+    "sort_order": 158
+  },
+  {
+    "brand": "manman",
+    "code": "MM-Y3",
+    "color_name": "MM-Y3",
+    "color_hex": "#D7FAA0",
+    "sort_order": 158
+  },
+  {
+    "brand": "panpan",
+    "code": "57",
+    "color_name": "57",
+    "color_hex": "#D7FAA0",
+    "sort_order": 158
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "57",
+    "color_name": "57",
+    "color_hex": "#D7FAA0",
+    "sort_order": 158
+  },
+  {
+    "brand": "coco",
+    "code": "J09",
+    "color_name": "J09",
+    "color_hex": "#D8C3D7",
+    "sort_order": 159
+  },
+  {
+    "brand": "manman",
+    "code": "D33",
+    "color_name": "D33",
+    "color_hex": "#D8C3D7",
+    "sort_order": 159
+  },
+  {
+    "brand": "panpan",
+    "code": "153",
+    "color_name": "153",
+    "color_hex": "#D8C3D7",
+    "sort_order": 159
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "153",
+    "color_name": "153",
+    "color_hex": "#D8C3D7",
+    "sort_order": 159
+  },
+  {
+    "brand": "coco",
+    "code": "K26",
+    "color_name": "K26",
+    "color_hex": "#D8C7D1",
+    "sort_order": 160
+  },
+  {
+    "brand": "manman",
+    "code": "MM-Q1",
+    "color_name": "MM-Q1",
+    "color_hex": "#D8C7D1",
+    "sort_order": 160
+  },
+  {
+    "brand": "panpan",
+    "code": "241",
+    "color_name": "241",
+    "color_hex": "#D8C7D1",
+    "sort_order": 160
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "241",
+    "color_name": "241",
+    "color_hex": "#D8C7D1",
+    "sort_order": 160
+  },
+  {
+    "brand": "coco",
+    "code": "L12",
+    "color_name": "L12",
+    "color_hex": "#D8D5CE",
+    "sort_order": 161
+  },
+  {
+    "brand": "manman",
+    "code": "T7",
+    "color_name": "T7",
+    "color_hex": "#D8D5CE",
+    "sort_order": 161
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-160",
+    "color_name": "PP-160",
+    "color_hex": "#D8D5CE",
+    "sort_order": 161
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-157",
+    "color_name": "MXW-157",
+    "color_hex": "#D8D5CE",
+    "sort_order": 161
+  },
+  {
+    "brand": "coco",
+    "code": "Z15",
+    "color_name": "Z15",
+    "color_hex": "#D98C39",
+    "sort_order": 162
+  },
+  {
+    "brand": "manman",
+    "code": "MM-B9",
+    "color_name": "MM-B9",
+    "color_hex": "#D98C39",
+    "sort_order": 162
+  },
+  {
+    "brand": "panpan",
+    "code": "87",
+    "color_name": "87",
+    "color_hex": "#D98C39",
+    "sort_order": 162
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-101",
+    "color_name": "MXW-101",
+    "color_hex": "#D98C39",
+    "sort_order": 162
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-M10",
+    "color_name": "COCO-M10",
+    "color_hex": "#D9C7EA",
+    "sort_order": 163
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P18",
+    "color_name": "MM-P18",
+    "color_hex": "#D9C7EA",
+    "sort_order": 163
+  },
+  {
+    "brand": "panpan",
+    "code": "187",
+    "color_name": "187",
+    "color_hex": "#D9C7EA",
+    "sort_order": 163
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "187",
+    "color_name": "187",
+    "color_hex": "#D9C7EA",
+    "sort_order": 163
+  },
+  {
+    "brand": "coco",
+    "code": "M09",
+    "color_name": "M09",
+    "color_hex": "#D9D9D9",
+    "sort_order": 164
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P13",
+    "color_name": "MM-P13",
+    "color_hex": "#D9D9D9",
+    "sort_order": 164
+  },
+  {
+    "brand": "panpan",
+    "code": "195",
+    "color_name": "195",
+    "color_hex": "#D9D9D9",
+    "sort_order": 164
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-178",
+    "color_name": "MXW-178",
+    "color_hex": "#D9D9D9",
+    "sort_order": 164
+  },
+  {
+    "brand": "coco",
+    "code": "GB1",
+    "color_name": "GB1",
+    "color_hex": "#DAABB3",
+    "sort_order": 165
+  },
+  {
+    "brand": "manman",
+    "code": "MM-ZG1",
+    "color_name": "MM-ZG1",
+    "color_hex": "#DAABB3",
+    "sort_order": 165
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-254",
+    "color_name": "PP-254",
+    "color_hex": "#DAABB3",
+    "sort_order": 165
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-ZG1",
+    "color_name": "MXW-ZG1",
+    "color_hex": "#DAABB3",
+    "sort_order": 165
+  },
+  {
+    "brand": "coco",
+    "code": "J10",
+    "color_name": "J10",
+    "color_hex": "#DE9AD4",
+    "sort_order": 166
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D20",
+    "color_name": "MM-D20",
+    "color_hex": "#DE9AD4",
+    "sort_order": 166
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-104",
+    "color_name": "PP-104",
+    "color_hex": "#DE9AD4",
+    "sort_order": 166
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-105",
+    "color_name": "MXW-105",
+    "color_hex": "#DE9AD4",
+    "sort_order": 166
+  },
+  {
+    "brand": "coco",
+    "code": "J22",
+    "color_name": "J22",
+    "color_hex": "#DFC2F8",
+    "sort_order": 167
+  },
+  {
+    "brand": "manman",
+    "code": "MM-R01",
+    "color_name": "MM-R01",
+    "color_hex": "#DFC2F8",
+    "sort_order": 167
+  },
+  {
+    "brand": "panpan",
+    "code": "273",
+    "color_name": "273",
+    "color_hex": "#DFC2F8",
+    "sort_order": 167
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-258",
+    "color_name": "MXW-258",
+    "color_hex": "#DFC2F8",
+    "sort_order": 167
+  },
+  {
+    "brand": "coco",
+    "code": "Z12",
+    "color_name": "Z12",
+    "color_hex": "#E07935",
+    "sort_order": 168
+  },
+  {
+    "brand": "manman",
+    "code": "DH3",
+    "color_name": "DH3",
+    "color_hex": "#E07935",
+    "sort_order": 168
+  },
+  {
+    "brand": "panpan",
+    "code": "208",
+    "color_name": "208",
+    "color_hex": "#E07935",
+    "sort_order": 168
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-195",
+    "color_name": "MXW-195",
+    "color_hex": "#E07935",
+    "sort_order": 168
+  },
+  {
+    "brand": "coco",
+    "code": "Z07",
+    "color_name": "Z07",
+    "color_hex": "#E0C593",
+    "sort_order": 169
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E12",
+    "color_name": "MM-E12",
+    "color_hex": "#E0C593",
+    "sort_order": 169
+  },
+  {
+    "brand": "panpan",
+    "code": "112",
+    "color_name": "112",
+    "color_hex": "#E0C593",
+    "sort_order": 169
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "118",
+    "color_name": "118",
+    "color_hex": "#E0C593",
+    "sort_order": 169
+  },
+  {
+    "brand": "coco",
+    "code": "Z08",
+    "color_name": "Z08",
+    "color_hex": "#E1B383",
+    "sort_order": 170
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E6",
+    "color_name": "MM-E6",
+    "color_hex": "#E1B383",
+    "sort_order": 170
+  },
+  {
+    "brand": "panpan",
+    "code": "19",
+    "color_name": "19",
+    "color_hex": "#E1B383",
+    "sort_order": 170
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "19",
+    "color_name": "19",
+    "color_hex": "#E1B383",
+    "sort_order": 170
+  },
+  {
+    "brand": "coco",
+    "code": "K30",
+    "color_name": "K30",
+    "color_hex": "#E1BCE8",
+    "sort_order": 171
+  },
+  {
+    "brand": "manman",
+    "code": "MM-G8",
+    "color_name": "MM-G8",
+    "color_hex": "#E1BCE8",
+    "sort_order": 171
+  },
+  {
+    "brand": "panpan",
+    "code": "282",
+    "color_name": "282",
+    "color_hex": "#E1BCE8",
+    "sort_order": 171
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-267",
+    "color_name": "MXW-267",
+    "color_hex": "#E1BCE8",
+    "sort_order": 171
+  },
+  {
+    "brand": "coco",
+    "code": "K20",
+    "color_name": "K20",
+    "color_hex": "#E2677A",
+    "sort_order": 172
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A15",
+    "color_name": "MM-A15",
+    "color_hex": "#E2677A",
+    "sort_order": 172
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-82",
+    "color_name": "PP-82",
+    "color_hex": "#E2677A",
+    "sort_order": 172
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-93",
+    "color_name": "MXW-93",
+    "color_hex": "#E2677A",
+    "sort_order": 172
+  },
+  {
+    "brand": "coco",
+    "code": "GB7",
+    "color_name": "GB7",
+    "color_hex": "#E2A9D2",
+    "sort_order": 173
+  },
+  {
+    "brand": "manman",
+    "code": "MM-ZG7",
+    "color_name": "MM-ZG7",
+    "color_hex": "#E2A9D2",
+    "sort_order": 173
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-260",
+    "color_name": "PP-260",
+    "color_hex": "#E2A9D2",
+    "sort_order": 173
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-ZG7",
+    "color_name": "MXW-ZG7",
+    "color_hex": "#E2A9D2",
+    "sort_order": 173
+  },
+  {
+    "brand": "coco",
+    "code": "J03",
+    "color_name": "J03",
+    "color_hex": "#E2D3FF",
+    "sort_order": 174
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D16",
+    "color_name": "MM-D16",
+    "color_hex": "#E2D3FF",
+    "sort_order": 174
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-94",
+    "color_name": "PP-94",
+    "color_hex": "#E2D3FF",
+    "sort_order": 174
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "89",
+    "color_name": "89",
+    "color_hex": "#E2D3FF",
+    "sort_order": 174
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-F23",
+    "color_name": "COCO-F23",
+    "color_hex": "#E2FCB1",
+    "sort_order": 175
+  },
+  {
+    "brand": "manman",
+    "code": "MM-G6",
+    "color_name": "MM-G6",
+    "color_hex": "#E2FCB1",
+    "sort_order": 175
+  },
+  {
+    "brand": "panpan",
+    "code": "285",
+    "color_name": "285",
+    "color_hex": "#E2FCB1",
+    "sort_order": 175
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "270",
+    "color_name": "270",
+    "color_hex": "#E2FCB1",
+    "sort_order": 175
+  },
+  {
+    "brand": "coco",
+    "code": "Y04",
+    "color_name": "Y04",
+    "color_hex": "#E3D2BC",
+    "sort_order": 176
+  },
+  {
+    "brand": "manman",
+    "code": "YX15",
+    "color_name": "YX15",
+    "color_hex": "#E3D2BC",
+    "sort_order": 176
+  },
+  {
+    "brand": "panpan",
+    "code": "167",
+    "color_name": "167",
+    "color_hex": "#E3D2BC",
+    "sort_order": 176
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "167",
+    "color_name": "167",
+    "color_hex": "#E3D2BC",
+    "sort_order": 176
+  },
+  {
+    "brand": "coco",
+    "code": "J01",
+    "color_name": "J01",
+    "color_hex": "#E3E1EE",
+    "sort_order": 177
+  },
+  {
+    "brand": "manman",
+    "code": "MM-D23",
+    "color_name": "MM-D23",
+    "color_hex": "#E3E1EE",
+    "sort_order": 177
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-118",
+    "color_name": "PP-118",
+    "color_hex": "#E3E1EE",
+    "sort_order": 177
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "126",
+    "color_name": "126",
+    "color_hex": "#E3E1EE",
+    "sort_order": 177
+  },
+  {
+    "brand": "coco",
+    "code": "M22",
+    "color_name": "M22",
+    "color_hex": "#E4A89F",
+    "sort_order": 178
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P16",
+    "color_name": "MM-P16",
+    "color_hex": "#E4A89F",
+    "sort_order": 178
+  },
+  {
+    "brand": "panpan",
+    "code": "189",
+    "color_name": "189",
+    "color_hex": "#E4A89F",
+    "sort_order": 178
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "189",
+    "color_name": "189",
+    "color_hex": "#E4A89F",
+    "sort_order": 178
+  },
+  {
+    "brand": "coco",
+    "code": "K39",
+    "color_name": "K39",
+    "color_hex": "#E54B4F",
+    "sort_order": 179
+  },
+  {
+    "brand": "manman",
+    "code": "MM-G10",
+    "color_name": "MM-G10",
+    "color_hex": "#E54B4F",
+    "sort_order": 179
+  },
+  {
+    "brand": "panpan",
+    "code": "284",
+    "color_name": "284",
+    "color_hex": "#E54B4F",
+    "sort_order": 179
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-269",
+    "color_name": "MXW-269",
+    "color_hex": "#E54B4F",
+    "sort_order": 179
+  },
+  {
+    "brand": "coco",
+    "code": "K38",
+    "color_name": "K38",
+    "color_hex": "#E698AA",
+    "sort_order": 180
+  },
+  {
+    "brand": "manman",
+    "code": "MM-G9",
+    "color_name": "MM-G9",
+    "color_hex": "#E698AA",
+    "sort_order": 180
+  },
+  {
+    "brand": "panpan",
+    "code": "283",
+    "color_name": "283",
+    "color_hex": "#E698AA",
+    "sort_order": 180
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-268",
+    "color_name": "MXW-268",
+    "color_hex": "#E698AA",
+    "sort_order": 180
+  },
+  {
+    "brand": "coco",
+    "code": "K31",
+    "color_name": "K31",
+    "color_hex": "#E69C79",
+    "sort_order": 181
+  },
+  {
+    "brand": "manman",
+    "code": "Q9",
+    "color_name": "Q9",
+    "color_hex": "#E69C79",
+    "sort_order": 181
+  },
+  {
+    "brand": "panpan",
+    "code": "245",
+    "color_name": "245",
+    "color_hex": "#E69C79",
+    "sort_order": 181
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "245",
+    "color_name": "245",
+    "color_hex": "#E69C79",
+    "sort_order": 181
+  },
+  {
+    "brand": "coco",
+    "code": "Z09",
+    "color_name": "Z09",
+    "color_hex": "#E6B483",
+    "sort_order": 182
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E10",
+    "color_name": "MM-E10",
+    "color_hex": "#E6B483",
+    "sort_order": 182
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-91",
+    "color_name": "PP-91",
+    "color_hex": "#E6B483",
+    "sort_order": 182
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-102",
+    "color_name": "MXW-102",
+    "color_hex": "#E6B483",
+    "sort_order": 182
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-E12",
+    "color_name": "COCO-E12",
+    "color_hex": "#E6C9B7",
+    "sort_order": 183
+  },
+  {
+    "brand": "manman",
+    "code": "MM-R08",
+    "color_name": "MM-R08",
+    "color_hex": "#E6C9B7",
+    "sort_order": 183
+  },
+  {
+    "brand": "panpan",
+    "code": "274",
+    "color_name": "274",
+    "color_hex": "#E6C9B7",
+    "sort_order": 183
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-259",
+    "color_name": "MXW-259",
+    "color_hex": "#E6C9B7",
+    "sort_order": 183
+  },
+  {
+    "brand": "coco",
+    "code": "F05",
+    "color_name": "F05",
+    "color_hex": "#E6EE31",
+    "sort_order": 184
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C1",
+    "color_name": "MM-C1",
+    "color_hex": "#E6EE31",
+    "sort_order": 184
+  },
+  {
+    "brand": "panpan",
+    "code": "48",
+    "color_name": "48",
+    "color_hex": "#E6EE31",
+    "sort_order": 184
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "48",
+    "color_name": "48",
+    "color_hex": "#E6EE31",
+    "sort_order": 184
+  },
+  {
+    "brand": "coco",
+    "code": "F07",
+    "color_name": "F07",
+    "color_hex": "#E6EE49",
+    "sort_order": 185
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C19",
+    "color_name": "MM-C19",
+    "color_hex": "#E6EE49",
+    "sort_order": 185
+  },
+  {
+    "brand": "panpan",
+    "code": "147",
+    "color_name": "147",
+    "color_hex": "#E6EE49",
+    "sort_order": 185
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "147",
+    "color_name": "147",
+    "color_hex": "#E6EE49",
+    "sort_order": 185
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-M12",
+    "color_name": "COCO-M12",
+    "color_hex": "#E6EEF2",
+    "sort_order": 186
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P12",
+    "color_name": "MM-P12",
+    "color_hex": "#E6EEF2",
+    "sort_order": 186
+  },
+  {
+    "brand": "panpan",
+    "code": "190",
+    "color_name": "190",
+    "color_hex": "#E6EEF2",
+    "sort_order": 186
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "190",
+    "color_name": "190",
+    "color_hex": "#E6EEF2",
+    "sort_order": 186
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-C07",
+    "color_name": "COCO-C07",
+    "color_hex": "#E7002F",
+    "sort_order": 187
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A5",
+    "color_name": "MM-A5",
+    "color_hex": "#E7002F",
+    "sort_order": 187
+  },
+  {
+    "brand": "panpan",
+    "code": "5",
+    "color_name": "5",
+    "color_hex": "#E7002F",
+    "sort_order": 187
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "5",
+    "color_name": "5",
+    "color_hex": "#E7002F",
+    "sort_order": 187
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-A09",
+    "color_name": "COCO-A09",
+    "color_hex": "#E7D6DB",
+    "sort_order": 188
+  },
+  {
+    "brand": "manman",
+    "code": "MM-F8",
+    "color_name": "MM-F8",
+    "color_hex": "#E7D6DB",
+    "sort_order": 188
+  },
+  {
+    "brand": "panpan",
+    "code": "85",
+    "color_name": "85",
+    "color_hex": "#E7D6DB",
+    "sort_order": 188
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "86",
+    "color_name": "86",
+    "color_hex": "#E7D6DB",
+    "sort_order": 188
+  },
+  {
+    "brand": "coco",
+    "code": "K21",
+    "color_name": "K21",
+    "color_hex": "#E8649E",
+    "sort_order": 189
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A9",
+    "color_name": "MM-A9",
+    "color_hex": "#E8649E",
+    "sort_order": 189
+  },
+  {
+    "brand": "panpan",
+    "code": "6",
+    "color_name": "6",
+    "color_hex": "#E8649E",
+    "sort_order": 189
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "6",
+    "color_name": "6",
+    "color_hex": "#E8649E",
+    "sort_order": 189
+  },
+  {
+    "brand": "coco",
+    "code": "S7",
+    "color_name": "S7",
+    "color_hex": "#E8C7B4",
+    "sort_order": 190
+  },
+  {
+    "brand": "manman",
+    "code": "MM-S6",
+    "color_name": "MM-S6",
+    "color_hex": "#E8C7B4",
+    "sort_order": 190
+  },
+  {
+    "brand": "panpan",
+    "code": "230",
+    "color_name": "230",
+    "color_hex": "#E8C7B4",
+    "sort_order": 190
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "230",
+    "color_name": "230",
+    "color_hex": "#E8C7B4",
+    "sort_order": 190
+  },
+  {
+    "brand": "coco",
+    "code": "G01",
+    "color_name": "G01",
+    "color_hex": "#E8FFE7",
+    "sort_order": 191
+  },
+  {
+    "brand": "manman",
+    "code": "MM-C8",
+    "color_name": "MM-C8",
+    "color_hex": "#E8FFE7",
+    "sort_order": 191
+  },
+  {
+    "brand": "panpan",
+    "code": "64",
+    "color_name": "64",
+    "color_hex": "#E8FFE7",
+    "sort_order": 191
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "76",
+    "color_name": "76",
+    "color_hex": "#E8FFE7",
+    "sort_order": 191
+  },
+  {
+    "brand": "coco",
+    "code": "K18",
+    "color_name": "K18",
+    "color_hex": "#E970CC",
+    "sort_order": 192
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A14",
+    "color_name": "MM-A14",
+    "color_hex": "#E970CC",
+    "sort_order": 192
+  },
+  {
+    "brand": "panpan",
+    "code": "98",
+    "color_name": "98",
+    "color_hex": "#E970CC",
+    "sort_order": 192
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "95",
+    "color_name": "95",
+    "color_hex": "#E970CC",
+    "sort_order": 192
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-N05",
+    "color_name": "COCO-N05",
+    "color_hex": "#E987EA",
+    "sort_order": 193
+  },
+  {
+    "brand": "manman",
+    "code": "MM-Y5",
+    "color_name": "MM-Y5",
+    "color_hex": "#E987EA",
+    "sort_order": 193
+  },
+  {
+    "brand": "panpan",
+    "code": "61",
+    "color_name": "61",
+    "color_hex": "#E987EA",
+    "sort_order": 193
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "61",
+    "color_name": "61",
+    "color_hex": "#E987EA",
+    "sort_order": 193
+  },
+  {
+    "brand": "coco",
+    "code": "Z11",
+    "color_name": "Z11",
+    "color_hex": "#E99C17",
+    "sort_order": 194
+  },
+  {
+    "brand": "manman",
+    "code": "MM-B8",
+    "color_name": "MM-B8",
+    "color_hex": "#E99C17",
+    "sort_order": 194
+  },
+  {
+    "brand": "panpan",
+    "code": "50",
+    "color_name": "50",
+    "color_hex": "#E99C17",
+    "sort_order": 194
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "50",
+    "color_name": "50",
+    "color_hex": "#E99C17",
+    "sort_order": 194
+  },
+  {
+    "brand": "coco",
+    "code": "W4",
+    "color_name": "W4",
+    "color_hex": "#E9EC91",
+    "sort_order": 195
+  },
+  {
+    "brand": "manman",
+    "code": "W4",
+    "color_name": "W4",
+    "color_hex": "#E9EC91",
+    "sort_order": 195
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-111",
+    "color_name": "PP-111",
+    "color_hex": "#E9EC91",
+    "sort_order": 195
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "W4",
+    "color_name": "W4",
+    "color_hex": "#E9EC91",
+    "sort_order": 195
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-S14",
+    "color_name": "COCO-S14",
+    "color_hex": "#EA8CB1",
+    "sort_order": 196
+  },
+  {
+    "brand": "manman",
+    "code": "MM-S8",
+    "color_name": "MM-S8",
+    "color_hex": "#EA8CB1",
+    "sort_order": 196
+  },
+  {
+    "brand": "panpan",
+    "code": "232",
+    "color_name": "232",
+    "color_hex": "#EA8CB1",
+    "sort_order": 196
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "232",
+    "color_name": "232",
+    "color_hex": "#EA8CB1",
+    "sort_order": 196
+  },
+  {
+    "brand": "coco",
+    "code": "M07",
+    "color_name": "M07",
+    "color_hex": "#EB9270",
+    "sort_order": 197
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P6",
+    "color_name": "MM-P6",
+    "color_hex": "#EB9270",
+    "sort_order": 197
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-159",
+    "color_name": "PP-159",
+    "color_hex": "#EB9270",
+    "sort_order": 197
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-68",
+    "color_name": "MXW-68",
+    "color_hex": "#EB9270",
+    "sort_order": 197
+  },
+  {
+    "brand": "coco",
+    "code": "J02",
+    "color_name": "J02",
+    "color_hex": "#EBDAFC",
+    "sort_order": 198
+  },
+  {
+    "brand": "manman",
+    "code": "IC8",
+    "color_name": "IC8",
+    "color_hex": "#EBDAFC",
+    "sort_order": 198
+  },
+  {
+    "brand": "panpan",
+    "code": "217",
+    "color_name": "217",
+    "color_hex": "#EBDAFC",
+    "sort_order": 198
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "217",
+    "color_name": "217",
+    "color_hex": "#EBDAFC",
+    "sort_order": 198
+  },
+  {
+    "brand": "coco",
+    "code": "M20",
+    "color_name": "M20",
+    "color_hex": "#ECBEBF",
+    "sort_order": 199
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P20",
+    "color_name": "MM-P20",
+    "color_hex": "#ECBEBF",
+    "sort_order": 199
+  },
+  {
+    "brand": "panpan",
+    "code": "180",
+    "color_name": "180",
+    "color_hex": "#ECBEBF",
+    "sort_order": 199
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "188",
+    "color_name": "188",
+    "color_hex": "#ECBEBF",
+    "sort_order": 199
+  },
+  {
+    "brand": "coco",
+    "code": "Z10",
+    "color_name": "Z10",
+    "color_hex": "#EDB045",
+    "sort_order": 200
+  },
+  {
+    "brand": "manman",
+    "code": "MM-B7",
+    "color_name": "MM-B7",
+    "color_hex": "#EDB045",
+    "sort_order": 200
+  },
+  {
+    "brand": "panpan",
+    "code": "43",
+    "color_name": "43",
+    "color_hex": "#EDB045",
+    "sort_order": 200
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "43",
+    "color_name": "43",
+    "color_hex": "#EDB045",
+    "sort_order": 200
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-A08",
+    "color_name": "COCO-A08",
+    "color_hex": "#EDEDED",
+    "sort_order": 201
+  },
+  {
+    "brand": "manman",
+    "code": "MM-F10",
+    "color_name": "MM-F10",
+    "color_hex": "#EDEDED",
+    "sort_order": 201
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-95",
+    "color_name": "PP-95",
+    "color_hex": "#EDEDED",
+    "sort_order": 201
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-87",
+    "color_name": "MXW-87",
+    "color_hex": "#EDEDED",
+    "sort_order": 201
+  },
+  {
+    "brand": "coco",
+    "code": "M05",
+    "color_name": "M05",
+    "color_hex": "#EE8C3E",
+    "sort_order": 202
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P3",
+    "color_name": "MM-P3",
+    "color_hex": "#EE8C3E",
+    "sort_order": 202
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-56",
+    "color_name": "PP-56",
+    "color_hex": "#EE8C3E",
+    "sort_order": 202
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-63",
+    "color_name": "MXW-63",
+    "color_hex": "#EE8C3E",
+    "sort_order": 202
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-A10",
+    "color_name": "COCO-A10",
+    "color_hex": "#EEE9EA",
+    "sort_order": 203
+  },
+  {
+    "brand": "manman",
+    "code": "MM-F9",
+    "color_name": "MM-F9",
+    "color_hex": "#EEE9EA",
+    "sort_order": 203
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-86",
+    "color_name": "PP-86",
+    "color_hex": "#EEE9EA",
+    "sort_order": 203
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "88",
+    "color_name": "88",
+    "color_hex": "#EEE9EA",
+    "sort_order": 203
+  },
+  {
+    "brand": "coco",
+    "code": "F01",
+    "color_name": "F01",
+    "color_hex": "#EEFCA5",
+    "sort_order": 204
+  },
+  {
+    "brand": "manman",
+    "code": "IC5",
+    "color_name": "IC5",
+    "color_hex": "#EEFCA5",
+    "sort_order": 204
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-222",
+    "color_name": "PP-222",
+    "color_hex": "#EEFCA5",
+    "sort_order": 204
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-207",
+    "color_name": "MXW-207",
+    "color_hex": "#EEFCA5",
+    "sort_order": 204
+  },
+  {
+    "brand": "coco",
+    "code": "M08",
+    "color_name": "M08",
+    "color_hex": "#F0D958",
+    "sort_order": 205
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P7",
+    "color_name": "MM-P7",
+    "color_hex": "#F0D958",
+    "sort_order": 205
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-158",
+    "color_name": "PP-158",
+    "color_hex": "#F0D958",
+    "sort_order": 205
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-67",
+    "color_name": "MXW-67",
+    "color_hex": "#F0D958",
+    "sort_order": 205
+  },
+  {
+    "brand": "coco",
+    "code": "K22",
+    "color_name": "K22",
+    "color_hex": "#F13D74",
+    "sort_order": 206
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A11",
+    "color_name": "MM-A11",
+    "color_hex": "#F13D74",
+    "sort_order": 206
+  },
+  {
+    "brand": "panpan",
+    "code": "20",
+    "color_name": "20",
+    "color_hex": "#F13D74",
+    "sort_order": 206
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "20",
+    "color_name": "20",
+    "color_hex": "#F13D74",
+    "sort_order": 206
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-A07",
+    "color_name": "COCO-A07",
+    "color_hex": "#F1EDED",
+    "sort_order": 207
+  },
+  {
+    "brand": "manman",
+    "code": "IC6",
+    "color_name": "IC6",
+    "color_hex": "#F1EDED",
+    "sort_order": 207
+  },
+  {
+    "brand": "panpan",
+    "code": "214",
+    "color_name": "214",
+    "color_hex": "#F1EDED",
+    "sort_order": 207
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "214",
+    "color_name": "214",
+    "color_hex": "#F1EDED",
+    "sort_order": 207
+  },
+  {
+    "brand": "coco",
+    "code": "W3",
+    "color_name": "W3",
+    "color_hex": "#F2A5E8",
+    "sort_order": 208
+  },
+  {
+    "brand": "manman",
+    "code": "W3",
+    "color_name": "W3",
+    "color_hex": "#F2A5E8",
+    "sort_order": 208
+  },
+  {
+    "brand": "panpan",
+    "code": "109",
+    "color_name": "109",
+    "color_hex": "#F2A5E8",
+    "sort_order": 208
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "W3",
+    "color_name": "W3",
+    "color_hex": "#F2A5E8",
+    "sort_order": 208
+  },
+  {
+    "brand": "coco",
+    "code": "Z04",
+    "color_name": "Z04",
+    "color_hex": "#F2D9BA",
+    "sort_order": 209
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E20",
+    "color_name": "MM-E20",
+    "color_hex": "#F2D9BA",
+    "sort_order": 209
+  },
+  {
+    "brand": "panpan",
+    "code": "134",
+    "color_name": "134",
+    "color_hex": "#F2D9BA",
+    "sort_order": 209
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "138",
+    "color_name": "138",
+    "color_hex": "#F2D9BA",
+    "sort_order": 209
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-C04",
+    "color_name": "COCO-C04",
+    "color_hex": "#F35744",
+    "sort_order": 210
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A24",
+    "color_name": "MM-A24",
+    "color_hex": "#F35744",
+    "sort_order": 210
+  },
+  {
+    "brand": "panpan",
+    "code": "148",
+    "color_name": "148",
+    "color_hex": "#F35744",
+    "sort_order": 210
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "148",
+    "color_name": "148",
+    "color_hex": "#F35744",
+    "sort_order": 210
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-S11",
+    "color_name": "COCO-S11",
+    "color_hex": "#F3C1C0",
+    "sort_order": 211
+  },
+  {
+    "brand": "panpan",
+    "code": "228",
+    "color_name": "228",
+    "color_hex": "#F3C1C0",
+    "sort_order": 211
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "228",
+    "color_name": "228",
+    "color_hex": "#F3C1C0",
+    "sort_order": 211
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-M11",
+    "color_name": "COCO-M11",
+    "color_hex": "#F3ECC9",
+    "sort_order": 212
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P9",
+    "color_name": "MM-P9",
+    "color_hex": "#F3ECC9",
+    "sort_order": 211
+  },
+  {
+    "brand": "panpan",
+    "code": "185",
+    "color_name": "185",
+    "color_hex": "#F3ECC9",
+    "sort_order": 212
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "185",
+    "color_name": "185",
+    "color_hex": "#F3ECC9",
+    "sort_order": 212
+  },
+  {
+    "brand": "coco",
+    "code": "Z06",
+    "color_name": "Z06",
+    "color_hex": "#F4C3A5",
+    "sort_order": 213
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E5",
+    "color_name": "MM-E5",
+    "color_hex": "#F4C3A5",
+    "sort_order": 212
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-80",
+    "color_name": "PP-80",
+    "color_hex": "#F4C3A5",
+    "sort_order": 213
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-85",
+    "color_name": "MXW-85",
+    "color_hex": "#F4C3A5",
+    "sort_order": 213
+  },
+  {
+    "brand": "coco",
+    "code": "D03",
+    "color_name": "D03",
+    "color_hex": "#F4D738",
+    "sort_order": 214
+  },
+  {
+    "brand": "manman",
+    "code": "MM-B4",
+    "color_name": "MM-B4",
+    "color_hex": "#F4D738",
+    "sort_order": 213
+  },
+  {
+    "brand": "panpan",
+    "code": "74",
+    "color_name": "74",
+    "color_hex": "#F4D738",
+    "sort_order": 214
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-79",
+    "color_name": "MXW-79",
+    "color_hex": "#F4D738",
+    "sort_order": 214
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-E11",
+    "color_name": "COCO-E11",
+    "color_hex": "#F4F57D",
+    "sort_order": 215
+  },
+  {
+    "brand": "manman",
+    "code": "MM-R06",
+    "color_name": "MM-R06",
+    "color_hex": "#F4F57D",
+    "sort_order": 214
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-270",
+    "color_name": "PP-270",
+    "color_hex": "#F4F57D",
+    "sort_order": 215
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-255",
+    "color_name": "MXW-255",
+    "color_hex": "#F4F57D",
+    "sort_order": 215
+  },
+  {
+    "brand": "coco",
+    "code": "K19",
+    "color_name": "K19",
+    "color_hex": "#F551A2",
+    "sort_order": 216
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A10",
+    "color_name": "MM-A10",
+    "color_hex": "#F551A2",
+    "sort_order": 215
+  },
+  {
+    "brand": "panpan",
+    "code": "40",
+    "color_name": "40",
+    "color_hex": "#F551A2",
+    "sort_order": 216
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "40",
+    "color_name": "40",
+    "color_hex": "#F551A2",
+    "sort_order": 216
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-A06",
+    "color_name": "COCO-A06",
+    "color_hex": "#F5ECD2",
+    "sort_order": 217
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E23",
+    "color_name": "MM-E23",
+    "color_hex": "#F5ECD2",
+    "sort_order": 216
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-145",
+    "color_name": "PP-145",
+    "color_hex": "#F5ECD2",
+    "sort_order": 217
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-146",
+    "color_name": "MXW-146",
+    "color_hex": "#F5ECD2",
+    "sort_order": 217
+  },
+  {
+    "brand": "coco",
+    "code": "K37",
+    "color_name": "K37",
+    "color_hex": "#F67E66",
+    "sort_order": 218
+  },
+  {
+    "brand": "manman",
+    "code": "MM-R05",
+    "color_name": "MM-R05",
+    "color_hex": "#F67E66",
+    "sort_order": 217
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-264",
+    "color_name": "PP-264",
+    "color_hex": "#F67E66",
+    "sort_order": 218
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-249",
+    "color_name": "MXW-249",
+    "color_hex": "#F67E66",
+    "sort_order": 218
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-A05",
+    "color_name": "COCO-A05",
+    "color_hex": "#F6EFE2",
+    "sort_order": 219
+  },
+  {
+    "brand": "manman",
+    "code": "IC11",
+    "color_name": "IC11",
+    "color_hex": "#F6EFE2",
+    "sort_order": 218
+  },
+  {
+    "brand": "panpan",
+    "code": "209",
+    "color_name": "209",
+    "color_hex": "#F6EFE2",
+    "sort_order": 219
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "209",
+    "color_name": "209",
+    "color_hex": "#F6EFE2",
+    "sort_order": 219
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-C03",
+    "color_name": "COCO-C03",
+    "color_hex": "#F74941",
+    "sort_order": 220
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A3",
+    "color_name": "MM-A3",
+    "color_hex": "#F74941",
+    "sort_order": 219
+  },
+  {
+    "brand": "panpan",
+    "code": "53",
+    "color_name": "53",
+    "color_hex": "#F74941",
+    "sort_order": 220
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "72",
+    "color_name": "72",
+    "color_hex": "#F74941",
+    "sort_order": 220
+  },
+  {
+    "brand": "coco",
+    "code": "D07",
+    "color_name": "D07",
+    "color_hex": "#F77C31",
+    "sort_order": 221
+  },
+  {
+    "brand": "manman",
+    "code": "MM-B12",
+    "color_name": "MM-B12",
+    "color_hex": "#F77C31",
+    "sort_order": 220
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-89",
+    "color_name": "PP-89",
+    "color_hex": "#F77C31",
+    "sort_order": 221
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-96",
+    "color_name": "MXW-96",
+    "color_hex": "#F77C31",
+    "sort_order": 221
+  },
+  {
+    "brand": "coco",
+    "code": "K16",
+    "color_name": "K16",
+    "color_hex": "#F78FC3",
+    "sort_order": 222
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A20",
+    "color_name": "MM-A20",
+    "color_hex": "#F78FC3",
+    "sort_order": 221
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-126",
+    "color_name": "PP-126",
+    "color_hex": "#F78FC3",
+    "sort_order": 222
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-112",
+    "color_name": "MXW-112",
+    "color_hex": "#F78FC3",
+    "sort_order": 222
+  },
+  {
+    "brand": "coco",
+    "code": "K35",
+    "color_name": "K35",
+    "color_hex": "#F7B4C6",
+    "sort_order": 223
+  },
+  {
+    "brand": "manman",
+    "code": "MM-R03",
+    "color_name": "MM-R03",
+    "color_hex": "#F7B4C6",
+    "sort_order": 222
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-266",
+    "color_name": "PP-266",
+    "color_hex": "#F7B4C6",
+    "sort_order": 223
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-251",
+    "color_name": "MXW-251",
+    "color_hex": "#F7B4C6",
+    "sort_order": 223
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-E13",
+    "color_name": "COCO-E13",
+    "color_hex": "#F7F8A2",
+    "sort_order": 224
+  },
+  {
+    "brand": "manman",
+    "code": "MM-G3",
+    "color_name": "MM-G3",
+    "color_hex": "#F7F8A2",
+    "sort_order": 223
+  },
+  {
+    "brand": "panpan",
+    "code": "288",
+    "color_name": "288",
+    "color_hex": "#F7F8A2",
+    "sort_order": 224
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-273",
+    "color_name": "MXW-273",
+    "color_hex": "#F7F8A2",
+    "sort_order": 224
+  },
+  {
+    "brand": "coco",
+    "code": "K04",
+    "color_name": "K04",
+    "color_hex": "#F8C7C9",
+    "sort_order": 225
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A23",
+    "color_name": "MM-A23",
+    "color_hex": "#F8C7C9",
+    "sort_order": 224
+  },
+  {
+    "brand": "panpan",
+    "code": "135",
+    "color_name": "135",
+    "color_hex": "#F8C7C9",
+    "sort_order": 225
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-139",
+    "color_name": "MXW-139",
+    "color_hex": "#F8C7C9",
+    "sort_order": 225
+  },
+  {
+    "brand": "coco",
+    "code": "L04",
+    "color_name": "L04",
+    "color_hex": "#F8EC31",
+    "sort_order": 226
+  },
+  {
+    "brand": "manman",
+    "code": "N3",
+    "color_name": "N3",
+    "color_hex": "#F8EC31",
+    "sort_order": 225
+  },
+  {
+    "brand": "panpan",
+    "code": "21",
+    "color_name": "21",
+    "color_hex": "#F8EC31",
+    "sort_order": 226
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "21",
+    "color_name": "21",
+    "color_hex": "#F8EC31",
+    "sort_order": 226
+  },
+  {
+    "brand": "coco",
+    "code": "L02",
+    "color_name": "L02",
+    "color_hex": "#F92F83",
+    "sort_order": 227
+  },
+  {
+    "brand": "manman",
+    "code": "N1",
+    "color_name": "N1",
+    "color_hex": "#F92F83",
+    "sort_order": 226
+  },
+  {
+    "brand": "panpan",
+    "code": "24",
+    "color_name": "24",
+    "color_hex": "#F92F83",
+    "sort_order": 227
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "24",
+    "color_name": "24",
+    "color_hex": "#F92F83",
+    "sort_order": 227
+  },
+  {
+    "brand": "coco",
+    "code": "E02",
+    "color_name": "E02",
+    "color_hex": "#FAF4C8",
+    "sort_order": 228
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E2",
+    "color_name": "MM-E2",
+    "color_hex": "#FAF4C8",
+    "sort_order": 227
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-65",
+    "color_name": "PP-65",
+    "color_hex": "#FAF4C8",
+    "sort_order": 228
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-77",
+    "color_name": "MXW-77",
+    "color_hex": "#FAF4C8",
+    "sort_order": 228
+  },
+  {
+    "brand": "coco",
+    "code": "E07",
+    "color_name": "E07",
+    "color_hex": "#FBED56",
+    "sort_order": 229
+  },
+  {
+    "brand": "manman",
+    "code": "MM-B3",
+    "color_name": "MM-B3",
+    "color_hex": "#FBED56",
+    "sort_order": 228
+  },
+  {
+    "brand": "panpan",
+    "code": "3",
+    "color_name": "3",
+    "color_hex": "#FBED56",
+    "sort_order": 229
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "3",
+    "color_name": "3",
+    "color_hex": "#FBED56",
+    "sort_order": 229
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-C06",
+    "color_name": "COCO-C06",
+    "color_hex": "#FC283C",
+    "sort_order": 230
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A4",
+    "color_name": "MM-A4",
+    "color_hex": "#FC283C",
+    "sort_order": 229
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-54",
+    "color_name": "PP-54",
+    "color_hex": "#FC283C",
+    "sort_order": 230
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-73",
+    "color_name": "MXW-73",
+    "color_hex": "#FC283C",
+    "sort_order": 230
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-C02",
+    "color_name": "COCO-C02",
+    "color_hex": "#FC3D46",
+    "sort_order": 231
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A2",
+    "color_name": "MM-A2",
+    "color_hex": "#FC3D46",
+    "sort_order": 230
+  },
+  {
+    "brand": "panpan",
+    "code": "31",
+    "color_name": "31",
+    "color_hex": "#FC3D46",
+    "sort_order": 231
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "31",
+    "color_name": "31",
+    "color_hex": "#FC3D46",
+    "sort_order": 231
+  },
+  {
+    "brand": "coco",
+    "code": "K02",
+    "color_name": "K02",
+    "color_hex": "#FCDDD2",
+    "sort_order": 232
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A19",
+    "color_name": "MM-A19",
+    "color_hex": "#FCDDD2",
+    "sort_order": 231
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-125",
+    "color_name": "PP-125",
+    "color_hex": "#FCDDD2",
+    "sort_order": 232
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "131",
+    "color_name": "131",
+    "color_hex": "#FCDDD2",
+    "sort_order": 232
+  },
+  {
+    "brand": "coco",
+    "code": "M01",
+    "color_name": "M01",
+    "color_hex": "#FCF7F8",
+    "sort_order": 233
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P1",
+    "color_name": "MM-P1",
+    "color_hex": "#FCF7F8",
+    "sort_order": 232
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-71",
+    "color_name": "PP-71",
+    "color_hex": "#FCF7F8",
+    "sort_order": 233
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "62",
+    "color_name": "62",
+    "color_hex": "#FCF7F8",
+    "sort_order": 233
+  },
+  {
+    "brand": "coco",
+    "code": "Z03",
+    "color_name": "Z03",
+    "color_hex": "#FCF9E0",
+    "sort_order": 234
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E19",
+    "color_name": "MM-E19",
+    "color_hex": "#FCF9E0",
+    "sort_order": 233
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-133",
+    "color_name": "PP-133",
+    "color_hex": "#FCF9E0",
+    "sort_order": 234
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-143",
+    "color_name": "MXW-143",
+    "color_hex": "#FCF9E0",
+    "sort_order": 234
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-C01",
+    "color_name": "COCO-C01",
+    "color_hex": "#FD4E6A",
+    "sort_order": 235
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A22",
+    "color_name": "MM-A22",
+    "color_hex": "#FD4E6A",
+    "sort_order": 234
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-136",
+    "color_name": "PP-136",
+    "color_hex": "#FD4E6A",
+    "sort_order": 235
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-134",
+    "color_name": "MXW-134",
+    "color_hex": "#FD4E6A",
+    "sort_order": 235
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-C05",
+    "color_name": "COCO-C05",
+    "color_hex": "#FD543D",
+    "sort_order": 236
+  },
+  {
+    "brand": "manman",
+    "code": "MM-B14",
+    "color_name": "MM-B14",
+    "color_hex": "#FD543D",
+    "sort_order": 235
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-138",
+    "color_name": "PP-138",
+    "color_hex": "#FD543D",
+    "sort_order": 236
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-135",
+    "color_name": "MXW-135",
+    "color_hex": "#FD543D",
+    "sort_order": 236
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-N01",
+    "color_name": "COCO-N01",
+    "color_hex": "#FD6FB4",
+    "sort_order": 237
+  },
+  {
+    "brand": "manman",
+    "code": "MM-Y1",
+    "color_name": "MM-Y1",
+    "color_hex": "#FD6FB4",
+    "sort_order": 236
+  },
+  {
+    "brand": "panpan",
+    "code": "59",
+    "color_name": "59",
+    "color_hex": "#FD6FB4",
+    "sort_order": 237
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "59",
+    "color_name": "59",
+    "color_hex": "#FD6FB4",
+    "sort_order": 237
+  },
+  {
+    "brand": "coco",
+    "code": "K10",
+    "color_name": "K10",
+    "color_hex": "#FD7C72",
+    "sort_order": 238
+  },
+  {
+    "brand": "manman",
+    "code": "IC15",
+    "color_name": "IC15",
+    "color_hex": "#FD7C72",
+    "sort_order": 237
+  },
+  {
+    "brand": "panpan",
+    "code": "218",
+    "color_name": "218",
+    "color_hex": "#FD7C72",
+    "sort_order": 238
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "218",
+    "color_name": "218",
+    "color_hex": "#FD7C72",
+    "sort_order": 238
+  },
+  {
+    "brand": "coco",
+    "code": "L03",
+    "color_name": "L03",
+    "color_hex": "#FD8324",
+    "sort_order": 239
+  },
+  {
+    "brand": "manman",
+    "code": "N2",
+    "color_name": "N2",
+    "color_hex": "#FD8324",
+    "sort_order": 238
+  },
+  {
+    "brand": "panpan",
+    "code": "22",
+    "color_name": "22",
+    "color_hex": "#FD8324",
+    "sort_order": 239
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "22",
+    "color_name": "22",
+    "color_hex": "#FD8324",
+    "sort_order": 239
+  },
+  {
+    "brand": "coco",
+    "code": "K08",
+    "color_name": "K08",
+    "color_hex": "#FD957B",
+    "sort_order": 240
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A1",
+    "color_name": "MM-A1",
+    "color_hex": "#FD957B",
+    "sort_order": 239
+  },
+  {
+    "brand": "panpan",
+    "code": "35",
+    "color_name": "35",
+    "color_hex": "#FD957B",
+    "sort_order": 240
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "35",
+    "color_name": "35",
+    "color_hex": "#FD957B",
+    "sort_order": 240
+  },
+  {
+    "brand": "coco",
+    "code": "K36",
+    "color_name": "K36",
+    "color_hex": "#FDC0D0",
+    "sort_order": 241
+  },
+  {
+    "brand": "manman",
+    "code": "MM-R02",
+    "color_name": "MM-R02",
+    "color_hex": "#FDC0D0",
+    "sort_order": 240
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-272",
+    "color_name": "PP-272",
+    "color_hex": "#FDC0D0",
+    "sort_order": 241
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-257",
+    "color_name": "MXW-257",
+    "color_hex": "#FDC0D0",
+    "sort_order": 241
+  },
+  {
+    "brand": "coco",
+    "code": "K03",
+    "color_name": "K03",
+    "color_hex": "#FDD3CC",
+    "sort_order": 242
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E1",
+    "color_name": "MM-E1",
+    "color_hex": "#FDD3CC",
+    "sort_order": 241
+  },
+  {
+    "brand": "panpan",
+    "code": "18",
+    "color_name": "18",
+    "color_hex": "#FDD3CC",
+    "sort_order": 242
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "18",
+    "color_name": "18",
+    "color_hex": "#FDD3CC",
+    "sort_order": 242
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-A02",
+    "color_name": "COCO-A02",
+    "color_hex": "#FDFBFF",
+    "sort_order": 243
+  },
+  {
+    "brand": "manman",
+    "code": "MM-F1",
+    "color_name": "MM-F1",
+    "color_hex": "#FDFBFF",
+    "sort_order": 242
+  },
+  {
+    "brand": "panpan",
+    "code": "15",
+    "color_name": "15",
+    "color_hex": "#FDFBFF",
+    "sort_order": 243
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "15",
+    "color_name": "15",
+    "color_hex": "#FDFBFF",
+    "sort_order": 243
+  },
+  {
+    "brand": "coco",
+    "code": "D08",
+    "color_name": "D08",
+    "color_hex": "#FE8B4C",
+    "sort_order": 244
+  },
+  {
+    "brand": "manman",
+    "code": "MM-B6",
+    "color_name": "MM-B6",
+    "color_hex": "#FE8B4C",
+    "sort_order": 243
+  },
+  {
+    "brand": "panpan",
+    "code": "4",
+    "color_name": "4",
+    "color_hex": "#FE8B4C",
+    "sort_order": 244
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "4",
+    "color_name": "4",
+    "color_hex": "#FE8B4C",
+    "sort_order": 244
+  },
+  {
+    "brand": "coco",
+    "code": "K09",
+    "color_name": "K09",
+    "color_hex": "#FE9F72",
+    "sort_order": 245
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A18",
+    "color_name": "MM-A18",
+    "color_hex": "#FE9F72",
+    "sort_order": 244
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-99",
+    "color_name": "PP-99",
+    "color_hex": "#FE9F72",
+    "sort_order": 245
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "110",
+    "color_name": "110",
+    "color_hex": "#FE9F72",
+    "sort_order": 245
+  },
+  {
+    "brand": "coco",
+    "code": "M17",
+    "color_name": "M17",
+    "color_hex": "#FEA324",
+    "sort_order": 246
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P19",
+    "color_name": "MM-P19",
+    "color_hex": "#FEA324",
+    "sort_order": 245
+  },
+  {
+    "brand": "panpan",
+    "code": "179",
+    "color_name": "179",
+    "color_hex": "#FEA324",
+    "sort_order": 246
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "179",
+    "color_name": "179",
+    "color_hex": "#FEA324",
+    "sort_order": 246
+  },
+  {
+    "brand": "coco",
+    "code": "M04",
+    "color_name": "M04",
+    "color_hex": "#FEA49F",
+    "sort_order": 247
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P5",
+    "color_name": "MM-P5",
+    "color_hex": "#FEA49F",
+    "sort_order": 246
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-72",
+    "color_name": "PP-72",
+    "color_hex": "#FEA49F",
+    "sort_order": 247
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-64",
+    "color_name": "MXW-64",
+    "color_hex": "#FEA49F",
+    "sort_order": 247
+  },
+  {
+    "brand": "coco",
+    "code": "D05",
+    "color_name": "D05",
+    "color_hex": "#FEAC4C",
+    "sort_order": 248
+  },
+  {
+    "brand": "manman",
+    "code": "MM-B5",
+    "color_name": "MM-B5",
+    "color_hex": "#FEAC4C",
+    "sort_order": 247
+  },
+  {
+    "brand": "panpan",
+    "code": "29",
+    "color_name": "29",
+    "color_hex": "#FEAC4C",
+    "sort_order": 248
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "29",
+    "color_name": "29",
+    "color_hex": "#FEAC4C",
+    "sort_order": 248
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-N02",
+    "color_name": "COCO-N02",
+    "color_hex": "#FEB481",
+    "sort_order": 249
+  },
+  {
+    "brand": "manman",
+    "code": "MM-Y2",
+    "color_name": "MM-Y2",
+    "color_hex": "#FEB481",
+    "sort_order": 248
+  },
+  {
+    "brand": "panpan",
+    "code": "60",
+    "color_name": "60",
+    "color_hex": "#FEB481",
+    "sort_order": 249
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "60",
+    "color_name": "60",
+    "color_hex": "#FEB481",
+    "sort_order": 249
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-S10",
+    "color_name": "COCO-S10",
+    "color_hex": "#FEB872",
+    "sort_order": 250
+  },
+  {
+    "brand": "manman",
+    "code": "MM-S12",
+    "color_name": "MM-S12",
+    "color_hex": "#FEB872",
+    "sort_order": 249
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-224",
+    "color_name": "PP-224",
+    "color_hex": "#FEB872",
+    "sort_order": 250
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "219",
+    "color_name": "219",
+    "color_hex": "#FEB872",
+    "sort_order": 250
+  },
+  {
+    "brand": "coco",
+    "code": "M18",
+    "color_name": "M18",
+    "color_hex": "#FEB89F",
+    "sort_order": 251
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P11",
+    "color_name": "MM-P11",
+    "color_hex": "#FEB89F",
+    "sort_order": 250
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-194",
+    "color_name": "PP-194",
+    "color_hex": "#FEB89F",
+    "sort_order": 251
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-177",
+    "color_name": "MXW-177",
+    "color_hex": "#FEB89F",
+    "sort_order": 251
+  },
+  {
+    "brand": "coco",
+    "code": "K14",
+    "color_name": "K14",
+    "color_hex": "#FEBAD5",
+    "sort_order": 252
+  },
+  {
+    "brand": "manman",
+    "code": "IC12",
+    "color_name": "IC12",
+    "color_hex": "#FEBAD5",
+    "sort_order": 251
+  },
+  {
+    "brand": "panpan",
+    "code": "215",
+    "color_name": "215",
+    "color_hex": "#FEBAD5",
+    "sort_order": 252
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "215",
+    "color_name": "215",
+    "color_hex": "#FEBAD5",
+    "sort_order": 252
+  },
+  {
+    "brand": "coco",
+    "code": "D02",
+    "color_name": "D02",
+    "color_hex": "#FEBE7D",
+    "sort_order": 253
+  },
+  {
+    "brand": "manman",
+    "code": "IC14",
+    "color_name": "IC14",
+    "color_hex": "#FEBE7D",
+    "sort_order": 252
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-223",
+    "color_name": "PP-223",
+    "color_hex": "#FEBE7D",
+    "sort_order": 253
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-208",
+    "color_name": "MXW-208",
+    "color_hex": "#FEBE7D",
+    "sort_order": 253
+  },
+  {
+    "brand": "coco",
+    "code": "M21",
+    "color_name": "M21",
+    "color_hex": "#FEBECF",
+    "sort_order": 254
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P15",
+    "color_name": "MM-P15",
+    "color_hex": "#FEBECF",
+    "sort_order": 253
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-188",
+    "color_name": "PP-188",
+    "color_hex": "#FEBECF",
+    "sort_order": 254
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-180",
+    "color_name": "MXW-180",
+    "color_hex": "#FEBECF",
+    "sort_order": 254
+  },
+  {
+    "brand": "coco",
+    "code": "M16",
+    "color_name": "M16",
+    "color_hex": "#FEBF45",
+    "sort_order": 255
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P14",
+    "color_name": "MM-P14",
+    "color_hex": "#FEBF45",
+    "sort_order": 254
+  },
+  {
+    "brand": "panpan",
+    "code": "182",
+    "color_name": "182",
+    "color_hex": "#FEBF45",
+    "sort_order": 255
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "182",
+    "color_name": "182",
+    "color_hex": "#FEBF45",
+    "sort_order": 255
+  },
+  {
+    "brand": "coco",
+    "code": "K15",
+    "color_name": "K15",
+    "color_hex": "#FEC0DF",
+    "sort_order": 256
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A7",
+    "color_name": "MM-A7",
+    "color_hex": "#FEC0DF",
+    "sort_order": 255
+  },
+  {
+    "brand": "panpan",
+    "code": "38",
+    "color_name": "38",
+    "color_hex": "#FEC0DF",
+    "sort_order": 256
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "38",
+    "color_name": "38",
+    "color_hex": "#FEC0DF",
+    "sort_order": 256
+  },
+  {
+    "brand": "coco",
+    "code": "K06",
+    "color_name": "K06",
+    "color_hex": "#FEC2A6",
+    "sort_order": 257
+  },
+  {
+    "brand": "manman",
+    "code": "IC10",
+    "color_name": "IC10",
+    "color_hex": "#FEC2A6",
+    "sort_order": 256
+  },
+  {
+    "brand": "panpan",
+    "code": "211",
+    "color_name": "211",
+    "color_hex": "#FEC2A6",
+    "sort_order": 257
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "211",
+    "color_name": "211",
+    "color_hex": "#FEC2A6",
+    "sort_order": 257
+  },
+  {
+    "brand": "coco",
+    "code": "E05",
+    "color_name": "E05",
+    "color_hex": "#FEFF8B",
+    "sort_order": 258
+  },
+  {
+    "brand": "manman",
+    "code": "MM-B2",
+    "color_name": "MM-B2",
+    "color_hex": "#FEFF8B",
+    "sort_order": 257
+  },
+  {
+    "brand": "panpan",
+    "code": "28",
+    "color_name": "28",
+    "color_hex": "#FEFF8B",
+    "sort_order": 258
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "28",
+    "color_name": "28",
+    "color_hex": "#FEFF8B",
+    "sort_order": 258
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-A01",
+    "color_name": "COCO-A01",
+    "color_hex": "#FEFFFF",
+    "sort_order": 259
+  },
+  {
+    "brand": "manman",
+    "code": "MM-F2",
+    "color_name": "MM-F2",
+    "color_hex": "#FEFFFF",
+    "sort_order": 258
+  },
+  {
+    "brand": "panpan",
+    "code": "1",
+    "color_name": "1",
+    "color_hex": "#FEFFFF",
+    "sort_order": 259
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "1",
+    "color_name": "1",
+    "color_hex": "#FEFFFF",
+    "sort_order": 259
+  },
+  {
+    "brand": "coco",
+    "code": "D06",
+    "color_name": "D06",
+    "color_hex": "#FF995B",
+    "sort_order": 260
+  },
+  {
+    "brand": "manman",
+    "code": "MM-B11",
+    "color_name": "MM-B11",
+    "color_hex": "#FF995B",
+    "sort_order": 259
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-90",
+    "color_name": "PP-90",
+    "color_hex": "#FF995B",
+    "sort_order": 260
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-97",
+    "color_name": "MXW-97",
+    "color_hex": "#FF995B",
+    "sort_order": 260
+  },
+  {
+    "brand": "coco",
+    "code": "K07",
+    "color_name": "K07",
+    "color_hex": "#FFA9AD",
+    "sort_order": 261
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A25",
+    "color_name": "MM-A25",
+    "color_hex": "#FFA9AD",
+    "sort_order": 260
+  },
+  {
+    "brand": "panpan",
+    "code": "154",
+    "color_name": "154",
+    "color_hex": "#FFA9AD",
+    "sort_order": 261
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "154",
+    "color_name": "154",
+    "color_hex": "#FFA9AD",
+    "sort_order": 261
+  },
+  {
+    "brand": "coco",
+    "code": "K17",
+    "color_name": "K17",
+    "color_hex": "#FFB7E7",
+    "sort_order": 262
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A8",
+    "color_name": "MM-A8",
+    "color_hex": "#FFB7E7",
+    "sort_order": 261
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-62",
+    "color_name": "PP-62",
+    "color_hex": "#FFB7E7",
+    "sort_order": 262
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-74",
+    "color_name": "MXW-74",
+    "color_hex": "#FFB7E7",
+    "sort_order": 262
+  },
+  {
+    "brand": "coco",
+    "code": "D04",
+    "color_name": "D04",
+    "color_hex": "#FFC365",
+    "sort_order": 263
+  },
+  {
+    "brand": "manman",
+    "code": "MM-B13",
+    "color_name": "MM-B13",
+    "color_hex": "#FFC365",
+    "sort_order": 262
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-131",
+    "color_name": "PP-131",
+    "color_hex": "#FFC365",
+    "sort_order": 263
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-116",
+    "color_name": "MXW-116",
+    "color_hex": "#FFC365",
+    "sort_order": 263
+  },
+  {
+    "brand": "coco",
+    "code": "Z05",
+    "color_name": "Z05",
+    "color_hex": "#FFC4AA",
+    "sort_order": 264
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E4",
+    "color_name": "MM-E4",
+    "color_hex": "#FFC4AA",
+    "sort_order": 263
+  },
+  {
+    "brand": "panpan",
+    "code": "49",
+    "color_name": "49",
+    "color_hex": "#FFC4AA",
+    "sort_order": 264
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "49",
+    "color_name": "49",
+    "color_hex": "#FFC4AA",
+    "sort_order": 264
+  },
+  {
+    "brand": "coco",
+    "code": "K13",
+    "color_name": "K13",
+    "color_hex": "#FFC7DB",
+    "sort_order": 265
+  },
+  {
+    "brand": "manman",
+    "code": "IC13",
+    "color_name": "IC13",
+    "color_hex": "#FFC7DB",
+    "sort_order": 264
+  },
+  {
+    "brand": "panpan",
+    "code": "210",
+    "color_name": "210",
+    "color_hex": "#FFC7DB",
+    "sort_order": 265
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "210",
+    "color_name": "210",
+    "color_hex": "#FFC7DB",
+    "sort_order": 265
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-E15",
+    "color_name": "COCO-E15",
+    "color_hex": "#FFC830",
+    "sort_order": 266
+  },
+  {
+    "brand": "manman",
+    "code": "MM-G5",
+    "color_name": "MM-G5",
+    "color_hex": "#FFC830",
+    "sort_order": 265
+  },
+  {
+    "brand": "panpan",
+    "code": "290",
+    "color_name": "290",
+    "color_hex": "#FFC830",
+    "sort_order": 266
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-275",
+    "color_name": "MXW-275",
+    "color_hex": "#FFC830",
+    "sort_order": 266
+  },
+  {
+    "brand": "coco",
+    "code": "Z13",
+    "color_name": "Z13",
+    "color_hex": "#FFC890",
+    "sort_order": 267
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E13",
+    "color_name": "MM-E13",
+    "color_hex": "#FFC890",
+    "sort_order": 266
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-113",
+    "color_name": "PP-113",
+    "color_hex": "#FFC890",
+    "sort_order": 267
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-127",
+    "color_name": "MXW-127",
+    "color_hex": "#FFC890",
+    "sort_order": 267
+  },
+  {
+    "brand": "coco",
+    "code": "K05",
+    "color_name": "K05",
+    "color_hex": "#FFD1BA",
+    "sort_order": 268
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E21",
+    "color_name": "MM-E21",
+    "color_hex": "#FFD1BA",
+    "sort_order": 267
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-137",
+    "color_name": "PP-137",
+    "color_hex": "#FFD1BA",
+    "sort_order": 268
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-140",
+    "color_name": "MXW-140",
+    "color_hex": "#FFD1BA",
+    "sort_order": 268
+  },
+  {
+    "brand": "coco",
+    "code": "E09",
+    "color_name": "E09",
+    "color_hex": "#FFD568",
+    "sort_order": 269
+  },
+  {
+    "brand": "manman",
+    "code": "Q6",
+    "color_name": "Q6",
+    "color_hex": "#FFD568",
+    "sort_order": 268
+  },
+  {
+    "brand": "panpan",
+    "code": "242",
+    "color_name": "242",
+    "color_hex": "#FFD568",
+    "sort_order": 269
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "242",
+    "color_name": "242",
+    "color_hex": "#FFD568",
+    "sort_order": 269
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-E14",
+    "color_name": "COCO-E14",
+    "color_hex": "#FFD67D",
+    "sort_order": 270
+  },
+  {
+    "brand": "manman",
+    "code": "MM-G4",
+    "color_name": "MM-G4",
+    "color_hex": "#FFD67D",
+    "sort_order": 269
+  },
+  {
+    "brand": "panpan",
+    "code": "289",
+    "color_name": "289",
+    "color_hex": "#FFD67D",
+    "sort_order": 270
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-274",
+    "color_name": "MXW-274",
+    "color_hex": "#FFD67D",
+    "sort_order": 270
+  },
+  {
+    "brand": "coco",
+    "code": "E08",
+    "color_name": "E08",
+    "color_hex": "#FFDA45",
+    "sort_order": 271
+  },
+  {
+    "brand": "manman",
+    "code": "MM-B10",
+    "color_name": "MM-B10",
+    "color_hex": "#FFDA45",
+    "sort_order": 270
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-88",
+    "color_name": "PP-88",
+    "color_hex": "#FFDA45",
+    "sort_order": 271
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-98",
+    "color_name": "MXW-98",
+    "color_hex": "#FFDA45",
+    "sort_order": 271
+  },
+  {
+    "brand": "coco",
+    "code": "L10",
+    "color_name": "L10",
+    "color_hex": "#FFDB4C",
+    "sort_order": 272
+  },
+  {
+    "brand": "manman",
+    "code": "L2",
+    "color_name": "L2",
+    "color_hex": "#FFDB4C",
+    "sort_order": 271
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-156",
+    "color_name": "PP-156",
+    "color_hex": "#FFDB4C",
+    "sort_order": 272
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-53",
+    "color_name": "MXW-53",
+    "color_hex": "#FFDB4C",
+    "sort_order": 272
+  },
+  {
+    "brand": "coco",
+    "code": "K12",
+    "color_name": "K12",
+    "color_hex": "#FFDBE9",
+    "sort_order": 273
+  },
+  {
+    "brand": "manman",
+    "code": "MM-A13",
+    "color_name": "MM-A13",
+    "color_hex": "#FFDBE9",
+    "sort_order": 272
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-84",
+    "color_name": "PP-84",
+    "color_hex": "#FFDBE9",
+    "sort_order": 273
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-103",
+    "color_name": "MXW-103",
+    "color_hex": "#FFDBE9",
+    "sort_order": 273
+  },
+  {
+    "brand": "coco",
+    "code": "D01",
+    "color_name": "D01",
+    "color_hex": "#FFDD99",
+    "sort_order": 274
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E11",
+    "color_name": "MM-E11",
+    "color_hex": "#FFDD99",
+    "sort_order": 273
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-100",
+    "color_name": "PP-100",
+    "color_hex": "#FFDD99",
+    "sort_order": 274
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-109",
+    "color_name": "MXW-109",
+    "color_hex": "#FFDD99",
+    "sort_order": 274
+  },
+  {
+    "brand": "coco",
+    "code": "Z02",
+    "color_name": "Z02",
+    "color_hex": "#FFE2CE",
+    "sort_order": 275
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E3",
+    "color_name": "MM-E3",
+    "color_hex": "#FFE2CE",
+    "sort_order": 274
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-76",
+    "color_name": "PP-76",
+    "color_hex": "#FFE2CE",
+    "sort_order": 275
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-81",
+    "color_name": "MXW-81",
+    "color_hex": "#FFE2CE",
+    "sort_order": 275
+  },
+  {
+    "brand": "coco",
+    "code": "K11",
+    "color_name": "K11",
+    "color_hex": "#FFE2EA",
+    "sort_order": 276
+  },
+  {
+    "brand": "manman",
+    "code": "IC7",
+    "color_name": "IC7",
+    "color_hex": "#FFE2EA",
+    "sort_order": 275
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-220",
+    "color_name": "PP-220",
+    "color_hex": "#FFE2EA",
+    "sort_order": 276
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-205",
+    "color_name": "MXW-205",
+    "color_hex": "#FFE2EA",
+    "sort_order": 276
+  },
+  {
+    "brand": "coco",
+    "code": "E06",
+    "color_name": "E06",
+    "color_hex": "#FFE36E",
+    "sort_order": 277
+  },
+  {
+    "brand": "manman",
+    "code": "IC9",
+    "color_name": "IC9",
+    "color_hex": "#FFE36E",
+    "sort_order": 276
+  },
+  {
+    "brand": "panpan",
+    "code": "213",
+    "color_name": "213",
+    "color_hex": "#FFE36E",
+    "sort_order": 277
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "213",
+    "color_name": "213",
+    "color_hex": "#FFE36E",
+    "sort_order": 277
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-E10",
+    "color_name": "COCO-E10",
+    "color_hex": "#FFE395",
+    "sort_order": 278
+  },
+  {
+    "brand": "manman",
+    "code": "MM-R07",
+    "color_name": "MM-R07",
+    "color_hex": "#FFE395",
+    "sort_order": 277
+  },
+  {
+    "brand": "panpan",
+    "code": "276",
+    "color_name": "276",
+    "color_hex": "#FFE395",
+    "sort_order": 278
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-261",
+    "color_name": "MXW-261",
+    "color_hex": "#FFE395",
+    "sort_order": 278
+  },
+  {
+    "brand": "coco",
+    "code": "Z01",
+    "color_name": "Z01",
+    "color_hex": "#FFE4CC",
+    "sort_order": 279
+  },
+  {
+    "brand": "manman",
+    "code": "DH5",
+    "color_name": "DH5",
+    "color_hex": "#FFE4CC",
+    "sort_order": 278
+  },
+  {
+    "brand": "panpan",
+    "code": "203",
+    "color_name": "203",
+    "color_hex": "#FFE4CC",
+    "sort_order": 279
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "203",
+    "color_name": "203",
+    "color_hex": "#FFE4CC",
+    "sort_order": 279
+  },
+  {
+    "brand": "coco",
+    "code": "W2",
+    "color_name": "W2",
+    "color_hex": "#FFEBFA",
+    "sort_order": 280
+  },
+  {
+    "brand": "manman",
+    "code": "W2",
+    "color_name": "W2",
+    "color_hex": "#FFEBFA",
+    "sort_order": 279
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-110",
+    "color_name": "PP-110",
+    "color_hex": "#FFEBFA",
+    "sort_order": 280
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "W2",
+    "color_name": "W2",
+    "color_hex": "#FFEBFA",
+    "sort_order": 280
+  },
+  {
+    "brand": "coco",
+    "code": "L11",
+    "color_name": "L11",
+    "color_hex": "#FFEBFB",
+    "sort_order": 281
+  },
+  {
+    "brand": "manman",
+    "code": "T6",
+    "color_name": "T6",
+    "color_hex": "#FFEBFB",
+    "sort_order": 280
+  },
+  {
+    "brand": "panpan",
+    "code": "151",
+    "color_name": "151",
+    "color_hex": "#FFEBFB",
+    "sort_order": 281
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "151",
+    "color_name": "151",
+    "color_hex": "#FFEBFB",
+    "sort_order": 281
+  },
+  {
+    "brand": "coco",
+    "code": "E04",
+    "color_name": "E04",
+    "color_hex": "#FFF365",
+    "sort_order": 282
+  },
+  {
+    "brand": "manman",
+    "code": "MM-B15",
+    "color_name": "MM-B15",
+    "color_hex": "#FFF365",
+    "sort_order": 281
+  },
+  {
+    "brand": "panpan",
+    "code": "150",
+    "color_name": "150",
+    "color_hex": "#FFF365",
+    "sort_order": 282
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "150",
+    "color_name": "150",
+    "color_hex": "#FFF365",
+    "sort_order": 282
+  },
+  {
+    "brand": "coco",
+    "code": "K01",
+    "color_name": "K01",
+    "color_hex": "#FFF3EB",
+    "sort_order": 283
+  },
+  {
+    "brand": "manman",
+    "code": "IC2",
+    "color_name": "IC2",
+    "color_hex": "#FFF3EB",
+    "sort_order": 282
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-221",
+    "color_name": "PP-221",
+    "color_hex": "#FFF3EB",
+    "sort_order": 283
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-206",
+    "color_name": "MXW-206",
+    "color_hex": "#FFF3EB",
+    "sort_order": 283
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-A04",
+    "color_name": "COCO-A04",
+    "color_hex": "#FFF5ED",
+    "sort_order": 284
+  },
+  {
+    "brand": "manman",
+    "code": "MM-E18",
+    "color_name": "MM-E18",
+    "color_hex": "#FFF5ED",
+    "sort_order": 283
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-132",
+    "color_name": "PP-132",
+    "color_hex": "#FFF5ED",
+    "sort_order": 284
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-144",
+    "color_name": "MXW-144",
+    "color_hex": "#FFF5ED",
+    "sort_order": 284
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-A11",
+    "color_name": "COCO-A11",
+    "color_hex": "#FFFBE1",
+    "sort_order": 285
+  },
+  {
+    "brand": "manman",
+    "code": "MM-G1",
+    "color_name": "MM-G1",
+    "color_hex": "#FFFBE1",
+    "sort_order": 284
+  },
+  {
+    "brand": "panpan",
+    "code": "291",
+    "color_name": "291",
+    "color_hex": "#FFFBE1",
+    "sort_order": 285
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-276",
+    "color_name": "MXW-276",
+    "color_hex": "#FFFBE1",
+    "sort_order": 285
+  },
+  {
+    "brand": "coco",
+    "code": "COCO-A03",
+    "color_name": "COCO-A03",
+    "color_hex": "#FFFDF0",
+    "sort_order": 286
+  },
+  {
+    "brand": "manman",
+    "code": "IC1",
+    "color_name": "IC1",
+    "color_hex": "#FFFDF0",
+    "sort_order": 285
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-219",
+    "color_name": "PP-219",
+    "color_hex": "#FFFDF0",
+    "sort_order": 286
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-204",
+    "color_name": "MXW-204",
+    "color_hex": "#FFFDF0",
+    "sort_order": 286
+  },
+  {
+    "brand": "coco",
+    "code": "M19",
+    "color_name": "M19",
+    "color_hex": "#FFFEEC",
+    "sort_order": 287
+  },
+  {
+    "brand": "manman",
+    "code": "MM-P10",
+    "color_name": "MM-P10",
+    "color_hex": "#FFFEEC",
+    "sort_order": 286
+  },
+  {
+    "brand": "panpan",
+    "code": "186",
+    "color_name": "186",
+    "color_hex": "#FFFEEC",
+    "sort_order": 287
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "186",
+    "color_name": "186",
+    "color_hex": "#FFFEEC",
+    "sort_order": 287
+  },
+  {
+    "brand": "coco",
+    "code": "W1",
+    "color_name": "W1",
+    "color_hex": "#FFFF00",
+    "sort_order": 288
+  },
+  {
+    "brand": "manman",
+    "code": "W1",
+    "color_name": "W1",
+    "color_hex": "#FFFF00",
+    "sort_order": 287
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-107",
+    "color_name": "PP-107",
+    "color_hex": "#FFFF00",
+    "sort_order": 288
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "W1",
+    "color_name": "W1",
+    "color_hex": "#FFFF00",
+    "sort_order": 288
+  },
+  {
+    "brand": "coco",
+    "code": "E03",
+    "color_name": "E03",
+    "color_hex": "#FFFF9F",
+    "sort_order": 289
+  },
+  {
+    "brand": "manman",
+    "code": "IC04",
+    "color_name": "IC04",
+    "color_hex": "#FFFF9F",
+    "sort_order": 288
+  },
+  {
+    "brand": "panpan",
+    "code": "216",
+    "color_name": "216",
+    "color_hex": "#FFFF9F",
+    "sort_order": 289
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "216",
+    "color_name": "216",
+    "color_hex": "#FFFF9F",
+    "sort_order": 289
+  },
+  {
+    "brand": "coco",
+    "code": "E01",
+    "color_name": "E01",
+    "color_hex": "#FFFFD5",
+    "sort_order": 290
+  },
+  {
+    "brand": "manman",
+    "code": "MM-B1",
+    "color_name": "MM-B1",
+    "color_hex": "#FFFFD5",
+    "sort_order": 289
+  },
+  {
+    "brand": "panpan",
+    "code": "2",
+    "color_name": "2",
+    "color_hex": "#FFFFD5",
+    "sort_order": 290
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "2",
+    "color_name": "2",
+    "color_hex": "#FFFFD5",
+    "sort_order": 290
+  },
+  {
+    "brand": "coco",
+    "code": "L14",
+    "color_name": "L14",
+    "color_hex": "#FFFFFF",
+    "sort_order": 291
+  },
+  {
+    "brand": "manman",
+    "code": "L6",
+    "color_name": "L6",
+    "color_hex": "#FFFFFF",
+    "sort_order": 290
+  },
+  {
+    "brand": "panpan",
+    "code": "PP-155",
+    "color_name": "PP-155",
+    "color_hex": "#FFFFFF",
+    "sort_order": 291
+  },
+  {
+    "brand": "mixiaowo",
+    "code": "MXW-51",
+    "color_name": "MXW-51",
+    "color_hex": "#FFFFFF",
+    "sort_order": 291
   }
 ]
