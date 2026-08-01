@@ -31,6 +31,7 @@ export interface ColorDto {
   code: string;
   name: string;
   hex: string;
+  brand?: string | null;
 }
 
 export interface JobDetail {

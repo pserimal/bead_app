@@ -256,14 +256,17 @@ class ApiContractTest {
 
     @Test
     fun `颜色库列表与单色查询`() {
-        mockMvc.perform(get("/api/v1/colors").param("q", "H1"))
+        // 017 决议：官方颜色库（beadcolors 1950 码）——Hama 官方 H01=White #E5ECF1
+        mockMvc.perform(get("/api/v1/colors").param("q", "H01"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.items[0].code").value("H1"))
-            .andExpect(jsonPath("$.items[0].hex").value("FFFFFF"))
+            .andExpect(jsonPath("$.items[0].code").value("H01"))
+            .andExpect(jsonPath("$.items[0].hex").value("E5ECF1"))
+            .andExpect(jsonPath("$.items[0].brand").value("hama"))
 
-        mockMvc.perform(get("/api/v1/colors/H1"))
+        mockMvc.perform(get("/api/v1/colors/H01"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.code").value("H1"))
+            .andExpect(jsonPath("$.code").value("H01"))
+            .andExpect(jsonPath("$.brand").value("hama"))
 
         mockMvc.perform(get("/api/v1/colors/NOPE"))
             .andExpect(status().isNotFound)

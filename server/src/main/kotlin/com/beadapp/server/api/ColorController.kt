@@ -28,7 +28,7 @@ class ColorController(
         val p = if (q.isNullOrBlank()) colorRepo.findAll(pageable)
         else colorRepo.findByCodeStartsWithIgnoreCase(q.trim().uppercase(), pageable)
         return PageResponse(
-            items = p.content.map { ColorDto(it.code, it.name, it.hex) },
+            items = p.content.map { ColorDto(it.code, it.name, it.hex, it.brand) },
             page = page,
             pageSize = pageSize,
             total = p.totalElements,
@@ -42,6 +42,6 @@ class ColorController(
         val c = colorRepo.findByCodeIgnoreCase(code.trim().uppercase()) ?: throw ApiException(
             HttpStatus.NOT_FOUND, "COLOR_NOT_FOUND", "颜色不存在: $code"
         )
-        return ColorDto(c.code, c.name, c.hex)
+        return ColorDto(c.code, c.name, c.hex, c.brand)
     }
 }

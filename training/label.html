@@ -136,6 +136,73 @@ body{
 }
 .btn-w:hover{background:#FDE8E6;border-color:rgba(220,69,56,.3)}
 
+/* Blue / info */
+.btn-b{
+  background:var(--blue-bg);color:var(--blue);
+  border:1px solid rgba(61,114,216,.2);
+}
+.btn-b:hover{background:#E0EAFB;border-color:rgba(61,114,216,.4)}
+.btn-b:active{background:#D4E2F8}
+
+/* ── Crop view ── */
+#crop-view{
+  position:fixed;inset:0;z-index:100;
+  background:var(--surface);  /* 完全不透明，盖住整个页面（含左侧栏） */
+  display:flex;flex-direction:column;
+}
+#crop-view[hidden]{display:none}
+#crop-toolbar{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 14px;background:var(--card);
+  border-bottom:1px solid var(--border);
+  box-shadow:var(--shadow-sm);flex-wrap:wrap;
+}
+.crop-title{font:600 14px var(--font-body);color:var(--text)}
+.crop-ctrl{display:flex;align-items:center;gap:8px}
+.crop-ctrl label{display:flex;align-items:center;gap:4px;font:400 11px var(--font-body);color:var(--text-muted)}
+.crop-ctrl input{font:500 12px var(--font-mono);padding:4px 6px;border:1px solid var(--border-strong);border-radius:4px;background:var(--card)}
+#crop-stage{
+  flex:1;position:relative;overflow:hidden;
+  background:#1E1D19;
+  cursor:default;
+}
+#crop-stage.panning{cursor:grabbing}
+#crop-img{
+  position:absolute;left:0;top:0;
+  transform-origin:0 0;
+  -webkit-user-select:none;user-select:none;
+  pointer-events:none;
+}
+#crop-canvas{
+  position:absolute;left:0;top:0;
+  pointer-events:none;
+}
+#crop-tip{
+  position:absolute;left:12px;bottom:10px;
+  color:rgba(255,255,255,.7);font:400 11px var(--font-body);
+  background:rgba(0,0,0,.5);padding:4px 10px;border-radius:4px;
+  pointer-events:none;
+}
+#crop-pos{
+  min-width:130px;text-align:right;
+}
+
+/* ── 恢复上次目录遮罩 ── */
+#resume-overlay{
+  position:fixed;inset:0;z-index:200;
+  background:rgba(30,29,25,.35);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+}
+#resume-overlay[hidden]{display:none}
+#resume-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:24px 32px;
+  box-shadow:var(--shadow-lg);text-align:center;
+}
+.resume-title{font:600 16px var(--font-body);color:var(--text);margin-bottom:6px}
+.resume-sub{font:400 12px var(--font-body);color:var(--text-muted)}
+
 /* ── Stats panel ── */
 .stats{
   display:grid;grid-template-columns:1fr 1fr;gap:1px;
@@ -308,6 +375,7 @@ body{
   background:rgba(249,248,244,.8);
   backdrop-filter:blur(6px);
 }
+#progress[hidden]{display:none}
 #progress-card{
   background:var(--card);border:1px solid var(--border);
   border-radius:var(--radius-lg);padding:28px 36px;min-width:320px;
@@ -410,6 +478,12 @@ body{
     </div>
 
     <div class="group">
+      <div class="group-label">切割图纸</div>
+      <button class="btn btn-b" onclick="cropOpenImage()">打开图纸裁剪</button>
+      <div style="font:400 10.5px var(--font-body);color:var(--text-faint);margin-top:4px">整张拼豆图纸 → 框选棋盘 → 均分切割<br>支持 JPG/PNG，最大约 30MB</div>
+    </div>
+
+    <div class="group">
       <div class="group-label">排序</div>
       <button class="btn btn-g" onclick="reinitSort()">重新计算排序</button>
     </div>
@@ -438,6 +512,38 @@ body{
   <div id="grid-wrap"><div id="grid"></div></div>
 </div>
 <div id="selbox"></div>
+
+<!-- 恢复上次目录遮罩：页面加载时权限为 prompt，点击授权后自动进入 -->
+<div id="resume-overlay" hidden>
+  <div id="resume-card">
+    <div class="resume-title">↻ 恢复上次目录</div>
+    <div class="resume-sub" id="resume-sub">点击任意位置，授权后自动打开上次标注目录</div>
+  </div>
+</div>
+
+<!-- ── 切割视图 (crop mode overlay) ── -->
+<div id="crop-view" hidden>
+  <div id="crop-toolbar">
+    <span class="crop-title">裁剪图纸</span>
+    <div class="crop-ctrl">
+      <label>行数 <input id="crop-rows" type="number" min="1" value="29" style="width:52px"></label>
+      <label>列数 <input id="crop-cols" type="number" min="1" value="29" style="width:52px"></label>
+      <button class="btn btn-b" style="width:auto;padding:5px 10px" onclick="cropSwapRC()" title="行/列互换">⇄ 互换</button>
+      <button class="btn btn-g" style="width:auto;padding:5px 10px" onclick="cropResetLines()">重置网格</button>
+    </div>
+    <div class="crop-ctrl" style="margin-left:auto">
+      <span id="crop-pos" style="font:500 11px var(--font-mono);color:var(--text-muted)"></span>
+      <button class="btn btn-r" style="width:auto;padding:5px 14px" onclick="cropCut()">✂ 切割</button>
+      <button class="btn btn-g" style="width:auto;padding:5px 14px" onclick="cropClose()">取消</button>
+    </div>
+  </div>
+  <div id="crop-stage">
+    <img id="crop-img" draggable="false">
+    <canvas id="crop-canvas"></canvas>
+    <div id="crop-tip">拖动平移图片 · 滚轮缩放 · 拖四角手柄调框 · 方向键微调 · Shift+拖线微调 · Enter 切割</div>
+  </div>
+</div>
+<div id="selbox2"></div>
 <div id="progress" hidden>
   <div id="progress-card">
     <div id="progress-title">处理中</div>
@@ -487,8 +593,8 @@ function _codeHue(code){
 }
 
 function _idb(){return new Promise(function(ok,no){var r=indexedDB.open('bl',2);r.onupgradeneeded=function(e){var db=r.result;if(!db.objectStoreNames.contains('d'))db.createObjectStore('d');if(!db.objectStoreNames.contains('m'))db.createObjectStore('m')};r.onsuccess=function(){ok(r.result)};r.onerror=function(){no(r.error)}})}
-async function _saveDir(h){var d=await _idb();var t=d.transaction('d','readwrite');t.objectStore('d').put(h,'last');await new Promise(function(r){t.oncomplete=r});d.close()}
-async function _loadDir(){try{var d=await _idb();var t=d.transaction('d','readonly');var h=await new Promise(function(r){var q=t.objectStore('d').get('last');q.onsuccess=function(){r(q.result)};q.onerror=function(){r(null)}});d.close();return h||null}catch(e){return null}}
+async function _saveDir(h,key){key=key||'last';var d=await _idb();var t=d.transaction('d','readwrite');t.objectStore('d').put(h,key);await new Promise(function(r){t.oncomplete=r});d.close()}
+async function _loadDir(key){key=key||'last';try{var d=await _idb();var t=d.transaction('d','readonly');var h=await new Promise(function(r){var q=t.objectStore('d').get(key);q.onsuccess=function(){r(q.result)};q.onerror=function(){r(null)}});d.close();return h||null}catch(e){return null}}
 async function _saveRecent(name){
   var d=await _idb();var t=d.transaction('m','readwrite');
   var rec=await new Promise(function(r){var q=t.objectStore('m').get('recent');q.onsuccess=function(){r(q.result||[])};q.onerror=function(){r([])}});
@@ -552,9 +658,9 @@ async function reinitSort(){
     }
     done++;_progUpdate(done,_cells.length);
   }
-  await loadCells();
+  await loadCells(true);
 }
-async function loadCells(){
+async function loadCells(forceCompute){
   _cells=[];_sel.clear();_last=-1;$('grid').innerHTML='';$('empty').style.display='none';
   $('dir-label').innerHTML=_dir.name+' <span class="count">读取中…</span>';
   try{
@@ -566,7 +672,7 @@ async function loadCells(){
     var recent=await _loadRecent();
     var isFirstOpen=!recent.some(function(r){return r.name===_dir.name});
     files.forEach(function(f){if(!SORT_RE.test(f.name))needCompute++});
-    if(!isFirstOpen)needCompute=0;
+    if(!isFirstOpen&&!forceCompute)needCompute=0;
     _progShow('读取目录',files.length);
     var done=0;
     var cells=[];
@@ -684,14 +790,13 @@ document.addEventListener('mouseup',function(e){
 
 var _lastSel=null;
 function updSelUI(){
-  var prev=_lastSel||new Set();
-  var cur=_sel;
+  /* 用 DOM 当前 class 判断，而非 _lastSel（_lastSel=null 时会导致清除失效） */
   document.querySelectorAll('.cell').forEach(function(w){
     var i=+w.dataset.i;
-    var was=prev.has(i),now=cur.has(i);
-    if(was!==now)w.classList.toggle('sel',now);
+    var now=_sel.has(i);
+    if(w.classList.contains('sel')!==now)w.classList.toggle('sel',now);
   });
-  _lastSel=new Set(cur);
+  _lastSel=new Set(_sel);
   updStats();
 }
 function clearSel(){_sel.clear();_last=-1;_lastSel=null;updSelUI()}
@@ -700,7 +805,8 @@ function onFilter(){
   var cf=$('cmode')?$('cmode').value:'all';
   document.querySelectorAll('.cell').forEach(function(w){var c=_cells[+w.dataset.i];
     var show=true;
-    if(cf!=='all'&&c.c!==cf)show=false;
+    if(cf==='empty'){if(c.c!==_EMPTY)show=false}
+    else if(cf!=='all'&&c.c!==cf)show=false;
     if(show){
       if(m==='unlabeled'&&c.c)show=false;
       else if(m==='labeled'&&!c.c)show=false;
@@ -713,7 +819,8 @@ function selFiltered(){
   var cf=$('cmode')?$('cmode').value:'all';
   _sel.clear();
   _cells.forEach(function(c,i){
-    if(cf!=='all'&&c.c!==cf)return;
+    if(cf==='empty'){if(c.c!==_EMPTY)return}
+    else if(cf!=='all'&&c.c!==cf)return;
     if(m==='labeled'&&c.c)_sel.add(i);
     if(m==='unlabeled'&&!c.c)_sel.add(i);
     if(m==='empty'&&c.c===_EMPTY)_sel.add(i);
@@ -732,20 +839,30 @@ function updateCodeFilter(){
     return(parseInt(a.slice(1))||0)-(parseInt(b.slice(1))||0);
   });
   sel.innerHTML='<option value="all">全部编码 ('+_cnt(function(c){return c.c&&c.c!==_EMPTY})+')</option>';
+  sel.innerHTML+='<option value="empty">空白格子 ('+_cnt(function(c){return c.c===_EMPTY})+')</option>';
   codes.forEach(function(code){sel.innerHTML+='<option value="'+code+'">'+code+' ('+map[code]+')</option>'});
   /* Restore previous selection if still valid */
-  if(cur&&(cur==='all'||codes.indexOf(cur)>=0))sel.value=cur;else sel.value='all';
+  if(cur&&(cur==='all'||cur==='empty'||codes.indexOf(cur)>=0))sel.value=cur;else sel.value='all';
   $('code-count').textContent=codes.length+' 种编码';
 }
 
 /* Try stored handle first (preserves user gesture), fall back to fresh handle */
 async function _safeMove(c, nm){
-  try{ c.h=await c.h.move(nm); return; }
-  catch(e){
-    if(e.name==='InvalidModificationError'||e.name==='NotFoundError'){
-      c.h=await (await _dir.getFileHandle(_diskName(c))).move(nm); return;
+  var attempts=0;
+  while(attempts<3){
+    attempts++;
+    try{
+      /* 每次从目录重新获取句柄，避免缓存句柄失效（Chrome move 后可能 invalidate） */
+      var fresh=await _dir.getFileHandle(_diskName(c));
+      c.h=await fresh.move(nm); return;
+    }catch(e){
+      /* 失败：用缓存的句柄再试一次 */
+      try{ c.h=await c.h.move(nm); return; }
+      catch(e2){
+        if(attempts>=3)throw e2;
+        await new Promise(function(r){setTimeout(r,50)});
+      }
     }
-    throw e;
   }
 }
 
@@ -753,10 +870,14 @@ async function _safeMove(c, nm){
    where refresh failed — they keep their stored handle as fallback). */
 async function _refreshHandles(indices){
   if(!indices.length)return indices;
-  for(var k=0;k<indices.length;k++){
-    var c=_cells[indices[k]];
-    try{ c.h=await _dir.getFileHandle(_diskName(c)); }
-    catch(e){/* keep stored handle as fallback */}
+  /* 并发刷新句柄，加快批量操作 */
+  var CH=30;
+  for(var b=0;b<indices.length;b+=CH){
+    var batch=indices.slice(b,b+CH);
+    await Promise.all(batch.map(function(idx){
+      var c=_cells[idx];
+      return _dir.getFileHandle(_diskName(c)).then(function(h){c.h=h}).catch(function(){});
+    }));
   }
   return indices;
 }
@@ -770,29 +891,75 @@ async function _doLabel(code){
   var used=new Set();
   _cells.forEach(function(c){if(c.c===code)used.add(_diskName(c));});
   var nextIdx=used.size;
-  /* Refresh all selected handles before batch */
-  indices=await _refreshHandles(indices);
-  _progShow('标注 '+code,indices.length);
-  var done=0,failed=0;
-  for(var _k=0;_k<indices.length;_k++){var idx=indices[_k];var c=_cells[idx];
+  /* 预生成所有目标文件名（避免并发时序号冲突） */
+  var plans=[];
+  for(var _k=0;_k<indices.length;_k++){
+    var idx=indices[_k];var c=_cells[idx];
     if(c.r<0&&c._o){var pm=c._o.match(/^r(\d{3})_c(\d{3})\.png$/);if(pm){c.r=+pm[1];c.l=+pm[2]}}
     var sortTag=(c.hue!==null)?'_h'+Math.round(c.hue)+'_v'+c.bri:'';
     var nm=code+'_'+String(nextIdx).padStart(4,'0')+'_marked'+sortTag+'.png';
     var safety=0;
     while(used.has(nm)&&safety++<10000){nextIdx++;nm=code+'_'+String(nextIdx).padStart(4,'0')+'_marked'+sortTag+'.png';}
-    try{
-      if(c.n!==nm){
-        if(!c._o&&c.r<0)c._o=c.n;
-        /* Handle was refreshed upfront — direct move should succeed */
-        try{ c.h=await c.h.move(nm); }
-        catch(e2){
-          try{ c.h=await (await _dir.getFileHandle(_diskName(c))).move(nm); }
-          catch(e3){ console.error('both move attempts failed',e2.message,e3.message,c.n); throw e3; }
+    used.add(nm);nextIdx++;
+    if(c.n!==nm){
+      if(!c._o&&c.r<0)c._o=c.n;
+      plans.push({idx:idx,nm:nm});
+    }else{
+      c.c=code;  /* 已同名，只需更新状态 */
+    }
+  }
+  if(!plans.length){_refreshOV();updStats();onFilter();return}
+  _progShow('标注 '+code,plans.length);
+  var done=0,failed=0;
+  var CONCURRENCY=15;  /* 并发移动数（降低避免句柄竞争） */
+  var serial=false;  /* 失败过多时降级为串行 */
+  for(var b=0;b<plans.length;b+=CONCURRENCY){
+    var batch=plans.slice(b,b+CONCURRENCY);
+    var results;
+    if(serial){
+      /* 串行模式：逐个移动 */
+      results=[];
+      for(var si=0;si<batch.length;si++){
+        var pS=batch[si];
+        try{
+          await _safeMove(_cells[pS.idx],pS.nm);
+          var cellS=_cells[pS.idx];cellS.c=code;cellS.n=_baseName(pS.nm);
+          results.push({status:'fulfilled'});
+        }catch(eS){
+          results.push({status:'rejected',reason:eS});
         }
+        _progUpdate(done,plans.length);
+        await new Promise(function(r){setTimeout(r,0)});
       }
-      c.n=_baseName(nm);c.c=code;used.add(nm);nextIdx++
-    }catch(e){console.error('label move failed',e,c.n);failed++}
-    done++;_progUpdate(done,indices.length);
+    }else{
+      results=await Promise.allSettled(batch.map(function(p){
+        return _safeMove(_cells[p.idx],p.nm).then(function(){
+          var cell=_cells[p.idx];cell.c=code;cell.n=_baseName(p.nm);
+        });
+      }));
+    }
+    /* 失败的项逐个串行重试（避免再次并发冲突） */
+    var batchFailed=0;
+    for(var ri=0;ri<results.length;ri++){
+      if(results[ri].status==='fulfilled'){done++;continue}
+      batchFailed++;
+      var p2=batch[ri];
+      try{
+        await _safeMove(_cells[p2.idx],p2.nm);
+        var cell2=_cells[p2.idx];cell2.c=code;cell2.n=_baseName(p2.nm);
+        done++;
+      }catch(e2){
+        failed++;console.error('label move retry failed',e2);
+      }
+    }
+    /* 若整批大部分失败，降级串行（浏览器句柄限制） */
+    if(!serial&&batch.length>3&&batchFailed>=batch.length*0.7){
+      serial=true;
+      console.warn('标注并发失败率高，降级串行模式');
+    }
+    _progUpdate(done,plans.length);
+    /* 让出主线程，避免 UI 卡死 */
+    await new Promise(function(r){setTimeout(r,0)});
   }
   _progHide();
   if(failed)alert('标注完成: '+done+' 个选中, '+failed+' 个失败\n(文件可能已被移动, 建议刷新页面后重试)');
@@ -813,39 +980,66 @@ async function unlabelSel(){
   var indices=[];_cells.forEach(function(c,i){if(_sel.has(i))indices.push(i)});
   indices=await _refreshHandles(indices);
   if(!indices.length){_progHide();alert('所选文件均已失效, 请刷新页面后重试');return}
-  _progShow('取消标注',indices.length);
-  var done=0;var uid=uidBase;
-  for(var _k=0;_k<indices.length;_k++){var idx=indices[_k];var c=_cells[idx];if(!c.c){done++;continue}
+  /* 预生成目标名 */
+  var plans=[];var uid=uidBase;
+  for(var _k=0;_k<indices.length;_k++){var idx=indices[_k];var c=_cells[idx];
+    if(!c.c){continue}
     var sortTag=(c.hue!==null)?'_h'+Math.round(c.hue)+'_v'+c.bri:'';
     var nm;if(c.r>=0)nm='r'+String(c.r).padStart(3,'0')+'_c'+String(c.l).padStart(3,'0')+sortTag+'.png';
     else if(c._o&&/^r\d{3}_c\d{3}\.png$/.test(c._o))nm=c._o;
     else{nm='u_'+String(uid).padStart(4,'0')+sortTag+'.png';uid++}
-    try{
-      /* Handle was refreshed upfront — direct move first */
-      try{ c.h=await c.h.move(nm); }
-      catch(e2){ c.h=await (await _dir.getFileHandle(_diskName(c))).move(nm); }
-      c.n=_baseName(nm);c.c=null
-    }catch(e){console.error('move failed',e,c.n)}
-    done++;_progUpdate(done,indices.length);
+    plans.push({idx:idx,nm:nm});
+  }
+  if(!plans.length){_progHide();return}
+  _progShow('取消标注',plans.length);
+  var done=0,failed=0,CONCURRENCY=15;
+  for(var b=0;b<plans.length;b+=CONCURRENCY){
+    var batch=plans.slice(b,b+CONCURRENCY);
+    var results=await Promise.allSettled(batch.map(function(p){
+      return _safeMove(_cells[p.idx],p.nm).then(function(){
+        var cell=_cells[p.idx];cell.n=_baseName(p.nm);cell.c=null;
+      });
+    }));
+    for(var ri=0;ri<results.length;ri++){
+      if(results[ri].status==='fulfilled'){done++;continue}
+      var p2=batch[ri];
+      try{
+        await _safeMove(_cells[p2.idx],p2.nm);
+        var cell2=_cells[p2.idx];cell2.n=_baseName(p2.nm);cell2.c=null;
+        done++;
+      }catch(e2){failed++;console.error('unlabel retry failed',e2)}
+    }
+    _progUpdate(done,plans.length);
+    await new Promise(function(r){setTimeout(r,0)});
   }
   _progHide();
+  if(failed)console.warn('取消标注失败: '+failed);
   _refreshOV();updStats();onFilter();
 }
 async function unlabelAll(){
   if(!_dir)return;
   var ld=_cells.filter(function(c){return c.c});if(!ld.length)return;
   if(!confirm('确认清空全部 '+ld.length+' 个标注?'))return;
+  var plans=[];
   for(var i=0;i<ld.length;i++){var c=ld[i];
     var sortTag=(c.hue!==null)?'_h'+Math.round(c.hue)+'_v'+c.bri:'';
     var nm;if(c.r>=0)nm='r'+String(c.r).padStart(3,'0')+'_c'+String(c.l).padStart(3,'0')+sortTag+'.png';
     else if(c._o&&/^r\d{3}_c\d{3}\.png$/.test(c._o))nm=c._o;
     else{nm='u_'+String(Math.floor(Math.random()*9999)).padStart(4,'0')+sortTag+'.png'}
-    try{
-      try{ c.h=await c.h.move(nm); }
-      catch(e2){ c.h=await (await _dir.getFileHandle(_diskName(c))).move(nm); }
-      c.n=_baseName(nm);c.c=null
-    }catch(e){console.error('move failed',e,c.n)}
+    plans.push({c:c,nm:nm});
   }
+  _progShow('清空标注',plans.length);
+  var done=0,CONCURRENCY=15;
+  for(var b=0;b<plans.length;b+=CONCURRENCY){
+    var batch=plans.slice(b,b+CONCURRENCY);
+    var results=await Promise.allSettled(batch.map(function(p){
+      return _safeMove(p.c,p.nm).then(function(){p.c.n=_baseName(p.nm);p.c.c=null});
+    }));
+    results.forEach(function(r){if(r.status==='fulfilled')done++;else console.error('move failed',r.reason)});
+    _progUpdate(done,plans.length);
+    await new Promise(function(r){setTimeout(r,0)});
+  }
+  _progHide();
   _refreshOV();updStats();onFilter();
 }
 
@@ -882,6 +1076,339 @@ async function exportLabels(){
   if(!failed)alert(msg);else console.warn(msg);
 }
 
+/* ═══════════════════════════════════════════════
+   ── 切割模式 (crop) ──
+   流程: 打开图纸 → 拖动/缩放图片 → 手柄调框 → 微调网格线 → 切割
+   核心交互:
+   - 任意处拖动 = 平移图片 (取景框模型，框固定)
+   - 滚轮 = 缩放图片
+   - 拖蓝色手柄 = 调整裁剪框大小
+   - Shift+拖网格线 = 微调网格位置
+   ═══════════════════════════════════════════════ */
+var _CROP={img:null,nw:0,nh:0,scale:1,offX:0,offY:0,      /* 图像与缩放 */
+           bx:0,by:0,bw:0,bh:0,                          /* 裁剪框(stage局部) */
+           rows:29,cols:29,
+           hLines:[],vLines:[],                          /* 网格线(框内局部) */
+           drag:null,pan:null,lineIdx:-1,lineIsH:false,
+           url:null};
+
+function cropOpenImage(){
+  if(!window.showOpenFilePicker){alert('请用 Chrome/Edge');return}
+  window.showOpenFilePicker({types:[{description:'图纸图片',accept:{'image/*':['.jpg','.jpeg','.png']}}]})
+  .then(function(hs){return hs[0].getFile().then(function(f){return cropLoadFile(f)})})
+  .catch(function(e){if(e.name!=='AbortError')alert('打开图片失败: '+e.message)});
+}
+function cropLoadFile(f){
+  var url=URL.createObjectURL(f);
+  var img=new Image();
+  img.onload=function(){
+    _CROP.drag=null;_CROP.pan=null;_CROP.lineIdx=-1;_CROP.url=null;
+    $('crop-stage').classList.remove('panning');
+    _CROP.img=img;_CROP.nw=img.naturalWidth;_CROP.nh=img.naturalHeight;
+    $('crop-view').hidden=false;   /* 先显示再量尺寸 */
+    _CROP.rows=parseInt($('crop-rows').value)||29;
+    _CROP.cols=parseInt($('crop-cols').value)||29;
+    /* 框用图片坐标: 默认与图片完全重合（整个图片） */
+    _CROP.bx=0;_CROP.by=0;
+    _CROP.bw=_CROP.nw;_CROP.bh=_CROP.nh;
+    cropLayout();cropGenLines();cropDraw();
+    _CROP.url=url;
+  };
+  img.onerror=function(){alert('图片加载失败');URL.revokeObjectURL(url)};
+  img.src=url;
+}
+function cropLayout(){
+  var stage=$('crop-stage');
+  var sw=stage.clientWidth,sh=stage.clientHeight;
+  var fit=Math.min(sw/_CROP.nw,sh/_CROP.nh,1.5);
+  _CROP.scale=fit;_CROP.offX=(sw-_CROP.nw*fit)/2;_CROP.offY=(sh-_CROP.nh*fit)/2;
+  var im=$('crop-img');
+  im.style.width=_CROP.nw*fit+'px';im.style.height=_CROP.nh*fit+'px';
+  im.style.left=_CROP.offX+'px';im.style.top=_CROP.offY+'px';
+  if(_CROP.url)im.src=_CROP.url;else im.src=_CROP.img.src;
+  var cv=$('crop-canvas');cv.width=sw;cv.height=sh;
+}
+function cropGenLines(){
+  /* 网格线在框内等距（图片坐标，相对框左上 bx/by） */
+  _CROP.hLines=[];_CROP.vLines=[];
+  for(var r=1;r<_CROP.rows;r++)_CROP.hLines.push(Math.round(_CROP.bh*r/_CROP.rows));
+  for(var c=1;c<_CROP.cols;c++)_CROP.vLines.push(Math.round(_CROP.bw*c/_CROP.cols));
+}
+function cropResetLines(){cropGenLines();cropDraw()}
+function cropSwapRC(){
+  var t=_CROP.rows;_CROP.rows=_CROP.cols;_CROP.cols=t;
+  $('crop-rows').value=_CROP.rows;$('crop-cols').value=_CROP.cols;
+  cropGenLines();cropDraw();
+}
+
+/* ── 绘制: 图片坐标 → 屏幕 = off + pos*scale ── */
+function _cropSX(x){return _CROP.offX+x*_CROP.scale}
+function _cropSY(y){return _CROP.offY+y*_CROP.scale}
+function cropDraw(){
+  var cv=$('crop-canvas'),ctx=cv.getContext('2d');
+  ctx.clearRect(0,0,cv.width,cv.height);
+  var C=_CROP;
+  var x0=_cropSX(C.bx),y0=_cropSY(C.by),x1=_cropSX(C.bx+C.bw),y1=_cropSY(C.by+C.bh);
+  /* 框外区域：高斯模糊 + 轻微暗化（遮罩效果） */
+  ctx.save();
+  /* 裁剪到框外区域 */
+  ctx.beginPath();
+  ctx.rect(0,0,cv.width,cv.height);
+  ctx.rect(x0,y0,x1-x0,y1-y0);  /* 框内挖空 */
+  ctx.clip('evenodd');
+  /* 绘制模糊的图片副本 */
+  ctx.filter='blur(8px)';
+  ctx.drawImage(C.img,C.offX,C.offY,C.nw*C.scale,C.nh*C.scale);
+  ctx.filter='none';
+  /* 叠加轻微暗化 */
+  ctx.fillStyle='rgba(0,0,0,.25)';
+  ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.restore();
+  /* 框线 */
+  ctx.strokeStyle='#3D72D8';ctx.lineWidth=2;ctx.strokeRect(x0,y0,x1-x0,y1-y0);
+  /* 4 角手柄 */
+  ctx.fillStyle='#3D72D8';
+  [[x0,y0],[x1,y0],[x0,y1],[x1,y1]]
+  .forEach(function(p){ctx.fillRect(p[0]-7,p[1]-7,14,14)});
+  ctx.strokeStyle='#fff';ctx.lineWidth=1.5;
+  [[x0,y0],[x1,y0],[x0,y1],[x1,y1]]
+  .forEach(function(p){ctx.strokeRect(p[0]-7,p[1]-7,14,14)});
+  /* 网格线 */
+  ctx.lineWidth=1;
+  for(var i=0;i<C.hLines.length;i++){
+    var y=y0+C.hLines[i]*C.scale;
+    ctx.strokeStyle=(i===C.lineIdx&&C.lineIsH)?'#FFCC00':'rgba(61,114,216,.9)';
+    ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();
+  }
+  for(var j=0;j<C.vLines.length;j++){
+    var x=x0+C.vLines[j]*C.scale;
+    ctx.strokeStyle=(j===C.lineIdx&&!C.lineIsH)?'#FFCC00':'rgba(61,114,216,.9)';
+    ctx.beginPath();ctx.moveTo(x,y0);ctx.lineTo(x,y1);ctx.stroke();
+  }
+  /* 坐标 */
+  var posTxt;
+  if(C.lineIdx>=0)posTxt='线'+C.lineIdx+' @ '+(C.lineIsH?C.hLines[C.lineIdx]:C.vLines[C.lineIdx])+'px(图)';
+  else if(C.lastHd)posTxt='角 '+C.lastHd+' (方向键微调) '+Math.round(C.bw)+'x'+Math.round(C.bh)+'px(图)';
+  else posTxt='框 '+Math.round(C.bx)+','+Math.round(C.by)+' '+Math.round(C.bw)+'x'+Math.round(C.bh)+'px(图)';
+  $('crop-pos').textContent=posTxt;
+}
+
+/* ── 交互: Pointer Events + setPointerCapture ──
+   pointer capture 保证 pointerup 一定派发到 stage，拖动状态永不残留 */
+function _cropLocal(e){
+  var r=$('crop-stage').getBoundingClientRect();
+  return {x:e.clientX-r.left,y:e.clientY-r.top};
+}
+function cropStageDown(e){
+  var C=_CROP;
+  if(e.button!==0&&e.pointerType==='mouse')return;  /* 仅左键 */
+  var stage=$('crop-stage');
+  try{stage.setPointerCapture(e.pointerId)}catch(err){}
+  C.pointerId=e.pointerId;
+  var pt=_cropLocal(e);
+  /* 框的屏幕位置 */
+  var x0=_cropSX(C.bx),y0=_cropSY(C.by),x1=_cropSX(C.bx+C.bw),y1=_cropSY(C.by+C.bh);
+  /* 4 角手柄命中（屏幕容差 8px） */
+  var hs=8,handles=[
+    {m:'tl',x:x0,y:y0},{m:'tr',x:x1,y:y0},{m:'bl',x:x0,y:y1},{m:'br',x:x1,y:y1}
+  ];
+  for(var hi=0;hi<handles.length;hi++){
+    var hd=handles[hi];
+    if(Math.abs(pt.x-hd.x)<=hs&&Math.abs(pt.y-hd.y)<=hs){
+      C.drag={mode:'frame',hd:hd.m,startX:pt.x,startY:pt.y,ox:C.bx,oy:C.by,ow:C.bw,oh:C.bh};
+      C.lastHd=hd.m;
+      cropDraw();return;
+    }
+  }
+  /* 网格线命中（需 Shift；屏幕位置 = 框屏左上 + 线位置*scale） */
+  var tol=6,hit=null,minD=tol;
+  if(e.shiftKey){
+    for(var i=0;i<C.hLines.length;i++){var ly2=y0+C.hLines[i]*C.scale;if(pt.x>=x0&&pt.x<=x1){var d=Math.abs(pt.y-ly2);if(d<minD){minD=d;hit={i:i,isH:true}}}}
+    for(var j=0;j<C.vLines.length;j++){var lx2=x0+C.vLines[j]*C.scale;if(pt.y>=y0&&pt.y<=y1){var d2=Math.abs(pt.x-lx2);if(d2<minD){minD=d2;hit={i:j,isH:false}}}}
+  }
+  if(hit){C.lineIdx=hit.i;C.lineIsH=hit.isH;C.drag={mode:'line',i:hit.i,isH:hit.isH};cropDraw();return}
+  /* 其余 → 平移图片 */
+  e.preventDefault();
+  C.pan={x:e.clientX,y:e.clientY};
+  $('crop-stage').classList.add('panning');
+}
+function cropStageMove(e){
+  var C=_CROP;
+  if(!C.drag&&!C.pan)return;
+  e.preventDefault();
+  if(C.pan&&!C.drag){
+    var dx=e.clientX-C.pan.x,dy=e.clientY-C.pan.y;
+    C.pan.x=e.clientX;C.pan.y=e.clientY;
+    C.offX+=dx;C.offY+=dy;
+    var im=$('crop-img');im.style.left=C.offX+'px';im.style.top=C.offY+'px';
+    cropDraw();return;
+  }
+  if(!C.drag)return;
+  var pt=_cropLocal(e);
+  if(C.drag.mode==='line'){
+    /* 屏幕位移 → 图片位移 (÷scale) */
+    var s=C.scale;
+    var delta=(C.drag.isH?(pt.y-(_cropSY(C.by)+C.hLines[C.drag.i]*s)):(pt.x-(_cropSX(C.bx)+C.vLines[C.drag.i]*s)))/s;
+    if(C.drag.isH){C.hLines[C.drag.i]=Math.max(1,Math.min(C.bh-1,C.hLines[C.drag.i]+delta))}
+    else{C.vLines[C.drag.i]=Math.max(1,Math.min(C.bw-1,C.vLines[C.drag.i]+delta))}
+  }else if(C.drag.mode==='frame'){
+    /* 屏幕位移 → 图片位移 (÷scale) */
+    var s2=C.scale;
+    var dx2=(pt.x-C.drag.startX)/s2,dy2=(pt.y-C.drag.startY)/s2;
+    var bx=C.drag.ox,by=C.drag.oy,bw=C.drag.ow,bh=C.drag.oh,hd=C.drag.hd;
+    if(hd==='l'||hd==='tl'||hd==='bl'){bx+=dx2;bw-=dx2}
+    if(hd==='r'||hd==='tr'||hd==='br'){bw+=dx2}
+    if(hd==='t'||hd==='tl'||hd==='tr'){by+=dy2;bh-=dy2}
+    if(hd==='b'||hd==='bl'||hd==='br'){bh+=dy2}
+    /* 最小尺寸 5px(图) */
+    if(bw<5)bw=5;
+    if(bh<5)bh=5;
+    /* 边界: 框不超出图片 */
+    bx=Math.max(0,Math.min(bx,C.nw-bw));
+    by=Math.max(0,Math.min(by,C.nh-bh));
+    C.bx=bx;C.by=by;C.bw=bw;C.bh=bh;
+    cropGenLines();
+  }
+  cropDraw();
+}
+function cropStageUp(e){
+  var C=_CROP;
+  C.drag=null;C.pan=null;C.pointerId=null;
+  $('crop-stage').classList.remove('panning');
+  try{var s=$('crop-stage');if(s.hasPointerCapture&&s.hasPointerCapture(e.pointerId))s.releasePointerCapture(e.pointerId)}catch(err){}
+}
+function cropWheel(e){
+  e.preventDefault();
+  var C=_CROP,stage=$('crop-stage');
+  var rect=stage.getBoundingClientRect();
+  var mx=e.clientX-rect.left,my=e.clientY-rect.top;
+  var old=C.scale,f=Math.exp(-e.deltaY*0.001);
+  C.scale=Math.max(.05,Math.min(8,old*f));
+  C.offX=mx-(mx-C.offX)*(C.scale/old);
+  C.offY=my-(my-C.offY)*(C.scale/old);
+  var im=$('crop-img');im.style.width=C.nw*C.scale+'px';im.style.height=C.nh*C.scale+'px';im.style.left=C.offX+'px';im.style.top=C.offY+'px';
+  var cv=$('crop-canvas');cv.width=stage.clientWidth;cv.height=stage.clientHeight;
+  cropDraw();
+}
+function cropKey(e){
+  var C=_CROP;
+  var step=e.shiftKey?10:1;
+  /* 最近拖过框角 → 方向键微调该角 */
+  if(C.lastHd&&C.lineIdx<0){
+    var hd=C.lastHd,dx=0,dy=0;
+    if(e.key==='ArrowLeft')dx=-step;
+    else if(e.key==='ArrowRight')dx=step;
+    else if(e.key==='ArrowUp')dy=-step;
+    else if(e.key==='ArrowDown')dy=step;
+    else return;
+    var bx=C.bx,by=C.by,bw=C.bw,bh=C.bh;
+    if(hd==='tl'){bx+=dx;by+=dy;bw-=dx;bh-=dy}
+    else if(hd==='tr'){by+=dy;bw+=dx;bh-=dy}
+    else if(hd==='bl'){bx+=dx;bh+=dy;bw-=dx}
+    else if(hd==='br'){bw+=dx;bh+=dy}
+    if(bw<10||bh<10)return;
+    C.bx=bx;C.by=by;C.bw=bw;C.bh=bh;
+    cropGenLines();cropDraw();
+    $('crop-pos').textContent='框 '+Math.round(C.bx)+','+Math.round(C.by)+' '+Math.round(C.bw)+'x'+Math.round(C.bh)+' (+'+step+'px 角微调)';
+    e.preventDefault();return;
+  }
+  /* 网格线微调 */
+  if(C.lineIdx<0)return;
+  if(e.key==='ArrowLeft'&&!C.lineIsH){C.vLines[C.lineIdx]=Math.max(1,C.vLines[C.lineIdx]-step);cropDraw();e.preventDefault()}
+  else if(e.key==='ArrowRight'&&!C.lineIsH){C.vLines[C.lineIdx]=Math.min(C.bw-1,C.vLines[C.lineIdx]+step);cropDraw();e.preventDefault()}
+  else if(e.key==='ArrowUp'&&C.lineIsH){C.hLines[C.lineIdx]=Math.max(1,C.hLines[C.lineIdx]-step);cropDraw();e.preventDefault()}
+  else if(e.key==='ArrowDown'&&C.lineIsH){C.hLines[C.lineIdx]=Math.min(C.bh-1,C.hLines[C.lineIdx]+step);cropDraw();e.preventDefault()}
+}
+function cropSyncRC(){
+  _CROP.rows=Math.max(1,parseInt($('crop-rows').value)||1);
+  _CROP.cols=Math.max(1,parseInt($('crop-cols').value)||1);
+  cropGenLines();cropDraw();
+}
+$('crop-rows').addEventListener('change',cropSyncRC);
+$('crop-cols').addEventListener('change',cropSyncRC);
+var _cropStage=$('crop-stage');
+_cropStage.addEventListener('pointerdown',cropStageDown);
+_cropStage.addEventListener('pointermove',cropStageMove);
+_cropStage.addEventListener('pointerup',cropStageUp);
+_cropStage.addEventListener('pointercancel',cropStageUp);
+_cropStage.addEventListener('lostpointercapture',cropStageUp);
+_cropStage.addEventListener('wheel',cropWheel,{passive:false});
+document.addEventListener('keydown',function(e){
+  if(!$('crop-view').hidden)cropKey(e);
+});
+
+
+function cropClose(){
+  $('crop-view').hidden=true;
+  if(_CROP.url){URL.revokeObjectURL(_CROP.url);_CROP.url=null}
+  _CROP.img=null;_CROP.drag=null;_CROP.pan=null;_CROP.lineIdx=-1;
+  $('crop-img').removeAttribute('src');
+  var cv=$('crop-canvas');cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
+}
+
+/* ── 切割执行 ── */
+async function cropCut(){
+  var C=_CROP;
+  if(!C.img){alert('未加载图片');return}
+  if(C.rows<1||C.cols<1){alert('行列数无效');return}
+  if(!confirm('切割 '+C.rows+'×'+C.cols+'='+(C.rows*C.cols)+' 个格子到所选目录?\n(逐格写入, 可能需要几十秒)'))return;
+  /* 每次都让用户选择输出目录 */
+  var dir;
+  try{dir=await window.showDirectoryPicker({mode:'readwrite'})}catch(e){if(e.name!=='AbortError')alert('请授权目录');return}
+  await _saveDir(dir,'lastOut');
+  /* 框已是图片坐标，网格线是框内图片偏移 → 直接组装 */
+  var ys=[Math.round(C.by)].concat(C.hLines.map(function(l){return Math.round(C.by+l)})).concat([Math.round(C.by+C.bh)]);
+  var xs=[Math.round(C.bx)].concat(C.vLines.map(function(l){return Math.round(C.bx+l)})).concat([Math.round(C.bx+C.bw)]);
+  /* 裁剪到图片范围 + 保证顺序 */
+  ys=ys.map(function(v,i){v=Math.max(0,Math.min(C.nh,v));return i===0?v:Math.max(ys[i-1]+1,Math.min(ys[ys.length-1]-1,v))});
+  xs=xs.map(function(v,i){v=Math.max(0,Math.min(C.nw,v));return i===0?v:Math.max(xs[i-1]+1,Math.min(xs[xs.length-1]-1,v))});
+  var total=C.rows*C.cols,done=0,failed=0;
+  _progShow('切割写入',total);
+  var bmp=await createImageBitmap(C.img);
+  /* 预生成所有任务坐标 */
+  var tasks=[];
+  for(var r=0;r<C.rows;r++){
+    var y0=ys[r],y1=ys[r+1];
+    for(var c=0;c<C.cols;c++){
+      tasks.push({r:r,c:c,y0:y0,y1:y1,x0:xs[c],x1:xs[c+1]});
+    }
+  }
+  /* 并发处理: 每批 CONC 个 cell 并行（各自独立 canvas，避免互相覆盖） */
+  var CONC=24;
+  for(var b=0;b<tasks.length;b+=CONC){
+    var batch=tasks.slice(b,b+CONC);
+    var results=await Promise.allSettled(batch.map(function(t){
+      return (async function(){
+        var w=t.x1-t.x0,h=t.y1-t.y0;
+        /* 每任务独立 48x48 canvas（尺寸小，创建开销可忽略） */
+        var cv=document.createElement('canvas');cv.width=48;cv.height=48;
+        var cx=cv.getContext('2d');
+        cx.drawImage(bmp,t.x0,t.y0,w,h,0,0,48,48);
+        var blob=await new Promise(function(res,rej){cv.toBlob(function(bb){bb?res(bb):rej(new Error('toBlob失败'))},'image/png')});
+        var name='r'+String(t.r).padStart(3,'0')+'_c'+String(t.c).padStart(3,'0')+'.png';
+        var fh=await dir.getFileHandle(name,{create:true});
+        var ws=await fh.createWritable();
+        await ws.write(blob);await ws.close();
+      })();
+    }));
+    for(var ri=0;ri<results.length;ri++){
+      if(results[ri].status==='fulfilled'){done++}
+      else{failed++;console.error('cut failed',results[ri].reason)}
+    }
+    _progUpdate(done,total);
+    await new Promise(function(r){setTimeout(r,0)});
+  }
+  _progHide();
+  if(failed)alert('切割完成: '+done+' 格, '+failed+' 个失败');
+  else alert('切割完成: '+done+' 格 → '+dir.name);
+  /* 自动切换到标注视图 */
+  cropClose();
+  _dir=dir;
+  await _saveDir(_dir);
+  await _saveRecent(_dir.name);renderRecent();
+  await loadCells();
+}
+
 function _refreshOV(){
   _sel.forEach(function(i){
     var w=document.querySelector('.cell[data-i="'+i+'"]');
@@ -906,9 +1433,31 @@ document.addEventListener('keydown',function(e){if(e.target.tagName==='INPUT'||e
 
 (async function(){
   renderRecent();
-  try{var h=await _loadDir();if(!h)return;
-    var o={mode:'readwrite'};var p=await h.queryPermission(o);if(p!=='granted'){var r=await h.requestPermission(o);if(r!=='granted')return}
-    _dir=h;await loadCells()}catch(e){console.warn('auto:',e)}
+  try{
+    var h=await _loadDir();if(!h)return;
+    var o={mode:'readwrite'};
+    var p=await h.queryPermission(o);
+    if(p==='granted'){
+      /* 权限已授权 → 直接进入 */
+      _dir=h;await loadCells();
+    }else{
+      /* 权限为 prompt/denied → 显示恢复遮罩，点击后请求授权 */
+      var ov=$('resume-overlay');
+      var sub=$('resume-sub');
+      if(p==='denied')sub.textContent='上次目录权限已失效，点击重新授权后自动打开';
+      ov.hidden=false;
+      var once=false;
+      ov.addEventListener('click',async function onClick(){
+        if(once)return;once=true;
+        try{
+          var r=await h.requestPermission(o);
+          if(r==='granted'){_dir=h;await loadCells();}
+          else{sub.textContent='未授权，点击重试';once=false;return}
+        }catch(e){sub.textContent='授权失败: '+e.message;once=false;return}
+        ov.hidden=true;
+      });
+    }
+  }catch(e){console.warn('auto:',e)}
 })();
 </script>
 </body>

@@ -15,12 +15,17 @@ spring:
           time_zone: UTC
   flyway:
     enabled: true
+    # 允许 clean（bead.db.recreate-on-start=true 时 drop 重建需要）
+    clean-disabled: false
   servlet:
     multipart:
       max-file-size: 20MB
       max-request-size: 21MB
 
 bead:
+  # 017 决议：开发期每次启动重建全部表 + 重新 seed 官方颜色库（不保证兼容性）
+  db:
+    recreate-on-start: ${BEAD_DB_RECREATE_ON_START:true}
   recovery:
     interval-ms: 30000
   storage:

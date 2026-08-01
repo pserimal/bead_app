@@ -1,4 +1,5 @@
 -- 008 决议：RecognitionJob 持久化 schema（Flyway 初始版本）
+-- 017 修订：color_library 含 brand 列（官方编码库来源品牌，V2 已合并进 V1）
 -- 表：recognition_job, recognition_job_event, recognition_job_cell, blueprint, blueprint_cell, color_library
 
 CREATE TABLE recognition_job (
@@ -78,6 +79,7 @@ CREATE TABLE color_library (
     code    VARCHAR(8) PRIMARY KEY,
     name    VARCHAR(128) NOT NULL,
     hex     VARCHAR(6) NOT NULL,
+    brand   VARCHAR(32) NOT NULL,
     version VARCHAR(128) NOT NULL
 );
 

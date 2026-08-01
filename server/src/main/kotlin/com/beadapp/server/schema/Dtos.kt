@@ -27,6 +27,7 @@ data class ColorDto(
     val code: String,
     val name: String,
     val hex: String,
+    val brand: String? = null,
 )
 
 /** 007 决议：JobDetail */

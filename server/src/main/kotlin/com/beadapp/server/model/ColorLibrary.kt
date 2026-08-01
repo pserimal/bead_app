@@ -15,6 +15,9 @@ class ColorLibrary(
     @Column(name = "hex", nullable = false, length = 6)
     var hex: String,
 
+    @Column(name = "brand", nullable = false, length = 32)
+    var brand: String,
+
     @Column(name = "version", nullable = false)
     var version: String,
 )
