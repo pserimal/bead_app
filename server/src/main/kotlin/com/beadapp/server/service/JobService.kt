@@ -198,9 +198,10 @@ class JobService(
         else jobRepo.findAll(pageable)
     }
 
-    fun listEvents(jobId: UUID, page: Int, pageSize: Int): Page<RecognitionJobEvent> {
+    fun listEvents(jobId: UUID, page: Int, pageSize: Int, sortDir: String = "asc"): Page<RecognitionJobEvent> {
         getJob(jobId) // 404 检查
-        return eventRepo.findByJobId(jobId, PageRequest.of(page, pageSize, Sort.by(Sort.Order.asc("attempt"), Sort.Order.asc("sequence"))))
+        val order = if (sortDir.equals("desc", true)) Sort.Direction.DESC else Sort.Direction.ASC
+        return eventRepo.findByJobId(jobId, PageRequest.of(page, pageSize, Sort.by(Sort.Order(order, "attempt"), Sort.Order(order, "sequence"))))
     }
 
     private fun appendEvent(jobId: UUID, attempt: Int, sequence: Long, type: EventType, payload: Map<String, Any?>) {

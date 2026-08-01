@@ -27,7 +27,7 @@ export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: job, isLoading, error } = useJob(id ?? null);
-  const { data: events } = useJobEvents(id ?? null);
+  const { data: events } = useJobEvents(id ?? null, job?.status);
 
   const processing = job?.status === 'PENDING' || job?.status === 'PROCESSING';
   const terminal = job?.status === 'SUCCEEDED' || job?.status === 'SUCCEEDED_WITH_WARNINGS' || job?.status === 'FAILED';
@@ -138,6 +138,11 @@ export default function JobDetailPage() {
               <h2 style={{ fontWeight: 600, fontSize: 'var(--text-sm)', marginBottom: 12 }}>
                 事件时间线（{events?.total ?? 0} 条）
               </h2>
+              {events && events.total > events.items.length && (
+                <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', marginBottom: 8 }}>
+                  仅显示最近 {events.items.length} 条
+                </p>
+              )}
               <div className="space-y-2 max-h-80 overflow-y-auto">
                 {events?.items.map((ev) => (
                   <div key={`${ev.attempt}-${ev.sequence}`} className="flex items-start gap-3 text-sm py-1.5 border-b" style={{ borderColor: 'var(--color-border)' }}>

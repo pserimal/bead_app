@@ -49,6 +49,8 @@ export default function BlueprintDetailPage() {
           <div className="p-4 rounded-xl" style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
             <div
               className="grid gap-px"
+              role="img"
+              aria-label={`${bp.rows}×${bp.cols} 拼豆图纸，共 ${legend.size} 色，${unmapped.length} 格未映射`}
               style={{
                 gridTemplateColumns: `repeat(${bp.cols}, ${cellSize}px)`,
                 background: '#d5d1c7',
@@ -59,6 +61,7 @@ export default function BlueprintDetailPage() {
                   return (
                     <div
                       key={`${c.row}-${c.col}`}
+                      aria-hidden="true"
                       title={`(${c.row + 1}, ${c.col + 1}) ${c.code} — 不在颜色库`}
                       style={{
                         width: cellSize, height: cellSize, background: '#f5f5f5',
@@ -74,6 +77,7 @@ export default function BlueprintDetailPage() {
                 return (
                   <div
                     key={`${c.row}-${c.col}`}
+                    aria-hidden="true"
                     title={`(${c.row + 1}, ${c.col + 1}) ${c.code} ${c.color?.name ?? ''}`}
                     style={{
                       width: cellSize, height: cellSize, background: `#${c.color?.hex ?? 'ccc'}`,

@@ -330,6 +330,7 @@ export default function UploadPage() {
                     <input
                       type="number"
                       min={0}
+                      max={f.key === 'x' || f.key === 'w' ? imageSize?.w ?? undefined : imageSize?.h ?? undefined}
                       value={Math.round(crop[f.key])}
                       onChange={(e) => setCropField(f.key, e.target.value)}
                       className="px-2 py-1.5 rounded-lg border w-20"

@@ -43,8 +43,8 @@ export async function getJob(id: string): Promise<JobDetail> {
   return data;
 }
 
-/** 007：只读事件流 */
-export async function getJobEvents(id: string, pageSize = 100): Promise<PageResponse<JobEventDto>> {
-  const { data } = await apiClient.get(`/jobs/${id}/events`, { params: { pageSize } });
+/** 007：只读事件流（sortDir=desc 返回最近事件） */
+export async function getJobEvents(id: string, pageSize = 50, sortDir: 'asc' | 'desc' = 'desc'): Promise<PageResponse<JobEventDto>> {
+  const { data } = await apiClient.get(`/jobs/${id}/events`, { params: { pageSize, sortDir } });
   return data;
 }

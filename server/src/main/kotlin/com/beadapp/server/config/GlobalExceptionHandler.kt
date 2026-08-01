@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.multipart.support.MissingServletRequestPartException
+import org.springframework.web.method.annotation.HandlerMethodValidationException
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import java.util.UUID
 
@@ -35,6 +36,13 @@ class GlobalExceptionHandler {
     fun handleValidation(e: MethodArgumentNotValidException): ResponseEntity<ApiError> {
         val fields = e.bindingResult.fieldErrors
             .groupBy({ it.field }, { it.defaultMessage ?: "invalid" })
+        return ResponseEntity.badRequest().body(ApiError("VALIDATION_ERROR", "请求参数校验失败", fields, traceId()))
+    }
+
+    /** @RequestParam/@PathVariable 上 @Min/@Max/@NotNull 等约束失败（Spring 6.1 抛此异常） */
+    @ExceptionHandler(HandlerMethodValidationException::class)
+    fun handleParamValidation(e: HandlerMethodValidationException): ResponseEntity<ApiError> {
+        val fields = mapOf("parameters" to listOf(e.message ?: "请求参数校验失败"))
         return ResponseEntity.badRequest().body(ApiError("VALIDATION_ERROR", "请求参数校验失败", fields, traceId()))
     }
 

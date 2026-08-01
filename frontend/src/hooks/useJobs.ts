@@ -22,16 +22,13 @@ export function useJob(id: string | null) {
   });
 }
 
-export function useJobEvents(id: string | null) {
+export function useJobEvents(id: string | null, status?: JobDetail['status']) {
   return useQuery({
     queryKey: ['job-events', id],
     queryFn: () => jobsApi.getJobEvents(id!),
     enabled: !!id,
-    refetchInterval: (query) => {
-      const job = query.queryKey[1];
-      void job;
-      return 2000;
-    },
+    // 012：终态后事件不再增长，停止轮询
+    refetchInterval: status === 'PENDING' || status === 'PROCESSING' ? 2000 : false,
   });
 }
 

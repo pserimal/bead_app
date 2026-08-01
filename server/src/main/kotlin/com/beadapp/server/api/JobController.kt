@@ -76,14 +76,15 @@ class JobController(
     fun detail(@PathVariable("id") id: UUID): JobDetail =
         jobService.getJob(id).toDetail()
 
-    /** 007：只读事件流（分页，按 attempt+sequence 升序） */
+    /** 007：只读事件流（分页，sortDir=desc 时最近事件在前） */
     @GetMapping("/{id}/events")
     fun events(
         @PathVariable("id") id: UUID,
         @RequestParam(value = "page", defaultValue = "1") @Min(1) page: Int,
         @RequestParam(value = "pageSize", defaultValue = "20") @Min(1) @Max(100) pageSize: Int,
+        @RequestParam(value = "sortDir", defaultValue = "asc") sortDir: String,
     ): PageResponse<JobEventDto> {
-        val p = jobService.listEvents(id, page - 1, pageSize)
+        val p = jobService.listEvents(id, page - 1, pageSize, sortDir)
         return PageResponse(
             items = p.content.map { JobEventDto(it.attempt, it.sequence, it.type, it.createdAt, it.payload) },
             page = page,
