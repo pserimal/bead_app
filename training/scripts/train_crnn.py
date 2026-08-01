@@ -51,9 +51,8 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from training.models.bead_ocr_crnn import CRNN, ctc_greedy_decode, save_checkpoint  # noqa: E402
+from ocr_core.bead_ocr_crnn import CRNN, ctc_greedy_decode, save_checkpoint  # noqa: E402
 from training.models.synth_generator import (  # noqa: E402
-    CHARS as SYNTH_CHARS,
     CODES,
     Sample,
     generate_dataset,
@@ -510,7 +509,11 @@ def train(args):
             print(f"  first mismatches: {mismatches[:8]}")
         if em > best_val:
             best_val = em
-            save_checkpoint(out_path, model, len(chars), chars)
+            save_checkpoint(
+                out_path, model, len(chars), chars,
+                code_dict=list(codes_set) if codes_set else None,
+                training={"seed": args.seed, "epochs": args.epochs, "synth_n": args.synth_n},
+            )
             print(f"  → saved checkpoint → {out_path} (val_em={em:.3f})")
 
     print(f"[train] done. best_val_em={best_val:.3f} "

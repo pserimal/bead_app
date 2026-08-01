@@ -19,7 +19,7 @@ describe('Layout — navigation rendering', () => {
     renderLayout();
     const nav = screen.getByRole('navigation');
     expect(within(nav).getByText('上传图纸')).toBeInTheDocument();
-    expect(within(nav).getByText('图纸列表')).toBeInTheDocument();
+    expect(within(nav).getByText('任务历史')).toBeInTheDocument();
     expect(within(nav).getByText('颜色库')).toBeInTheDocument();
   });
 
@@ -42,7 +42,7 @@ describe('Layout — navigation rendering', () => {
   it('nav item links have correct hrefs', () => {
     renderLayout();
     expect(screen.getByText('上传图纸').closest('a')).toHaveAttribute('href', '/');
-    expect(screen.getByText('图纸列表').closest('a')).toHaveAttribute('href', '/blueprints');
+    expect(screen.getByText('任务历史').closest('a')).toHaveAttribute('href', '/blueprints');
     expect(screen.getByText('颜色库').closest('a')).toHaveAttribute('href', '/colors');
   });
 

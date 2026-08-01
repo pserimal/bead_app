@@ -10,7 +10,7 @@ interface LayoutProps {
 
 const navItems = [
   { path: '/', label: '上传图纸' },
-  { path: '/blueprints', label: '图纸列表' },
+  { path: '/blueprints', label: '任务历史' },
   { path: '/colors', label: '颜色库' },
 ];
 

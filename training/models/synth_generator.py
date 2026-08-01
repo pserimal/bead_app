@@ -51,31 +51,19 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
+from ocr_core.charset import CHARS, CHAR_TO_IDX, IDX_TO_CHAR, LETTERS, DIGITS  # noqa: F401
+from ocr_core.code_library import load_library
+
 # ═══════════════════════════════════════════════════════════════════════
 # Code vocabulary
 # ═══════════════════════════════════════════════════════════════════════
+# 010 决议：字符表单一事实源在 ocr_core.charset；颜色库从 artifact 快照加载。
+# 以下名字保持为 re-export，兼容既有调用方。
 
-# Color library lives in the backend service (single source of truth for the
-# 65-entry Perler palette). Resolve relative to repo root regardless of cwd.
-_LIB_PATH = Path(__file__).resolve().parent.parent.parent / "backend" / "app" / "data" / "default_colors.json"
+_LIB: list[dict] = load_library()
 
-
-def _load_library() -> list[dict]:
-    with open(_LIB_PATH, encoding="utf-8") as f:
-        return json.load(f)
-
-
-_LIB: list[dict] = _load_library()
-
-CODES: list[str] = [e["code"] for e in _LIB if e.get("code")]
-_HEX_COLORS: list[str] = [e["color_hex"] for e in _LIB if e.get("color_hex")]
-
-LETTERS: list[str] = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-DIGITS: list[str] = list("0123456789")
-# <blank> at index 0 (CTC requirement), then A‑Z, then 0‑9.
-CHARS: list[str] = ["<blank>"] + LETTERS + DIGITS
-CHAR_TO_IDX: dict[str, int] = {ch: i for i, ch in enumerate(CHARS)}
-IDX_TO_CHAR: dict[int, str] = {i: ch for i, ch in enumerate(CHARS)}
+CODES: list[str] = [e.get("code") for e in _LIB if e.get("code")]
+_HEX_COLORS: list[str] = [e.get("color_hex") for e in _LIB if e.get("color_hex")]
 
 
 def _random_code(rng: random.Random) -> str:

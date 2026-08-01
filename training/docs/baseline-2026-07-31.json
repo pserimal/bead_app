@@ -1,0 +1,400 @@
+{
+  "crnn_real_m.pt": {
+    "checkpoint": "training\\checkpoints\\crnn_real_m.pt",
+    "num_classes": 19,
+    "chars": [
+      "<blank>",
+      "A",
+      "B",
+      "C",
+      "E",
+      "F",
+      "G",
+      "H",
+      "M",
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9"
+    ],
+    "valid_codes": {
+      "zip": [
+        "A4",
+        "A6",
+        "A8",
+        "B23",
+        "C13",
+        "C21",
+        "C3",
+        "C7",
+        "E10",
+        "F22",
+        "F6",
+        "F7",
+        "H12",
+        "H14",
+        "H18",
+        "H2",
+        "H23",
+        "H3",
+        "H5",
+        "H7",
+        "M1",
+        "M5",
+        "M6"
+      ],
+      "dir": [
+        "F1",
+        "F2",
+        "F5",
+        "G2",
+        "G3",
+        "G5",
+        "H1",
+        "H10",
+        "H13",
+        "H14",
+        "H15",
+        "H17",
+        "H18",
+        "H2",
+        "H21",
+        "H23",
+        "H24",
+        "H27",
+        "H3",
+        "H33",
+        "H34",
+        "H35",
+        "H40",
+        "H41",
+        "H42",
+        "H46",
+        "H49",
+        "H50",
+        "H52",
+        "H6",
+        "H7",
+        "H8",
+        "H9"
+      ]
+    },
+    "zip": {
+      "n_cells": 7630,
+      "exact_match_rate": 0.700786369593709,
+      "correct": 5347,
+      "accepted": 0,
+      "accepted_accuracy": null,
+      "unknown_rate": 1.0,
+      "mean_conf": 0.002125484048526876,
+      "median_conf": 0.0015387775981790925,
+      "p10_conf": 0.00012103754421965324,
+      "p90_conf": 0.0034261021837246842,
+      "ms_per_cell": 0.9745653735254882,
+      "per_code": {
+        "A4": {
+          "n": 2,
+          "correct": 2,
+          "accuracy": 1.0
+        },
+        "A6": {
+          "n": 14,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "A8": {
+          "n": 84,
+          "correct": 2,
+          "accuracy": 0.023809523809523808
+        },
+        "B23": {
+          "n": 508,
+          "correct": 508,
+          "accuracy": 1.0
+        },
+        "C13": {
+          "n": 334,
+          "correct": 6,
+          "accuracy": 0.017964071856287425
+        },
+        "C21": {
+          "n": 730,
+          "correct": 730,
+          "accuracy": 1.0
+        },
+        "C3": {
+          "n": 15,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "C7": {
+          "n": 10,
+          "correct": 1,
+          "accuracy": 0.1
+        },
+        "E10": {
+          "n": 95,
+          "correct": 95,
+          "accuracy": 1.0
+        },
+        "F22": {
+          "n": 8,
+          "correct": 8,
+          "accuracy": 1.0
+        },
+        "F6": {
+          "n": 27,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "F7": {
+          "n": 30,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H12": {
+          "n": 998,
+          "correct": 605,
+          "accuracy": 0.6062124248496994
+        },
+        "H14": {
+          "n": 15,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H18": {
+          "n": 578,
+          "correct": 78,
+          "accuracy": 0.13494809688581316
+        },
+        "H2": {
+          "n": 234,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H23": {
+          "n": 223,
+          "correct": 141,
+          "accuracy": 0.6322869955156951
+        },
+        "H3": {
+          "n": 76,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H5": {
+          "n": 27,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H7": {
+          "n": 3557,
+          "correct": 3169,
+          "accuracy": 0.8909193140286759
+        },
+        "M1": {
+          "n": 2,
+          "correct": 2,
+          "accuracy": 1.0
+        },
+        "M5": {
+          "n": 45,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "M6": {
+          "n": 18,
+          "correct": 0,
+          "accuracy": 0.0
+        }
+      }
+    },
+    "dir": {
+      "n_cells": 50,
+      "exact_match_rate": 0.04,
+      "correct": 2,
+      "accepted": 0,
+      "accepted_accuracy": null,
+      "unknown_rate": 1.0,
+      "mean_conf": 0.006776840694918741,
+      "median_conf": 0.0016307577044514646,
+      "p10_conf": 0.00014614281577225247,
+      "p90_conf": 0.011009966548389847,
+      "ms_per_cell": 1.225933999994595,
+      "per_code": {
+        "F1": {
+          "n": 2,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "F2": {
+          "n": 1,
+          "correct": 1,
+          "accuracy": 1.0
+        },
+        "F5": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "G2": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "G3": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "G5": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H1": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H10": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H13": {
+          "n": 2,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H14": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H15": {
+          "n": 2,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H17": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H18": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H2": {
+          "n": 3,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H21": {
+          "n": 2,
+          "correct": 1,
+          "accuracy": 0.5
+        },
+        "H23": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H24": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H27": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H3": {
+          "n": 2,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H33": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H34": {
+          "n": 2,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H35": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H40": {
+          "n": 5,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H41": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H42": {
+          "n": 2,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H46": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H49": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H50": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H52": {
+          "n": 3,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H6": {
+          "n": 3,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H7": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H8": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        },
+        "H9": {
+          "n": 1,
+          "correct": 0,
+          "accuracy": 0.0
+        }
+      }
+    },
+    "reproduce": "python training/scripts/eval_cell_baseline.py --checkpoint training\\checkpoints\\crnn_real_m.pt"
+  }
+}

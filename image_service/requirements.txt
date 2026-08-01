@@ -1,0 +1,9 @@
+fastapi>=0.141
+uvicorn>=0.52
+python-multipart>=0.0.32
+pydantic>=2.13
+pydantic-settings>=2.14
+requests>=2.32
+numpy
+opencv-python-headless
+torch

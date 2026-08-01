@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>拼豆助手 · 新版交互原型</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════════
+   拼豆助手 · 「拼板」设计系统 (Pegboard system)
+   UI 暗色拼板 + 白色图纸板 + 立体豆粒 = 拼豆本体
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --ink:      #161B26;   /* 拼板深底 */
+  --ink-2:    #1C2331;
+  --panel:    #202838;
+  --panel-2:  #27324A;
+  --line:     #2E3A52;
+  --line-2:   #3D4C6B;
+  --snow:     #EDF1F8;
+  --mist:     #98A5BC;
+  --faint:    #5E6C88;
+  --cobalt:   #3E7BFA;
+  --cobalt-2: #5C92FF;
+  --mint:     #46B26B;
+  --amber:    #E8A33D;
+  --ember:    #E2544B;
+  --board:    #F4F6F9;   /* 图纸板 */
+  --board-line:#C9D2DE;
+  --radius:   14px;
+  --font-display:'Bricolage Grotesque','Trebuchet MS',sans-serif;
+  --font-body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,'Cascadia Code',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font-body);
+  background-color:var(--ink);
+  /* 环境签名：拼板孔洞肌理 */
+  background-image:radial-gradient(rgba(93,110,146,.16) 1px, transparent 1.4px);
+  background-size:22px 22px;
+  color:var(--snow);
+  line-height:1.5;
+  min-height:100vh;
+}
+a{color:var(--cobalt-2);text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+::selection{background:rgba(62,123,250,.4)}
+:focus-visible{outline:2px solid var(--cobalt-2);outline-offset:2px;border-radius:4px}
+
+/* ── 顶栏 ─────────────────────────────────────────── */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;gap:28px;
+  padding:14px 28px;
+  background:rgba(22,27,38,.86);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-beads{display:flex;gap:3px}
+.brand-beads i{
+  width:14px;height:14px;border-radius:50%;
+  box-shadow:inset 0 -2px 2px rgba(0,0,0,.3), inset 0 1px 1px rgba(255,255,255,.4), 0 0 0 1px rgba(0,0,0,.25);
+}
+.brand-beads i:nth-child(1){background:#E2544B}
+.brand-beads i:nth-child(2){background:#E8A33D}
+.brand-beads i:nth-child(3){background:#3E7BFA}
+.brand-beads i:nth-child(4){background:#46B26B}
+.brand-name{font-family:var(--font-display);font-weight:700;font-size:19px;letter-spacing:.5px}
+.brand-name em{font-style:normal;color:var(--cobalt-2)}
+.tabs{display:flex;gap:4px;margin-left:auto}
+.tab{
+  border:1px solid transparent;background:transparent;color:var(--mist);
+  padding:8px 16px;border-radius:999px;font-size:14px;font-weight:600;
+  transition:all .18s ease;
+}
+.tab:hover{color:var(--snow);background:var(--panel)}
+.tab.active{background:var(--panel-2);color:var(--snow);border-color:var(--line-2)}
+.ghost-tag{color:var(--faint);font-size:12px;margin-left:8px}
+
+/* ── 布局 ─────────────────────────────────────────── */
+.main{max-width:1160px;margin:0 auto;padding:28px 28px 80px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.page-title{font-family:var(--font-display);font-size:30px;font-weight:700;letter-spacing:.3px}
+.page-title small{display:block;font-family:var(--font-body);font-weight:400;font-size:13px;color:var(--mist);margin-top:4px}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--mist);font-size:13px;font-weight:600}
+.back:hover{color:var(--snow)}
+
+/* ── 卡片 ─────────────────────────────────────────── */
+.card{
+  background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--radius);padding:22px;margin-bottom:18px;
+}
+.card h3{font-family:var(--font-display);font-size:16px;font-weight:600;margin-bottom:14px;letter-spacing:.3px}
+.card h3 .kicker{display:block;font-family:var(--font-body);font-size:11px;font-weight:600;color:var(--faint);letter-spacing:1.2px;text-transform:uppercase;margin-bottom:3px}
+.card-sub{color:var(--mist);font-size:13px;margin-top:-8px;margin-bottom:14px}
+
+/* ── 按钮 ─────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border-radius:10px;border:1px solid var(--line-2);
+  background:var(--panel-2);color:var(--snow);
+  padding:10px 18px;font-size:14px;font-weight:600;
+  transition:all .15s ease;
+}
+.btn:hover{border-color:var(--cobalt-2)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn-primary{background:var(--cobalt);border-color:var(--cobalt)}
+.btn-primary:hover{background:var(--cobalt-2);border-color:var(--cobalt-2)}
+.btn-sm{padding:6px 12px;font-size:13px;border-radius:8px}
+
+/* ── 表单 ─────────────────────────────────────────── */
+.field{margin-bottom:18px}
+.label{display:block;font-size:12px;font-weight:600;color:var(--mist);margin-bottom:6px;letter-spacing:.4px}
+.label b{color:var(--snow)}
+.input,select.input{
+  width:100%;background:var(--ink-2);border:1px solid var(--line-2);
+  color:var(--snow);border-radius:10px;padding:10px 12px;font-size:14px;font-family:inherit;
+}
+.input:focus{outline:none;border-color:var(--cobalt-2);box-shadow:0 0 0 3px rgba(62,123,250,.18)}
+.input.danger{border-color:var(--ember)}
+.hint{font-size:12px;color:var(--faint);margin-top:6px}
+.error-text{font-size:12px;color:var(--ember);margin-top:6px;font-weight:500}
+.grid-two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cell-count{font-family:var(--font-mono);font-size:12px;color:var(--cobalt-2);margin-left:6px}
+
+/* 编码 chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;min-height:26px}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;
+  font-family:var(--font-mono);font-size:12px;font-weight:600;
+  padding:3px 10px;border-radius:999px;
+  background:rgba(62,123,250,.16);border:1px solid rgba(62,123,250,.45);color:var(--cobalt-2);
+}
+.chip.bad{background:rgba(226,84,75,.14);border-color:rgba(226,84,75,.5);color:var(--ember)}
+.chip .x{cursor:pointer;opacity:.7;font-weight:700}
+.chip .x:hover{opacity:1}
+
+/* 颜色库选择 */
+.lib-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.swatches{display:flex;gap:5px;flex-wrap:wrap}
+.swatch{width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.35);
+  box-shadow:inset 0 -2px 2px rgba(0,0,0,.25), inset 0 1px 1px rgba(255,255,255,.4)}
+.swatch-title{font-size:12px;color:var(--mist)}
+
+/* ── 裁剪台 ───────────────────────────────────────── */
+.crop-stage{
+  position:relative;display:flex;justify-content:center;align-items:center;
+  background:var(--ink-2);border:1px solid var(--line-2);border-radius:12px;
+  min-height:420px;overflow:hidden;touch-action:none;user-select:none;
+}
+.crop-stage img{max-height:520px;max-width:100%;display:block}
+.crop-box{
+  position:absolute;border:2px solid var(--cobalt-2);
+  background:rgba(62,123,250,.12);
+  box-shadow:0 0 0 9999px rgba(10,14,22,.62);
+  cursor:move;
+}
+.crop-box .handle{
+  position:absolute;width:14px;height:14px;background:var(--cobalt-2);
+  border:2px solid var(--ink);border-radius:4px;
+}
+.crop-box .h-nw{top:-8px;left:-8px;cursor:nwse-resize}
+.crop-box .h-ne{top:-8px;right:-8px;cursor:nesw-resize}
+.crop-box .h-sw{bottom:-8px;left:-8px;cursor:nesw-resize}
+.crop-box .h-se{bottom:-8px;right:-8px;cursor:nwse-resize}
+.crop-box .h-n{top:-8px;left:50%;transform:translateX(-50%);cursor:ns-resize}
+.crop-box .h-s{bottom:-8px;left:50%;transform:translateX(-50%);cursor:ns-resize}
+.crop-box .h-w{left:-8px;top:50%;transform:translateY(-50%);cursor:ew-resize}
+.crop-box .h-e{right:-8px;top:50%;transform:translateY(-50%);cursor:ew-resize}
+.crop-readout{
+  position:absolute;bottom:10px;left:10px;background:rgba(10,14,22,.8);
+  border:1px solid var(--line-2);border-radius:8px;
+  font-family:var(--font-mono);font-size:12px;color:var(--snow);padding:6px 10px;
+}
+.upload-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}
+
+/* ── 状态徽章 ─────────────────────────────────────── */
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:700;letter-spacing:.3px;
+  padding:4px 11px;border-radius:999px;white-space:nowrap;
+}
+.badge::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor}
+.badge[data-s="PENDING"]{background:rgba(152,165,188,.14);color:var(--mist)}
+.badge[data-s="PROCESSING"]{background:rgba(232,163,61,.15);color:var(--amber)}
+.badge[data-s="PROCESSING"]::before{animation:blink 1.1s infinite}
+.badge[data-s="SUCCEEDED"]{background:rgba(70,178,107,.15);color:var(--mint)}
+.badge[data-s="SUCCEEDED_WITH_WARNINGS"]{background:rgba(232,163,61,.16);color:#F2BC6D}
+.badge[data-s="FAILED"]{background:rgba(226,84,75,.15);color:var(--ember)}
+@keyframes blink{50%{opacity:.25}}
+
+/* 状态筛选 chips */
+.filter-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.fchip{
+  border:1px solid var(--line-2);background:var(--panel);color:var(--mist);
+  border-radius:999px;padding:6px 14px;font-size:13px;font-weight:600;
+  display:inline-flex;align-items:center;gap:7px;transition:all .15s;
+}
+.fchip .n{font-family:var(--font-mono);font-size:11px;color:var(--faint)}
+.fchip:hover{color:var(--snow)}
+.fchip.active{background:var(--panel-2);border-color:var(--cobalt-2);color:var(--snow)}
+
+/* ── 表格 ─────────────────────────────────────────── */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{
+  text-align:left;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:var(--faint);padding:10px 12px;border-bottom:1px solid var(--line);
+}
+.tbl td{padding:13px 12px;border-bottom:1px solid var(--line);font-size:14px}
+.tbl tr{cursor:pointer;transition:background .12s}
+.tbl tr:hover{background:var(--panel-2)}
+.tbl .mono{font-family:var(--font-mono);font-size:12px;color:var(--mist)}
+.tbl .prog{font-family:var(--font-mono);font-size:12px;color:var(--mist)}
+.pager{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px}
+.pager button{background:var(--panel);border:1px solid var(--line-2);color:var(--snow);border-radius:8px;padding:6px 14px;font-size:13px}
+.pager button:disabled{opacity:.35;cursor:not-allowed}
+.pager .pg{font-family:var(--font-mono);font-size:12px;color:var(--mist)}
+
+/* ── 追踪详情 ─────────────────────────────────────── */
+.trace-grid{display:grid;grid-template-columns:1fr 1.25fr;gap:18px;align-items:start}
+.trace-grid .stack{display:flex;flex-direction:column;gap:18px;min-width:0}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.kv:last-child{border-bottom:none}
+.kv .k{color:var(--faint)}
+.kv .v{font-family:var(--font-mono);font-size:12px;color:var(--snow);text-align:right;word-break:break-all}
+
+/* 进度 */
+.progress-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.progress-head .pct{font-family:var(--font-display);font-size:30px;font-weight:700;color:var(--snow)}
+.progress-head .pct small{font-size:13px;color:var(--mist);font-weight:500}
+.progress-track{
+  height:18px;border-radius:999px;background:var(--ink-2);border:1px solid var(--line-2);
+  overflow:hidden;position:relative;
+}
+.progress-fill{
+  height:100%;border-radius:999px;
+  background:linear-gradient(90deg,var(--cobalt),#5C92FF);
+  transition:width .35s ease;width:0%;
+}
+.progress-fill.done{background:linear-gradient(90deg,var(--mint),#63C98A)}
+.progress-meta{display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:var(--faint)}
+.progress-meta .mono{font-family:var(--font-mono);color:var(--mist)}
+.poll-note{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--faint);margin-top:10px}
+
+/* banner */
+.banner{border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.6;margin-bottom:16px}
+.banner.err{background:rgba(226,84,75,.12);border:1px solid rgba(226,84,75,.4);color:#F4A79F}
+.banner.warn{background:rgba(232,163,61,.12);border:1px solid rgba(232,163,61,.4);color:#F2C98C}
+.banner.info{background:rgba(62,123,250,.1);border:1px solid rgba(62,123,250,.35);color:#A9C4FF}
+.banner .b-title{font-weight:700;margin-bottom:4px}
+.banner .mono{font-family:var(--font-mono);font-size:12px}
+.banner ul{margin:6px 0 0 18px}
+.banner li{margin:3px 0}
+
+/* 事件时间线 */
+.events{
+  max-height:430px;overflow-y:auto;padding-right:6px;
+  display:flex;flex-direction:column;gap:4px;
+}
+.events::-webkit-scrollbar{width:8px}
+.events::-webkit-scrollbar-thumb{background:var(--line-2);border-radius:99px}
+.event{
+  display:flex;gap:12px;align-items:baseline;
+  padding:7px 10px;border-radius:9px;font-size:13px;
+  background:var(--ink-2);border:1px solid var(--line);
+}
+.event .seq{font-family:var(--font-mono);font-size:11px;color:var(--faint);min-width:34px}
+.event .ts{font-family:var(--font-mono);font-size:11px;color:var(--faint);margin-left:auto;white-space:nowrap}
+.evtag{
+  font-size:10px;font-weight:700;letter-spacing:.5px;border-radius:5px;padding:2px 7px;
+  font-family:var(--font-mono);white-space:nowrap;
+}
+.evtag.JOB_STARTED{background:rgba(62,123,250,.16);color:var(--cobalt-2)}
+.evtag.CELL_PROCESSED{background:rgba(70,178,107,.13);color:var(--mint)}
+.evtag.CELL_FAILED,.evtag.JOB_FAILED{background:rgba(226,84,75,.15);color:var(--ember)}
+.evtag.HEARTBEAT{background:rgba(152,165,188,.13);color:var(--mist)}
+.evtag.JOB_SUCCEEDED{background:rgba(70,178,107,.18);color:var(--mint)}
+.evtag.RETRY_SCHEDULED{background:rgba(232,163,61,.15);color:#F2BC6D}
+.event .payload{color:var(--mist);font-size:12px;word-break:break-all}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);display:inline-block;margin-right:6px;animation:blink 1.1s infinite}
+.event.live{border-color:rgba(232,163,61,.4)}
+
+/* ── 图纸板 ───────────────────────────────────────── */
+.board-panel{background:var(--board);border-radius:var(--radius);padding:26px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.board-meta{display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+.board-meta .info{color:#39424F;font-size:13px}
+.board-meta .info b{font-family:var(--font-mono)}
+.board-tools{margin-left:auto;display:flex;gap:12px;align-items:center}
+.board-tools label{color:#5A6573;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px}
+.board-tools input[type=range]{accent-color:#3E7BFA}
+.board-tools input[type=checkbox]{accent-color:#3E7BFA;width:15px;height:15px}
+.board-scroll{overflow:auto;max-height:560px;border-radius:8px;background:#EDF1F5;padding:14px}
+.board{
+  display:grid;gap:2px;width:max-content;margin:0 auto;
+  --bead:16px;
+}
+.bead-cell{width:var(--bead);height:var(--bead);display:flex;align-items:center;justify-content:center}
+.bead{
+  width:100%;height:100%;border-radius:50%;position:relative;
+  background:var(--c);
+  box-shadow:inset 0 -2px 3px rgba(0,0,0,.22), inset 0 2px 2px rgba(255,255,255,.4), 0 1px 2px rgba(0,0,0,.3);
+}
+.bead::after{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 32% 26%, rgba(255,255,255,.55), rgba(255,255,255,0) 42%);
+}
+.bead.unmapped{
+  background:repeating-linear-gradient(45deg,#F0F0F0 0 4px,#D8DCE2 4px 8px);
+  box-shadow:none;border:1.5px dashed #C2453B;
+}
+.bead.unmapped::after{background:radial-gradient(circle at 32% 26%, rgba(255,255,255,.4), rgba(255,255,255,0) 40%)}
+.bead.unmapped::before{
+  content:'?';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:calc(var(--bead)*.55);font-weight:800;color:#C2453B;font-family:var(--font-mono);
+}
+.bead-cell.empty{background:radial-gradient(rgba(22,27,38,.16) 1px, transparent 1.4px);background-size:6px 6px}
+.bead-code{
+  font-family:var(--font-mono);font-weight:700;color:rgba(20,24,34,.85);
+  font-size:calc(var(--bead)*.42);line-height:1;letter-spacing:-.2px;
+  text-shadow:0 1px 0 rgba(255,255,255,.35);
+}
+
+/* 图例 */
+.legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:18px}
+.legend-item{display:flex;align-items:center;gap:9px;background:#EDF1F5;border:1px solid #D9E0E8;border-radius:9px;padding:7px 10px}
+.legend-item .dot{width:16px;height:16px;border-radius:50%;flex:none;
+  box-shadow:inset 0 -2px 2px rgba(0,0,0,.2), inset 0 1px 1px rgba(255,255,255,.4)}
+.legend-item.unm{background:#FBE9E7;border-color:#F0C4BE}
+.legend-item .l-code{font-family:var(--font-mono);font-size:11px;font-weight:700;color:#333C49}
+.legend-item .l-name{font-size:11px;color:#5A6573;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.legend-item .l-count{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:#8A94A3}
+
+/* tooltip */
+#tooltip{
+  position:fixed;z-index:200;pointer-events:none;display:none;
+  background:#0E1420;border:1px solid var(--line-2);color:var(--snow);
+  border-radius:9px;padding:8px 12px;font-size:12px;max-width:260px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
+}
+#tooltip .t-code{font-family:var(--font-mono);font-weight:700;color:var(--cobalt-2)}
+#tooltip .t-pos{font-family:var(--font-mono);font-size:11px;color:var(--faint)}
+#tooltip .t-warn{color:#F4A79F;font-size:11px;margin-top:2px}
+
+/* toast */
+#toast{
+  position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--panel-2);border:1px solid var(--line-2);color:var(--snow);
+  border-radius:12px;padding:12px 20px;font-size:13px;font-weight:600;
+  opacity:0;transition:all .25s ease;z-index:300;box-shadow:0 14px 40px rgba(0,0,0,.5);
+  max-width:80vw;text-align:center;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* 空状态 */
+.empty{text-align:center;padding:60px 20px;color:var(--faint)}
+.empty .big{font-family:var(--font-display);font-size:38px;margin-bottom:10px}
+
+@media (max-width:880px){
+  .trace-grid{grid-template-columns:1fr}
+  .grid-two{grid-template-columns:1fr}
+  .topbar{flex-wrap:wrap;gap:12px}
+  .tabs{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .progress-fill{transition:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-beads"><i></i><i></i><i></i><i></i></span>
+    <span class="brand-name">拼豆<em>助手</em></span>
+  </div>
+  <nav class="tabs">
+    <button class="tab" data-view="upload">上传图纸</button>
+    <button class="tab" data-view="history">任务历史</button>
+  </nav>
+</header>
+
+<main class="main" id="view"></main>
+<div id="tooltip"></div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ════════════════════════════════════════════════════════
+   原型数据层 —— 模拟 /api/v1 契约（007 决议）
+   ════════════════════════════════════════════════════════ */
+
+const STATUS_LABEL = {
+  PENDING: "排队中",
+  PROCESSING: "识别中",
+  SUCCEEDED: "已完成",
+  SUCCEEDED_WITH_WARNINGS: "已完成·有警告",
+  FAILED: "失败",
+};
+
+/* 模拟颜色库快照（A01…B10） */
+const LIB = [
+  {code:"A01",name:"珍珠白",hex:"FFFFFF"},
+  {code:"A02",name:"奶黄",hex:"F7E9C8"},
+  {code:"A03",name:"柠黄",hex:"F5D547"},
+  {code:"A04",name:"橘橙",hex:"F2913D"},
+  {code:"A05",name:"正红",hex:"D64040"},
+  {code:"A06",name:"樱花粉",hex:"F4B6C6"},
+  {code:"A07",name:"紫罗兰",hex:"8E5BA6"},
+  {code:"A08",name:"钴蓝",hex:"3E6FD8"},
+  {code:"A09",name:"天蓝",hex:"7EC3F2"},
+  {code:"A10",name:"草绿",hex:"5FA96B"},
+  {code:"A11",name:"薄荷",hex:"A8DDB5"},
+  {code:"A12",name:"可可棕",hex:"8A6240"},
+  {code:"A13",name:"石墨黑",hex:"2B2F36"},
+  {code:"A14",name:"雾灰",hex:"9AA0A8"},
+  {code:"B01",name:"酒红",hex:"8E2434"},
+  {code:"B02",name:"珊瑚",hex:"F2796B"},
+  {code:"B04",name:"湖绿",hex:"2FA896"},
+  {code:"B05",name:"藏青",hex:"1E2A56"},
+  {code:"B06",name:"香芋",hex:"C3A8E0"},
+  {code:"B07",name:"鎏金",hex:"C9A227"},
+  {code:"B08",name:"银灰",hex:"C9CDD4"},
+  {code:"B10",name:"松石",hex:"35C2C0"},
+];
+const LIB_VERSION = "seed-2026-07-12";
+
+/* 确定性随机 */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function pick(arr,rng){return arr[Math.floor(rng()*arr.length)]}
+const now = Date.now();
+const iso = t => new Date(t).toISOString();
+const ago = ms => iso(now - ms);
+const short = id => id.slice(-6).toUpperCase();
+const fmtTs = isoStr => {const d=new Date(isoStr);const p=n=>String(n).padStart(2,"0");return p(d.getHours())+":"+p(d.getMinutes())+":"+p(d.getSeconds())};
+
+/* 心形图案生成器 —— 图纸内容 */
+function heartCells(rows, cols, rng, palette){
+  const cells = {};
+  for(let r=0;r<rows;r++){
+    for(let c=0;c<cols;c++){
+      const x = (c/(cols-1))*2-1;
+      const y = -((r/(rows-1))*2-1);
+      const v = Math.pow(x*x+y*y-1,3) - x*x*Math.pow(y,3);
+      if(v <= 0.03){
+        const color = pick(palette,rng);
+        cells[r+","+c] = {code:color.code,status:"MAPPED",color:color};
+      }
+    }
+  }
+  return cells;
+}
+const PATTERN_COLORS = LIB.filter(l=>["A02","A03","A05","A06","A07","A08","A09","A10","A12","A13","B02","B10"].includes(l.code));
+const UNMAPPED_CODES = ["Z99","X7","Q12","M45","W1"];
+
+/* 任务数据 */
+let SEQ = 100;
+function mkJob(rows, cols, status, minAgo, opts={}){
+  const total = rows*cols;
+  const done = status==="SUCCEEDED"||status==="SUCCEEDED_WITH_WARNINGS" ? total : (status==="PROCESSING"? Math.floor(total*.37) : (status==="FAILED"? Math.floor(total*.62) : 0));
+  return {
+    id: opts.id || ("job-"+(SEQ++)),
+    status, stage: status==="PENDING"?"QUEUED":(status==="PROCESSING"?"OCR":"DONE"),
+    rows, cols, total, processed: done,
+    attempt: opts.attempt||0, maxRetries:2, retryCount: opts.retryCount||0,
+    snapshot: {model:"crnn_v2.pt", colorLibraryVersion: LIB_VERSION},
+    createdAt: ago(minAgo*60000),
+    updatedAt: ago(Math.max(0,minAgo*60000-15000)),
+    heartbeatAt: (status==="PENDING")?null:ago(Math.max(0,minAgo*60000-8000)),
+    error: opts.error||null,
+    warnings: opts.warnings||[],
+    blueprintId: opts.blueprintId||null,
+    events: [], cells: null,
+    unmappedCode: opts.unmappedCode||null,
+  };
+}
+
+function buildEvents(job){
+  const evs = [{sequence:1, attempt:job.attempt, type:"JOB_STARTED", ts:job.createdAt, payload:{rows:job.rows, cols:job.cols}}];
+  let seq=2;
+  const steps = Math.min(16, job.total);
+  const step = Math.max(1, Math.floor(job.total/steps));
+  let from = 1;
+  const terminalAt = job.total;
+  for(let p=step; p<terminalAt; p+=step){
+    const to = Math.min(p, job.total-1);
+    evs.push({sequence:seq++, attempt:job.attempt, type:"CELL_PROCESSED", ts:ago(1000), payload:{from, to, status:"MAPPED"}});
+    from = to+1;
+    if(seq%5===0) evs.push({sequence:seq++, attempt:job.attempt, type:"HEARTBEAT", ts:ago(900), payload:{}});
+  }
+  if(job.status==="FAILED"){
+    evs.push({sequence:seq++, attempt:job.attempt, type:"CELL_FAILED", ts:ago(800), payload:{row:11, col:23, reason:"模型推理超时（2s）"}});
+    evs.push({sequence:seq++, attempt:job.attempt, type:"JOB_FAILED", ts:ago(700), payload:{code:"OCR_MODEL_ERROR", message:"第 12 行 24 列 OCR 推理超时，已重试 2 次"}});
+  } else if(job.status==="SUCCEEDED" || job.status==="SUCCEEDED_WITH_WARNINGS"){
+    evs.push({sequence:seq++, attempt:job.attempt, type:"JOB_SUCCEEDED", ts:ago(600), payload:{processedCells:job.total, unmappedCells:job.warnings.length}});
+  }
+  return evs;
+}
+
+/* 预置 6 个任务，覆盖全部状态 */
+const JOBS = [];
+JOBS.push(Object.assign(mkJob(29,29,"SUCCEEDED", 260, {id:"job-1001", blueprintId:"bp-1001"}), {cells:null}));
+JOBS.push(Object.assign(mkJob(29,29,"SUCCEEDED_WITH_WARNINGS", 200, {
+  id:"job-1002", blueprintId:"bp-1002",
+  warnings:[
+    {code:"UNMAPPED_COLOR", row:12, col:17, detail:"编码 Z99 不在颜色库快照 seed-2026-07-12"},
+    {code:"UNMAPPED_COLOR", row:19, col:6,  detail:"编码 X7 不在颜色库快照 seed-2026-07-12"},
+    {code:"UNMAPPED_COLOR", row:21, col:22, detail:"编码 Q12 不在颜色库快照 seed-2026-07-12"},
+  ],
+  unmappedCode:UNMAPPED_CODES[0],
+}), {cells:null}));
+JOBS.push(Object.assign(mkJob(29,29,"FAILED", 95, {
+  id:"job-1003", attempt:2, retryCount:2,
+  error:{code:"OCR_MODEL_ERROR", message:"第 12 行 24 列 OCR 推理超时，已重试 2 次（达到上限）"},
+}), {cells:null}));
+JOBS.push(Object.assign(mkJob(21,21,"SUCCEEDED", 42, {id:"job-1004", blueprintId:"bp-1004"}), {cells:null}));
+JOBS.push(mkJob(29,29,"PROCESSING", 1, {id:"job-1005"}));
+JOBS.push(mkJob(29,29,"PENDING", 0, {id:"job-1006"}));
+JOBS.forEach(j=>{ j.events = buildEvents(j); });
+
+const findJob = id => JOBS.find(j=>j.id===id);
+const findBp = id => JOBS.find(j=>j.blueprintId===id);
+
+/* 现场模拟状态（live processing job） */
+let LIVE = null; // {timer, job}
+
+/* ════════════════════════════════════════════════════════
+   路由
+   ════════════════════════════════════════════════════════ */
+function route(){
+  const h = location.hash || "#/upload";
+  const [path, param] = h.replace(/^#\//,"").split("/");
+  const view = document.getElementById("view");
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active", t.dataset.view===path));
+  if(path==="upload") renderUpload(view);
+  else if(path==="history") renderHistory(view);
+  else if(path==="trace") renderTrace(view, param);
+  else if(path==="blueprint") renderBlueprint(view, param);
+  else renderUpload(view);
+}
+window.addEventListener("hashchange", route);
+
+/* ── Toast ─────────────────────────────────────────── */
+let toastTimer=null;
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"), 2600);
+}
+
+/* ── Tooltip ───────────────────────────────────────── */
+const tip = document.getElementById("tooltip");
+function showTip(html, x, y){
+  tip.innerHTML=html; tip.style.display="block";
+  const r=tip.getBoundingClientRect();
+  let lx=x+14, ly=y+14;
+  if(lx+r.width>innerWidth-10) lx=x-r.width-14;
+  if(ly+r.height>innerHeight-10) ly=y-r.height-14;
+  tip.style.left=lx+"px"; tip.style.top=ly+"px";
+}
+function hideTip(){tip.style.display="none"}
+
+/* ════════════════════════════════════════════════════════
+   视图 1 · 单裁剪上传
+   ════════════════════════════════════════════════════════ */
+const UPLOAD = {
+  img:null,          // HTMLImageElement
+  natW:0, natH:0,
+  crop:{x:.1,y:.12,w:.8,h:.76},  // 相对坐标
+  rows:29, cols:29,
+  codes:[],          // {text, valid}
+  input:null,        // 编码输入框
+  drag:null,
+};
+
+function drawSampleBoard(){
+  /* 生成一张模拟的「用户上传的拼豆照片」（蓝线网格 + 彩色豆） */
+  const cv=document.createElement("canvas");
+  cv.width=900; cv.height=660;
+  const g=cv.getContext("2d");
+  g.fillStyle="#F6F2E9"; g.fillRect(0,0,900,660);
+  const rng=mulberry32(7);
+  const nr=30, nc=34;
+  const cw=900/nc, ch=660/nr;
+  for(let r=0;r<nr;r++){
+    for(let c=0;c<nc;c++){
+      if(rng()<.55){
+        const col=pick(PATTERN_COLORS,rng);
+        g.fillStyle=col.hex;
+        g.beginPath();
+        g.arc(c*cw+cw/2, r*ch+ch/2, Math.min(cw,ch)*.32, 0, Math.PI*2);
+        g.fill();
+        g.strokeStyle="rgba(0,0,0,.14)";
+        g.lineWidth=1;
+        g.stroke();
+      }
+    }
+  }
+  g.strokeStyle="#2B6EE8"; g.lineWidth=3;
+  g.strokeRect(2,2,896,656);
+  return cv;
+}
+
+function renderUpload(view){
+  view.innerHTML = `
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">上传图纸<small>选择照片 → 框出拼豆区域 → 设置行列 → 开始识别</small></h1>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="kicker">Step 1</span>选择照片<span class="ghost-tag">不会自动识别 · 需手动提交</span></h3>
+      <div class="upload-tools">
+        <label class="btn" for="file-input">选择图片文件</label>
+        <input id="file-input" type="file" accept="image/jpeg,image/png" hidden>
+        <button class="btn" id="sample-btn">使用示例照片</button>
+      </div>
+      <div class="hint" style="margin-top:10px">支持 JPEG / PNG，最大 20MB。选择后在此框出拼豆网格区域。</div>
+      <div class="crop-stage" id="crop-stage" style="margin-top:14px">
+        <img id="crop-img" alt="拼豆照片">
+        <div class="crop-box" id="crop-box">
+          <span class="handle h-nw"></span><span class="handle h-n"></span><span class="handle h-ne"></span>
+          <span class="handle h-w"></span><span class="handle h-e"></span>
+          <span class="handle h-sw"></span><span class="handle h-s"></span><span class="handle h-se"></span>
+        </div>
+        <div class="crop-readout" id="crop-readout">未选择图片</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="kicker">Step 2</span>网格参数</h3>
+      <div class="grid-two">
+        <div class="field">
+          <label class="label">行数 <b>rows</b></label>
+          <input class="input mono" id="rows-input" type="number" min="1" max="500" value="29">
+          <div class="hint">范围 1–500，以裁剪框内的豆粒行数为准</div>
+        </div>
+        <div class="field">
+          <label class="label">列数 <b>cols</b></label>
+          <input class="input mono" id="cols-input" type="number" min="1" max="500" value="29">
+          <div class="hint">范围 1–500</div>
+        </div>
+      </div>
+      <div class="hint">合计格数：<span class="cell-count" id="cell-count">841</span></div>
+    </div>
+
+    <div class="card">
+      <h3><span class="kicker">Step 3</span>图纸级编码（可选）</h3>
+      <p class="card-sub">整张图纸使用的编码清单，用于 OCR 约束与颜色匹配。留空则使用全部颜色库。</p>
+      <input class="input mono" id="codes-input" type="text" placeholder="例如：A01, A05, B10（字母+1~3位数字，自动转大写）">
+      <div class="chips" id="codes-chips"></div>
+      <div class="error-text" id="codes-error" hidden></div>
+      <div class="hint">合法但不在颜色库的编码将被标记为 UNMAPPED，不影响创建任务</div>
+    </div>
+
+    <div class="card">
+      <h3><span class="kicker">Step 4</span>颜色库</h3>
+      <div class="lib-row">
+        <select class="input" style="max-width:300px" id="lib-select">
+          <option>默认种子颜色库（${LIB_VERSION}）</option>
+        </select>
+        <div>
+          <div class="swatch-title">快照预览 · ${LIB.length} 色</div>
+          <div class="swatches">${LIB.map(c=>`<span class="swatch" style="background:${c.hex}" title="${c.code} ${c.name}"></span>`).join("")}</div>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:8px">任务创建时快照颜色库，图纸保存识别时的颜色信息（不会因之后库变化而改变）。</div>
+    </div>
+
+    <div style="display:flex;gap:12px;align-items:center">
+      <button class="btn btn-primary" id="submit-btn">开始识别</button>
+      <span class="hint" id="submit-hint">先选择照片并设置行列</span>
+    </div>
+  `;
+
+  /* 绑定 */
+  const imgEl=view.querySelector("#crop-img");
+  const box=view.querySelector("#crop-box");
+  const stage=view.querySelector("#crop-stage");
+  const readout=view.querySelector("#crop-readout");
+
+  const loadImage = src => {
+    const img=new Image();
+    img.onload=()=>{
+      UPLOAD.img=img; UPLOAD.natW=img.naturalWidth; UPLOAD.natH=img.naturalHeight;
+      imgEl.onload=updateCrop;      /* 元素布局稳定后再定位裁剪框 */
+      imgEl.src=src;
+      UPLOAD.crop={x:.08,y:.1,w:.84,h:.74};
+      updateCrop();
+      updateSubmit();
+      toast("照片已就绪，请框出拼豆网格区域");
+    };
+    img.src=src;
+  };
+  view.querySelector("#sample-btn").addEventListener("click", ()=>loadImage(drawSampleBoard().toDataURL("image/png")));
+  view.querySelector("#file-input").addEventListener("change", e=>{
+    const f=e.target.files[0];
+    if(!f) return;
+    if(f.size>20*1024*1024){ toast("文件超过 20MB"); return; }
+    const rd=new FileReader();
+    rd.onload=()=>loadImage(rd.result);
+    rd.readAsDataURL(f);
+  });
+
+  /* 裁剪框：相对坐标 → 像素 */
+  const stageRect=()=>imgEl.getBoundingClientRect();
+  function cropToPx(){
+    const r=stageRect();
+    return {x:UPLOAD.crop.x*r.width, y:UPLOAD.crop.y*r.height, w:UPLOAD.crop.w*r.width, h:UPLOAD.crop.h*r.height};
+  }
+  function updateCrop(){
+    if(!UPLOAD.img) return;
+    const r=stageRect();
+    const px=cropToPx();
+    box.style.left=px.x+"px"; box.style.top=px.y+"px";
+    box.style.width=px.w+"px"; box.style.height=px.h+"px";
+    const nx=Math.round(UPLOAD.crop.x*UPLOAD.natW), ny=Math.round(UPLOAD.crop.y*UPLOAD.natH);
+    const nw=Math.round(UPLOAD.crop.w*UPLOAD.natW), nh=Math.round(UPLOAD.crop.h*UPLOAD.natH);
+    readout.textContent=`裁剪 ${nw}×${nh}px @ (${nx}, ${ny})`;
+  }
+  window.addEventListener("resize", ()=>{ if(UPLOAD.img) updateCrop(); });
+
+  /* 拖拽 */
+  stage.addEventListener("pointerdown", e=>{
+    if(!UPLOAD.img) return;
+    const r=stageRect();
+    const t=e.target;
+    const mode = t.classList.contains("h-nw")?"nw":t.classList.contains("h-ne")?"ne":
+                 t.classList.contains("h-sw")?"sw":t.classList.contains("h-se")?"se":
+                 t.classList.contains("h-n")?"n":t.classList.contains("h-s")?"s":
+                 t.classList.contains("h-w")?"w":t.classList.contains("h-e")?"e":
+                 t===box?"move":null;
+    if(!mode) return;
+    e.preventDefault();
+    const startX=e.clientX, startY=e.clientY;
+    const c0={...UPLOAD.crop};
+    const relX=(e.clientX-r.left)/r.width, relY=(e.clientY-r.top)/r.height;
+    const offX=relX-c0.x, offY=relY-c0.y;
+    const minW=.04, minH=.04;
+    UPLOAD.drag={mode,startX,startY,c0,offX,offY,minW,minH};
+    box.setPointerCapture(e.pointerId);
+  });
+  stage.addEventListener("pointermove", e=>{
+    if(!UPLOAD.drag) return;
+    const r=stageRect();
+    const d=UPLOAD.drag;
+    const dx=(e.clientX-d.startX)/r.width, dy=(e.clientY-d.startY)/r.height;
+    let c={...d.c0};
+    const m=d.mode;
+    if(m==="move"){
+      c.x=Math.min(Math.max(0, d.c0.x+dx), 1-c.w);
+      c.y=Math.min(Math.max(0, d.c0.y+dy), 1-c.h);
+    } else {
+      if(m.includes("e")) c.w=Math.min(Math.max(d.minW, d.c0.w+dx), 1-c.x);
+      if(m.includes("s")) c.h=Math.min(Math.max(d.minH, d.c0.h+dy), 1-c.y);
+      if(m.includes("w")){ const nw=Math.min(Math.max(d.minW, d.c0.w-dx), c.x+c.w); c.x+=(c.w-nw); c.w=nw; }
+      if(m.includes("n")){ const nh=Math.min(Math.max(d.minH, d.c0.h-dy), c.y+c.h); c.y+=(c.h-nh); c.h=nh; }
+    }
+    UPLOAD.crop=c;
+    updateCrop();
+  });
+  const endDrag=e=>{ UPLOAD.drag=null; };
+  stage.addEventListener("pointerup", endDrag);
+  stage.addEventListener("pointercancel", endDrag);
+
+  /* 行列 */
+  const rowsEl=view.querySelector("#rows-input"), colsEl=view.querySelector("#cols-input");
+  const cellCount=view.querySelector("#cell-count");
+  const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,v));
+  function updateGrid(){
+    UPLOAD.rows=clamp(parseInt(rowsEl.value)||29,1,500);
+    UPLOAD.cols=clamp(parseInt(colsEl.value)||29,1,500);
+    rowsEl.value=UPLOAD.rows; colsEl.value=UPLOAD.cols;
+    cellCount.textContent=UPLOAD.rows*UPLOAD.cols;
+    updateSubmit();
+  }
+  rowsEl.addEventListener("input", updateGrid);
+  colsEl.addEventListener("input", updateGrid);
+
+  /* 编码 chips + 校验 */
+  const codesInput=view.querySelector("#codes-input");
+  const chipsEl=view.querySelector("#codes-chips");
+  const codesErr=view.querySelector("#codes-error");
+  const CODE_RE=/^[A-Za-z][0-9]{1,3}$/;
+  function renderChips(){
+    chipsEl.innerHTML=UPLOAD.codes.map((c,i)=>
+      `<span class="chip ${c.valid?"":"bad"}">${c.text}<span class="x" data-i="${i}">×</span></span>`).join("");
+    chipsEl.querySelectorAll(".x").forEach(x=>x.addEventListener("click",()=>{
+      UPLOAD.codes.splice(+x.dataset.i,1); renderChips(); updateSubmit();
+    }));
+  }
+  function parseCodes(){
+    const raw=codesInput.value;
+    const parts=raw.split(/[,，\s]+/).map(s=>s.trim()).filter(Boolean);
+    UPLOAD.codes=parts.map(p=>({text:p.toUpperCase(), valid:CODE_RE.test(p)}));
+    renderChips();
+    const bad=UPLOAD.codes.filter(c=>!c.valid);
+    codesErr.hidden = bad.length===0;
+    codesErr.textContent = bad.length? `以下编码格式不正确：${bad.map(b=>b.text).join("、")}（应为 字母+1~3位数字，如 A01）`:"";
+    updateSubmit();
+  }
+  codesInput.addEventListener("input", parseCodes);
+  codesInput.addEventListener("blur", ()=>{ codesInput.value=codesInput.value.toUpperCase(); parseCodes(); });
+
+  /* 提交 */
+  function updateSubmit(){
+    const btn=view.querySelector("#submit-btn");
+    const hint=view.querySelector("#submit-hint");
+    const badCodes=UPLOAD.codes.filter(c=>!c.valid);
+    if(!UPLOAD.img){ btn.disabled=true; hint.textContent="请先选择照片"; return; }
+    if(badCodes.length){ btn.disabled=true; hint.textContent="请修正编码格式后再提交"; return; }
+    btn.disabled=false;
+    hint.textContent=`将创建 ${UPLOAD.rows}×${UPLOAD.cols}（${UPLOAD.rows*UPLOAD.cols} 格）识别任务`;
+  }
+  view.querySelector("#submit-btn").addEventListener("click", createJob);
+
+  /* 初始：直接加载示例照片 */
+  loadImage(drawSampleBoard().toDataURL("image/png"));
+}
+
+  /* 创建任务（模拟 POST /api/v1/jobs → 202） */
+function createJob(){
+  const validCodes=UPLOAD.codes.filter(c=>c.valid).map(c=>c.text);
+  const job=mkJob(UPLOAD.rows, UPLOAD.cols, "PENDING", 0, {id:"job-"+(SEQ++)});
+  job.snapshot={model:"crnn_v2.pt", colorLibraryVersion:LIB_VERSION};
+  job.validCodes = validCodes;
+  job.live = true;   /* 用户新建任务：进入追踪页即开始模拟 */
+  job.events=[{sequence:1, attempt:0, type:"JOB_STARTED", ts:new Date().toISOString(), payload:{rows:job.rows, cols:job.cols}}];
+  JOBS.unshift(job);
+  toast("任务已创建，进入追踪");
+  location.hash="#/trace/"+job.id;
+}
+
+/* ════════════════════════════════════════════════════════
+   视图 2 · 任务历史
+   ════════════════════════════════════════════════════════ */
+let histFilter="ALL", histPage=1;
+const PAGE_SIZE=5;
+
+function renderHistory(view){
+  const counts={};
+  JOBS.forEach(j=>{ counts[j.status]=(counts[j.status]||0)+1; });
+  const statuses=["ALL","PENDING","PROCESSING","SUCCEEDED","SUCCEEDED_WITH_WARNINGS","FAILED"];
+  const filtered=JOBS.filter(j=>histFilter==="ALL"||j.status===histFilter)
+    .sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+  const pages=Math.max(1,Math.ceil(filtered.length/PAGE_SIZE));
+  histPage=Math.min(histPage,pages);
+  const pageItems=filtered.slice((histPage-1)*PAGE_SIZE, histPage*PAGE_SIZE);
+
+  view.innerHTML=`
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">任务历史<small>所有识别任务的进度与结果，点击任意任务查看追踪详情</small></h1>
+      </div>
+      <button class="btn" onclick="location.hash='#/upload'">＋ 上传新图纸</button>
+    </div>
+
+    <div class="filter-chips">
+      ${statuses.map(s=>{
+        const label=s==="ALL"?"全部":STATUS_LABEL[s];
+        const n=s==="ALL"?JOBS.length:(counts[s]||0);
+        return `<button class="fchip ${histFilter===s?"active":""}" data-f="${s}">${label}<span class="n">${n}</span></button>`;
+      }).join("")}
+    </div>
+
+    <div class="card" style="padding:8px 14px">
+      <table class="tbl">
+        <thead><tr>
+          <th>任务</th><th>状态</th><th>图纸</th><th>进度</th><th>创建时间</th><th></th>
+        </tr></thead>
+        <tbody>
+        ${pageItems.map(j=>`
+          <tr data-id="${j.id}">
+            <td class="mono">#${short(j.id)}</td>
+            <td><span class="badge" data-s="${j.status}">${STATUS_LABEL[j.status]}</span></td>
+            <td>${j.rows}×${j.cols}</td>
+            <td class="prog">${j.processed}/${j.total}</td>
+            <td class="prog">${fmtTs(j.createdAt)}</td>
+            <td style="text-align:right"><span class="back">查看追踪 →</span></td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+      ${filtered.length===0?`<div class="empty"><div class="big">🫙</div>没有该状态的任务</div>`:""}
+    </div>
+
+    <div class="pager">
+      <button id="pg-prev" ${histPage<=1?"disabled":""}>← 上一页</button>
+      <span class="pg">第 ${histPage} / ${pages} 页 · 共 ${filtered.length} 个任务</span>
+      <button id="pg-next" ${histPage>=pages?"disabled":""}>下一页 →</button>
+    </div>
+  `;
+
+  view.querySelectorAll(".fchip").forEach(ch=>ch.addEventListener("click",()=>{
+    histFilter=ch.dataset.f; histPage=1; renderHistory(view);
+  }));
+  view.querySelectorAll("tr[data-id]").forEach(tr=>tr.addEventListener("click",()=>{
+    location.hash="#/trace/"+tr.dataset.id;
+  }));
+  view.querySelector("#pg-prev").addEventListener("click",()=>{ histPage--; renderHistory(view); });
+  view.querySelector("#pg-next").addEventListener("click",()=>{ histPage++; renderHistory(view); });
+}
+
+/* ════════════════════════════════════════════════════════
+   视图 3 · 只读追踪详情
+   ════════════════════════════════════════════════════════ */
+function renderTrace(view, jobId){
+  const job=findJob(jobId);
+  if(!job){ view.innerHTML=`<div class="empty"><div class="big">🧭</div>任务不存在</div>`; return; }
+
+  const pct=Math.round(job.processed/job.total*100);
+  const running = job.status==="PENDING" || job.status==="PROCESSING";
+  const isLive = !!job.live || (job.status==="PROCESSING" && job.id==="job-1005") || (job.status==="PENDING" && job.id==="job-1006");
+
+  view.innerHTML=`
+    <div class="page-head">
+      <div>
+        <a class="back" href="#/history">← 返回任务历史</a>
+        <h1 class="page-title" style="margin-top:6px">追踪 · <span class="mono" style="font-size:20px">#${short(job.id)}</span></h1>
+      </div>
+      <span class="badge" data-s="${job.status}">${STATUS_LABEL[job.status]}</span>
+    </div>
+
+    ${job.status==="FAILED" ? `
+      <div class="banner err">
+        <div class="b-title">识别失败 · ${job.error.code}</div>
+        ${job.error.message}
+        <ul><li>已自动重试 ${job.retryCount}/${job.maxRetries} 次</li><li>可回到上传页重新框选后重试</li></ul>
+      </div>` : ""}
+
+    ${job.warnings.length>0 ? `
+      <div class="banner warn">
+        <div class="b-title">已完成，但有 ${job.warnings.length} 个未匹配编码</div>
+        <ul>${job.warnings.map(w=>`<li><span class="mono">(${w.row}, ${w.col})</span> ${w.detail}</li>`).join("")}</ul>
+      </div>` : ""}
+
+    ${running ? `<div class="banner info"><div class="b-title">识别进行中</div>
+        处理完成前不展示半成品棋盘；可在此页实时查看进度与事件流水，成功后即可打开图纸。</div>` : ""}
+
+    <div class="trace-grid">
+      <div class="stack">
+        <div class="card">
+          <h3><span class="kicker">Progress</span>识别进度</h3>
+          <div class="progress-head">
+            <span class="pct">${pct}<small>%</small></span>
+            <span class="mono" style="color:var(--mist);font-size:12px">${job.processed.toLocaleString()} / ${job.total.toLocaleString()} 格</span>
+          </div>
+          <div class="progress-track"><div class="progress-fill ${pct>=100?"done":""}" id="prog-fill" style="width:${pct}%"></div></div>
+          <div class="progress-meta">
+            <span>阶段：<span class="mono">${job.stage}</span></span>
+            <span>尝试：<span class="mono">${job.attempt+1} / ${job.maxRetries+1}</span></span>
+            <span>重试：<span class="mono">${job.retryCount}</span></span>
+          </div>
+          ${running?`<div class="poll-note"><span class="live-dot"></span>React Query 每 2s 轮询 · 心跳每 30s</div>`:""}
+        </div>
+
+        <div class="card">
+          <h3><span class="kicker">Job</span>任务信息</h3>
+          <div class="kv"><span class="k">任务 ID</span><span class="v">${job.id}</span></div>
+          <div class="kv"><span class="k">图纸尺寸</span><span class="v">${job.rows} × ${job.cols}</span></div>
+          ${job.validCodes && job.validCodes.length?`<div class="kv"><span class="k">图纸级编码</span><span class="v">${job.validCodes.join(", ")}</span></div>`:""}
+          <div class="kv"><span class="k">模型快照</span><span class="v">${job.snapshot.model}</span></div>
+          <div class="kv"><span class="k">颜色库快照</span><span class="v">${job.snapshot.colorLibraryVersion}</span></div>
+          <div class="kv"><span class="k">创建时间</span><span class="v">${fmtTs(job.createdAt)}</span></div>
+          <div class="kv"><span class="k">最近心跳</span><span class="v">${job.heartbeatAt?fmtTs(job.heartbeatAt):"—"}</span></div>
+          ${job.blueprintId?`<div class="kv"><span class="k">图纸</span><span class="v">${job.blueprintId}</span></div>`:""}
+        </div>
+      </div>
+
+      <div class="card">
+        <h3><span class="kicker">Trace</span>事件流水<span class="ghost-tag">只读 · 按 sequence 升序</span></h3>
+        <div class="events" id="events"></div>
+      </div>
+    </div>
+
+    ${pct>=100 && job.blueprintId ? `
+      <div style="display:flex;gap:12px;align-items:center;margin-top:4px">
+        <button class="btn btn-primary" onclick="location.hash='#/blueprint/${job.blueprintId}'">查看图纸 →</button>
+        <span class="hint">图纸共 ${job.total} 格，含 ${job.warnings.length} 个未匹配编码</span>
+      </div>` : ""}
+  `;
+
+  renderEvents(view.querySelector("#events"), job, isLive);
+
+  if(isLive){
+    if(LIVE && LIVE.job.id===job.id){ /* 已在模拟中，不重复启动 */ }
+    else startLive(job);
+  }
+}
+
+function renderEvents(el, job, live){
+  const evs=job.events;
+  el.innerHTML=evs.map(ev=>`
+    <div class="event ${live&&ev.type==="HEARTBEAT"?"live":""}">
+      <span class="seq">#${String(ev.sequence).padStart(3,"0")}</span>
+      <span class="evtag ${ev.type}">${ev.type}</span>
+      <span class="payload">${evPayload(ev)}</span>
+      <span class="ts">${fmtTs(ev.timestamp)}</span>
+    </div>`).join("");
+  el.scrollTop=el.scrollHeight;
+}
+function evPayload(ev){
+  switch(ev.type){
+    case "JOB_STARTED": return `图纸 ${ev.payload.rows}×${ev.payload.cols} 入队`;
+    case "CELL_PROCESSED": return `格子 ${ev.payload.from.toLocaleString()}–${ev.payload.to.toLocaleString()} 已识别`;
+    case "CELL_FAILED": return `格子 (${ev.payload.row}, ${ev.payload.col}) 失败：${ev.payload.reason}`;
+    case "HEARTBEAT": return "心跳";
+    case "JOB_SUCCEEDED": return `完成，共 ${ev.payload.processedCells.toLocaleString()} 格`+(ev.payload.unmappedCells?`，${ev.payload.unmappedCells} 格未匹配`:"");
+    case "JOB_FAILED": return `${ev.payload.code}：${ev.payload.message}`;
+    case "RETRY_SCHEDULED": return "即将自动重试";
+    default: return "";
+  }
+}
+
+/* 现场模拟：PENDING 1.2s 后进入 PROCESSING，再以 320ms/批 推进到完成 */
+function startLive(job){
+  if(job.status==="SUCCEEDED"||job.status==="SUCCEEDED_WITH_WARNINGS"||job.status==="FAILED") return; /* 终态不再模拟 */
+  const view=document.getElementById("view");
+  const tick=()=>{
+    if(job.status==="PROCESSING"){
+      const batch=6+Math.floor(Math.random()*10);
+      const prev=job.processed;
+      job.processed=Math.min(job.total, job.processed+batch);
+      const seq=job.events.length+1;
+      job.events.push({sequence:seq, attempt:0, type:"CELL_PROCESSED", timestamp:new Date().toISOString(), payload:{from:prev+1, to:job.processed, status:"MAPPED"}});
+      if(seq%4===0) job.events.push({sequence:seq+1, attempt:0, type:"HEARTBEAT", timestamp:new Date().toISOString(), payload:{}});
+      job.heartbeatAt=new Date().toISOString();
+      job.updatedAt=new Date().toISOString();
+      if(job.processed>=job.total){
+        const unmapped = job.id==="job-1006" ? 2 : 0;
+        job.status = unmapped>0 ? "SUCCEEDED_WITH_WARNINGS" : "SUCCEEDED";
+        job.stage="DONE";
+        job.live = false;
+        job.blueprintId="bp-"+(++SEQ);
+        if(unmapped>0){
+          job.warnings=[
+            {code:"UNMAPPED_COLOR", row:13, col:15, detail:"编码 Z99 不在颜色库快照 seed-2026-07-12"},
+            {code:"UNMAPPED_COLOR", row:17, col:19, detail:"编码 X7 不在颜色库快照 seed-2026-07-12"},
+          ];
+        }
+        job.events.push({sequence:job.events.length+1, attempt:0, type:"JOB_SUCCEEDED", timestamp:new Date().toISOString(), payload:{processedCells:job.total, unmappedCells:unmapped}});
+        if(LIVE){ clearInterval(LIVE.timer); LIVE=null; }
+      }
+    } else if(job.status==="PENDING"){
+      job.status="PROCESSING"; job.stage="OCR";
+      job.events.push({sequence:job.events.length+1, attempt:0, type:"HEARTBEAT", timestamp:new Date().toISOString(), payload:{}});
+    }
+    /* 若仍停留在本任务视图则重渲染 */
+    if(location.hash==="#/trace/"+job.id) renderTrace(view, job.id);
+  };
+  if(LIVE){ clearInterval(LIVE.timer); }
+  LIVE={job, timer:setInterval(tick, 320)};
+}
+
+/* ════════════════════════════════════════════════════════
+   视图 4 · 图纸详情（只读）
+   ════════════════════════════════════════════════════════ */
+function renderBlueprint(view, bpId){
+  const job=findBp(bpId);
+  if(!job){ view.innerHTML=`<div class="empty"><div class="big">🧩</div>图纸不存在</div>`; return; }
+  if(!job.cells){
+    const rng=mulberry32(job.id==="bp-1002"?13:job.id==="bp-1004"?21:42);
+    const palette=job.id==="bp-1004"?PATTERN_COLORS.slice(0,7):PATTERN_COLORS;
+    const cells=heartCells(job.rows, job.cols, rng, palette);
+    /* 注入 UNMAPPED 格（警告任务） */
+    if(job.warnings.length>0){
+      job.warnings.forEach((w,i)=>{
+        const k=w.row+","+w.col;
+        if(cells[k]) cells[k]={code:job.unmappedCode||UNMAPPED_CODES[i], status:"UNMAPPED", color:null};
+      });
+    }
+    job.cells=cells;
+  }
+
+  const cellCount=Object.keys(job.cells).length;
+  const counts={};
+  let unmappedN=0;
+  Object.values(job.cells).forEach(c=>{
+    if(c.status==="UNMAPPED"){ unmappedN++; }
+    else{ const k=c.code; counts[k]=(counts[k]||0)+1; }
+  });
+  const legend=Object.entries(counts).sort((a,b)=>b[1]-a[1])
+    .map(([code,n])=>{
+      const col=LIB.find(l=>l.code===code)||{code,name:"?",hex:"CCCCCC"};
+      return `<div class="legend-item"><span class="dot" style="background:${col.hex}"></span>
+        <span class="l-code">${code}</span><span class="l-name">${col.name}</span><span class="l-count">${n}</span></div>`;
+    }).join("");
+
+  view.innerHTML=`
+    <div class="page-head">
+      <div>
+        <a class="back" href="#/trace/${job.id}">← 返回任务追踪</a>
+        <h1 class="page-title" style="margin-top:6px">图纸 · <span class="mono" style="font-size:20px">${job.id}</span></h1>
+      </div>
+      <span class="badge" data-s="${job.status}">${STATUS_LABEL[job.status]}</span>
+    </div>
+
+    ${unmappedN>0?`
+      <div class="banner warn">
+        <div class="b-title">${unmappedN} 个格子未匹配颜色库</div>
+        <ul>${job.warnings.map(w=>`<li><span class="mono">(${w.row}, ${w.col})</span> ${w.detail}</li>`).join("")}</ul>
+      </div>`:""}
+
+    <div class="board-panel">
+      <div class="board-meta">
+        <span class="info">图纸 <b>${job.rows} × ${job.cols}</b> · 已放置 <b>${cellCount.toLocaleString()}</b> 格豆粒</span>
+        <div class="board-tools">
+          <label>豆粒大小 <input type="range" id="zoom" min="8" max="30" value="16"></label>
+          <label><input type="checkbox" id="show-codes"> 显示编码</label>
+        </div>
+      </div>
+      <div class="board-scroll">
+        <div class="board" id="board"></div>
+      </div>
+      <div class="legend">${legend}${unmappedN?`<div class="legend-item unm"><span class="dot" style="background:repeating-linear-gradient(45deg,#F0F0F0 0 4px,#D8DCE2 4px 8px)"></span><span class="l-code">UNMAPPED</span><span class="l-name">未匹配</span><span class="l-count">${unmappedN}</span></div>`:""}</div>
+    </div>
+  `;
+
+  const board=view.querySelector("#board");
+  const zoom=view.querySelector("#zoom");
+  const showCodes=view.querySelector("#show-codes");
+
+  const renderBoard=()=>{
+    board.style.gridTemplateColumns=`repeat(${job.cols}, var(--bead))`;
+    let html="";
+    for(let r=0;r<job.rows;r++){
+      for(let c=0;c<job.cols;c++){
+        const cell=job.cells[r+","+c];
+        if(!cell){ html+=`<div class="bead-cell empty"></div>`; continue; }
+        if(cell.status==="UNMAPPED"){
+          html+=`<div class="bead-cell" data-pos="${r},${c}" data-code="${cell.code}" data-unm="1">
+            <div class="bead unmapped"></div></div>`;
+        } else {
+          const col=cell.color;
+          html+=`<div class="bead-cell" data-pos="${r},${c}" data-code="${cell.code}" data-name="${col.name}" data-hex="${col.hex}">
+            <div class="bead" style="--c:${col.hex}"><span class="bead-code" style="display:none">${cell.code}</span></div></div>`;
+        }
+      }
+    }
+    board.innerHTML=html;
+    const showCode=showCodes.checked;
+    board.querySelectorAll(".bead-code").forEach(s=>s.style.display=showCode?"flex":"none");
+
+    /* tooltip 委托 */
+    board.querySelectorAll(".bead-cell").forEach(cell=>{
+      cell.addEventListener("mouseenter",()=>{});
+      cell.addEventListener("mousemove",e=>{
+        const pos=cell.dataset.pos, code=cell.dataset.code;
+        if(cell.dataset.unm){
+          showTip(`<div class="t-code">${code}</div><div class="t-warn">⚠ 不在颜色库快照（UNMAPPED）</div><div class="t-pos">格 ${pos}</div>`, e.clientX, e.clientY);
+        } else {
+          showTip(`<div class="t-code">${code} · ${cell.dataset.name}</div><div class="t-pos">格 ${pos}</div>`, e.clientX, e.clientY);
+        }
+      });
+      cell.addEventListener("mouseleave", hideTip);
+    });
+  };
+  renderBoard();
+  zoom.addEventListener("input",()=>{ board.style.setProperty("--bead", zoom.value+"px"); renderBoard(); });
+  showCodes.addEventListener("change", renderBoard);
+}
+
+/* 启动 */
+route();
+</script>
+</body>
+</html>

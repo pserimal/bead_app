@@ -8,6 +8,7 @@ import { ToastProvider } from './components/ToastContext';
 import { pageSlideUpFadeOut } from './lib/animations';
 import UploadPage from './pages/UploadPage';
 import HistoryPage from './pages/HistoryPage';
+import JobDetailPage from './pages/JobDetailPage';
 import BlueprintDetailPage from './pages/BlueprintDetailPage';
 import ColorLibraryPage from './pages/ColorLibraryPage';
 
@@ -39,6 +40,14 @@ function AnimatedRoutes() {
           element={
             <AnimatedPage variants={pageSlideUpFadeOut}>
               <HistoryPage />
+            </AnimatedPage>
+          }
+        />
+        <Route
+          path="/jobs/:id"
+          element={
+            <AnimatedPage variants={pageSlideUpFadeOut}>
+              <JobDetailPage />
             </AnimatedPage>
           }
         />

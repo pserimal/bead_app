@@ -9,6 +9,7 @@ Usage:
     cd training && python -m training.scripts.eval_stand
     # or with a custom checkpoint:
     CRNN_MODEL_PATH=../training/checkpoints/crnn_v1.pt python -m training.scripts.eval_stand
+    # (模型现在经 ocr_core 加载；artifact 通过 MODEL_ARTIFACT_DIR 指定)
 """
 from __future__ import annotations
 
@@ -89,7 +90,7 @@ def _evaluate_one(image_path: Path, ocr_fn) -> dict:
 
 
 def main():
-    from app.services.bead_ocr_crnn_inference import ocr_cells_from_crop_crnn
+    from ocr_core.inference import ocr_cells_from_crop as ocr_cells_from_crop_crnn
 
     if not MANIFEST.exists():
         raise SystemExit(f"Missing {MANIFEST}")

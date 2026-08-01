@@ -1,33 +1,13 @@
 import apiClient from './client';
-import type { ColorLibrary, ColorEntry, ColorEntryCreate, ColorEntryUpdate } from '../types';
+import type { ColorDto, PageResponse } from '../types/api';
 
-export async function getLibraries(): Promise<ColorLibrary[]> {
-  const { data } = await apiClient.get<ColorLibrary[]>('/color-libraries');
+/** 007：颜色库（q 前缀搜索 + 分页） */
+export async function getColors(params: { q?: string; page?: number; pageSize?: number } = {}): Promise<PageResponse<ColorDto>> {
+  const { data } = await apiClient.get('/colors', { params });
   return data;
 }
 
-export async function getLibrary(id: number): Promise<ColorLibrary> {
-  const { data } = await apiClient.get<ColorLibrary>(`/color-libraries/${id}`);
+export async function getColor(code: string): Promise<ColorDto> {
+  const { data } = await apiClient.get(`/colors/${code}`);
   return data;
-}
-
-export async function addEntry(libraryId: number, entry: ColorEntryCreate): Promise<ColorEntry> {
-  const { data } = await apiClient.post<ColorEntry>(`/color-libraries/${libraryId}/entries`, entry);
-  return data;
-}
-
-export async function updateEntry(
-  libraryId: number,
-  entryId: number,
-  entry: ColorEntryUpdate,
-): Promise<ColorEntry> {
-  const { data } = await apiClient.put<ColorEntry>(
-    `/color-libraries/${libraryId}/entries/${entryId}`,
-    entry,
-  );
-  return data;
-}
-
-export async function deleteEntry(libraryId: number, entryId: number): Promise<void> {
-  await apiClient.delete(`/color-libraries/${libraryId}/entries/${entryId}`);
 }

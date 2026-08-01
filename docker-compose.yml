@@ -1,32 +1,103 @@
+# 013 决议：postgres + spring-boot + python-crnn 三服务拓扑。
+# 反模式移除：硬编码凭据 → .env 注入；不发布 postgres/python 端口；版本 pin；
+# restart + start_period 健康检查；双网络隔离。
+#
+# 使用（仓库根）：
+#   cp .env.example .env && docker compose up -d --build
+#
+# 本地开发覆盖（docker-compose.dev.yml）：
+#   发布 postgres 5432 / python 8001 便于调试；模型挂载宿主机目录
+
+name: bead-app
+
 services:
+  # ── PostgreSQL 16（唯一 DB，internal 网络，不发布宿主机端口）──
   db:
-    image: postgres:16
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: 123456
-      POSTGRES_DB: bead_app
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${DB_USER:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-123456}
+      POSTGRES_DB: ${DB_NAME:-bead_app}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-admin} -d ${DB_NAME:-bead_app}"]
       interval: 5s
-      timeout: 5s
-      retries: 5
+      timeout: 3s
+      retries: 10
+      start_period: 10s
 
-  backend:
-    build: ./backend
+  # ── Spring Boot（唯一对外 HTTP 服务 :8080）──
+  spring-boot:
+    build:
+      context: ./server
+    restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "8080:8080"
     environment:
-      DATABASE_URL: postgresql+asyncpg://admin:123456@db:5432/bead_app
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-bead_app}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-admin}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-123456}
+      BEAD_PYTHON_BASE_URL: http://python-crnn:8001
+      CALLBACK_BASE_URL: http://spring-boot:8080
+      BEAD_STORAGE_DIR: /app/uploads
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173}
+    volumes:
+      - uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy
+      # python-crnn 软依赖（008 恢复循环兜底，不设硬闸门）
+      python-crnn:
+        condition: service_started
+    networks:
+      - frontend
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  # ── Python CRNN image-service（内部，不发布端口；无 DB 访问）──
+  python-crnn:
+    build:
+      context: .
+      dockerfile: image_service/Dockerfile
+    restart: unless-stopped
+    environment:
+      MODEL_ARTIFACT_DIR: /models
+      CODE_LIBRARY_PATH: /app/artifacts/colors/library.json
+      CALLBACK_BASE_URL: http://spring-boot:8080
+      OCR_MIN_CONF: "0.0"
+      HEARTBEAT_INTERVAL_S: "30"
     volumes:
-      - ./backend:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      # 010 R3：模型 artifact 只读挂载（宿主目录由 .env 指定，默认 artifacts/models/current）
+      - ${MODEL_ARTIFACT_HOST_DIR:-./artifacts/models/current}:/models:ro
+      - /tmp/image_service:/tmp/image_service
+    depends_on:
+      spring-boot:
+        condition: service_started
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,json; d=json.load(urllib.request.urlopen('http://localhost:8001/health')); exit(0 if d.get('model_ready') else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 60s  # torch 冷启动
+
+networks:
+  frontend:
+    # 仅 spring-boot 对外；postgres/python 不在此网
+  internal:
+    # db + python + spring 后端流量；python 无 DB 访问（005：网络可达但无凭据）
+    internal: true
 
 volumes:
   pgdata:
+  uploads:

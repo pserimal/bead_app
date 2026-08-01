@@ -22,13 +22,10 @@ import requests
 
 # Color library lives in the backend service (single source of truth for the
 # 65-entry Perler palette). Resolve relative to repo root regardless of cwd.
-_LIBRARY_PATH = Path(__file__).resolve().parent.parent.parent / "backend" / "app" / "data" / "default_colors.json"
-
-
 def _load_library_codes() -> list[str]:
-    with open(_LIBRARY_PATH) as f:
-        entries = json.load(f)
-    return [e["code"] for e in entries]
+    from ocr_core.code_library import load_codes
+
+    return load_codes()
 
 
 def _build_allowlist(codes: list[str]) -> str:

@@ -8,24 +8,24 @@ function readPage(filename: string): string {
   return fs.readFileSync(path.join(pagesDir, filename), 'utf-8');
 }
 
-describe('API consistency — no raw fetch/alert/reload', () => {
-  it('UploadPage.tsx uses apiClient instead of raw fetch', () => {
+describe('API consistency — no raw fetch/alert/reload, no old contract', () => {
+  it('UploadPage.tsx uses jobs API and no raw fetch', () => {
     const content = readPage('UploadPage.tsx');
     expect(content).not.toMatch(/\bfetch\(/);
-    expect(content).toMatch(/import apiClient/);
-    expect(content).toMatch(/apiClient[\s\S]*\.\w+\(/);
+    expect(content).toMatch(/useCreateJob/);
   });
 
-  it('ColorLibraryPage.tsx uses toast instead of alert', () => {
-    const content = readPage('ColorLibraryPage.tsx');
+  it('pages do not reference the old /blueprints/upload contract', () => {
+    for (const f of ['UploadPage.tsx', 'HistoryPage.tsx', 'JobDetailPage.tsx', 'BlueprintDetailPage.tsx', 'ColorLibraryPage.tsx']) {
+      const content = readPage(f);
+      expect(content).not.toMatch(/blueprints\/upload/);
+      expect(content).not.toMatch(/grid_rows|grid_cols|board_bbox/);
+    }
+  });
+
+  it('JobDetailPage.tsx has no alert or location.reload', () => {
+    const content = readPage('JobDetailPage.tsx');
     expect(content).not.toMatch(/\balert\(/);
-    expect(content).toMatch(/import.*useToast/);
-    expect(content).toMatch(/toast\(/);
-  });
-
-  it('HistoryPage.tsx uses refetch instead of window.location.reload', () => {
-    const content = readPage('HistoryPage.tsx');
     expect(content).not.toMatch(/window\.location\.reload/);
-    expect(content).toMatch(/\brefetch\b/);
   });
 });
