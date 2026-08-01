@@ -104,7 +104,7 @@ cd frontend && npm run lint
 
 ## NOTES
 
-- Dev proxy: `/api` → `http://localhost:8000` (configured in `vite.config.ts`)
+- Dev proxy: `/api` → `http://localhost:8080` (configured in `vite.config.ts`)
 - React Router v7 with 4 routes: `/`, `/blueprints`, `/blueprints/:id`, `/colors`
 - TanStack React Query configured with `retry: 1`, no refetch on window focus
 - Axios error interceptor extracts `error.response.data.detail` for user-facing messages

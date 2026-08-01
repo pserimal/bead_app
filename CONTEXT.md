@@ -17,7 +17,7 @@
 
 ## Vocabulary Reality (vs initial assumptions)
 
-The original Perler color library (`backend/app/data/default_colors.json`) has **65 codes with only 3 letter prefixes** (H, F, G).
+The original Perler color library (`artifacts/colors/library.json`, snapshot of the retired `backend/app/data/default_colors.json`) has **65 codes with only 3 letter prefixes** (H, F, G).
 
 But the **labeled training set** (8644 cells, 23 unique codes) covers **7 letter prefixes**: A, B, C, E, F, H, M. Treat A/B/C/E/M as first-class — do not assume any letter is "rare" or "only in library".
 

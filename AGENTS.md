@@ -1,12 +1,12 @@
 # PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-07-12
-**Commit:** 2080bac
-**Branch:** main
+**Generated:** 2026-08-01
+**Commit:** 77d564d
+**Branch:** flash-test
 
 ## OVERVIEW
 
-拼豆助手 (ai_dou) — Perler bead pattern recognition app. Users upload images of bead boards; the app detects the grid, reads alphanumeric bead codes via OCR, and generates bead blueprints with color lookup from a Perler color library. Monorepo: Python/FastAPI backend + React/TypeScript/Vite frontend.
+拼豆助手 (ai_dou) — Perler bead pattern recognition app. Users upload images of bead boards, crop the grid region, set rows/cols; the system OCRs alphanumeric bead codes per cell and generates read-only bead blueprints with color lookup from a Perler color library. Monorepo: Spring Boot + Kotlin API + React/TypeScript/Vite frontend + internal Python CRNN service.
 
 ## STRUCTURE
 
@@ -14,43 +14,51 @@
 ai_dou/
 ├── frontend/             ──── PART 1: FRONTEND ────
 │   ├── src/
-│   │   ├── api/          # Axios wrappers per resource (client.ts base)
-│   │   ├── components/   # 14 components; CropBox.tsx (1017 LOC) is the hotspot
-│   │   ├── pages/        # 4 route pages (Upload, History, BlueprintDetail, ColorLibrary)
-│   │   ├── hooks/        # TanStack React Query: useBlueprints, useColorLibrary
-│   │   └── types/        # TypeScript interfaces mirroring backend schemas
-│   ├── vite.config.ts    # Dev server :5173, proxies /api → :8000
+│   │   ├── api/          # Axios wrappers per resource (client.ts baseURL /api/v1)
+│   │   ├── components/   # Layout, BeadBoard, Button, ToastContext, ...
+│   │   ├── pages/        # 5 pages (Upload, History, JobDetail, BlueprintDetail, ColorLibrary)
+│   │   ├── hooks/        # TanStack React Query: useJobs, useBlueprints, useColorLibrary
+│   │   └── types/        # TypeScript interfaces mirroring /api/v1 schemas (types/api.ts)
+│   ├── vite.config.ts    # Dev server :5173, proxies /api → :8080
 │   └── package.json
-├── backend/              ──── PART 3: BACKEND (inference API) ────
-│   ├── app/
-│   │   ├── api/          # Routers: blueprints.py, colors.py
-│   │   ├── models/       # SQLAlchemy async models (4 models + base)
-│   │   ├── schemas/      # Pydantic v2 DTOs (generic pagination in common.py)
-│   │   ├── services/     # Runtime pipeline: bead_parser → pipeline/(grid+OCR) → OCR engines → color library lookup
-│   │   │                 # Engines: bead_ocr_easy / template / deepseek / crnn_inference
-│   │   ├── data/         # default_colors.json (Perler palette, runtime seed)
-│   │   ├── config.py     # pydantic_settings, .env file
-│   │   ├── db.py         # Async engine + get_db() dependency
-│   │   ├── seed.py       # Idempotent color library seeding
-│   │   └── main.py       # FastAPI app + lifespan (create tables, seed, teardown)
-│   ├── tests/            # Pytest (sync/async mixed, no conftest fixtures)
-│   ├── migrations/       # Alembic schema migrations
-│   └── uploads/          # Runtime uploaded images (gitignored)
+├── server/               ──── PART 3: BACKEND (Spring Boot + Kotlin, :8080) ────
+│   ├── src/main/kotlin/com/beadapp/server/
+│   │   ├── api/          # JobController, BlueprintController, ColorController, InternalEventController
+│   │   ├── model/        # JPA entities: RecognitionJob(+Event/Cell), Blueprint(+Cell), ColorLibrary
+│   │   ├── schema/       # Kotlin DTOs (007 contract: PageResponse, ApiError, JobDetail, ...)
+│   │   ├── repository/   # Spring Data JPA repositories
+│   │   ├── service/      # JobService (008), PythonTaskDispatcher (009), StorageService, mappers
+│   │   └── config/       # GlobalExceptionHandler, ColorSeedRunner, RecoveryScheduler, CorsConfig
+│   ├── src/main/resources/
+│   │   ├── application.yml       # datasource → 192.168.5.88 (env-overridable)
+│   │   ├── db/migration/V1__initial_schema.sql   # Flyway (008)
+│   │   └── default_colors.json   # color seed source (65 codes, copied from old backend)
+│   └── src/test/         # ApiContractTest (9 tests, MockMvc + jsonPath)
+├── image_service/        ──── PART 3b: PYTHON CRNN SERVICE (internal, :8001) ────
+│   ├── app/main.py       # FastAPI: POST /v1/tasks, GET /health(/model)
+│   ├── app/worker.py     # decode cells via ocr_core → per-cell callbacks
+│   ├── app/event_sender.py  # at-least-once delivery, exponential backoff (009)
+│   └── app/config.py     # MODEL_ARTIFACT_DIR, CODE_LIBRARY_PATH, CALLBACK_BASE_URL envs
+├── ocr_core/             ──── PART 3c: SHARED OCR CORE (010) ────
+│   ├── bead_ocr_crnn.py  # CRNN arch + checkpoint I/O (format_version=1 metadata, hard checks)
+│   ├── inference.py      # crop → letterbox → batch → constrained decode (conf fix F1)
+│   ├── charset.py        # CHARS/CHAR_TO_IDX + charset_hash() (single source of truth)
+│   └── code_library.py   # artifact-snapshot color codes (no backend path)
 ├── training/             ──── PART 2: TRAINING + DATA ANNOTATION ────
-│   ├── models/           # CRNN architecture, synth_generator, bead_ocr_vlm (experimental)
-│   ├── scripts/          # train_crnn, eval_stand, crop_examples, build_gt_from_ocr, augment, redraw_ocr_results
-│   ├── data/
-│   │   ├── real/         # Raw bead images + cropped stand images
-│   │   │   ├── raw/      # Unprocessed bead board photos
-│   │   │   └── stand/    # Reference stand crops used for eval
-│   │   ├── annotations/  # label_tool.html (annotator UI), stand_manifest.json, stand_gt/ (zipped GT)
-│   │   └── synthetic/    # Generated by synth_generator; gitignored
-│   ├── crops/            # cells/ (per-cell PNG crops), cut/ (full-image crops)
-│   ├── checkpoints/      # Trained .pt files (gitignored except crnn_v2.pt as the default)
-│   └── docs/             # PLAN.md (training rationale, architecture, A/B benchmark history)
-├── docs/                 # Project-wide docs (agents/ for agent-skill config; CONTEXT.md, docs/adr/ when used)
-├── docker-compose.yml    # PostgreSQL + backend (no frontend service)
+│   ├── models/           # synth_generator, bead_ocr_vlm (charset re-exported from ocr_core)
+│   ├── scripts/          # train_crnn, eval_stand, eval_cell_baseline, publish_checkpoint
+│   ├── data/synthetic/   # Generated by synth_generator; gitignored
+│   ├── checkpoints/      # Trained .pt files (gitignored; crnn_real_m.pt is the baseline)
+│   └── docs/             # PLAN.md, experiments/, baseline-2026-07-31*.md/json
+├── artifacts/            # Published model artifacts (010 R3)
+│   ├── models/<name>-<version>/{model.pt, charset.json, manifest.json}  # model.pt gitignored
+│   └── colors/library.json    # color snapshot (committed)
+├── docs/                 # Project-wide docs (agents/ for agent-skill config)
+├── docker-compose.yml    # 013: postgres + spring-boot + python-crnn (3 services, 1 port)
+├── docker-compose.dev.yml # dev override: publish 5432/8001, --reload
+├── .dockerignore / .env.example
 ├── CLAUDE.md             # Primary agent guidance (architecture, gotchas, where-to-look)
+├── .scratch/spring-kotlin-python-rewrite/  # Wayfinder tracker (14 closed tickets + notes)
 └── README.md             # Human-facing overview
 ```
 
@@ -58,125 +66,108 @@ ai_dou/
 
 | Task | Location | Notes |
 |------|----------|-------|
-| API endpoints | `backend/app/api/` | `blueprints.py` (upload, CRUD, cells), `colors.py` (CRUD) |
-| DB models | `backend/app/models/` | 2 parent-child pairs: Blueprint→Cell, ColorLibrary→Entry |
-| Pydantic schemas | `backend/app/schemas/` | `common.py` has generic `PaginatedResponse[T]` |
-| Image pipeline orchestrator | `backend/app/services/bead_parser.py` | `BeadPatternParser` chains grid detection → OCR → color library lookup |
-| Grid detection (low-level) | `backend/app/services/bead_grid_detector.py` | HSV blue-line mask → FFT period → cell sampling, `detect_grid()` (called by pipeline) |
-| Grid detection (pipeline) | `backend/app/services/pipeline/blue_line_grid_detector.py` | Pluggable wrapper around `bead_grid_detector` |
-| OCR dispatcher | `backend/app/services/bead_ocr.py` | Selects engine by `OCR_ENGINE` (easy/template/deepseek/crnn) |
-| OCR engines (runtime) | `backend/app/services/bead_ocr_easy.py` / `bead_ocr_template.py` / `bead_ocr_deepseek.py` / `bead_ocr_crnn_inference.py` | Engine implementations; `bead_ocr_crnn_inference.py` loads from `training/checkpoints/` |
-| CRNN architecture (training) | `training/models/bead_ocr_crnn.py` | Model class + checkpoint I/O; consumed by both training and runtime inference |
-| Synthetic dataset generator | `training/models/synth_generator.py` | `generate_dataset(n, seed)` produces labeled (image, code) pairs; CHARS/CODES constants reused at runtime |
-| Training scripts | `training/scripts/{train_crnn,eval_stand,crop_examples,build_gt_from_ocr,redraw_ocr_results,augment}.py` | CLI entrypoints; run via `python -m training.scripts.X` from repo root |
-| Real bead images | `training/data/real/{raw,stand}/` | Input data for fine-tuning + eval |
-| Annotation tool + GT | `training/data/annotations/` | `label_tool.html`, `stand_manifest.json`, `stand_gt/*.zip` |
-| Trained checkpoints | `training/checkpoints/` | `.pt` files; default `CRNN_MODEL_PATH` is `crnn_v2.pt` |
-| CRUD services | `backend/app/services/blueprint_service.py`, `color_library_service.py` | Thin async wrappers over DB queries |
-| File storage | `backend/app/services/storage.py` | Module-level singleton `FileStorage()`, local filesystem |
-| Backend tests | `backend/tests/` | 15 files, pytest, mixed sync/async, module-level init patterns |
-| Frontend tests | `frontend/src/test/` | 12 files, vitest + React Testing Library |
-| Frontend API client | `frontend/src/api/client.ts` | Axios, baseURL `/api`, 30s timeout, error interceptor |
-| React Query hooks | `frontend/src/hooks/` | `useBlueprints` (paginated list), `useColorLibrary` (+ mutations) |
-| Canvas interaction | `frontend/src/components/BeadBoard.tsx` | Canvas 2D — pan/zoom/rotation + cell selection, 216 lines |
-| Image cropping UI | `frontend/src/components/CropBox.tsx` | Drag-based dual-region with 8 resize handles, zoom/pan, touch support; `applyCrop()` + `onCropComplete` callback, 1017 lines (was 714) |
-| App config | `backend/app/config.py` | `pydantic_settings.Settings`, reads `.env` |
-| DB session | `backend/app/db.py` | `async_engine` + `async_sessionmaker` + `get_db()` async generator |
-| Migrations | `backend/migrations/versions/` | Alembic auto-generated, `env.py` uses `render_as_batch=True` |
+| /api/v1 endpoints | `server/src/main/kotlin/com/beadapp/server/api/` | Job/Blueprint/Color/InternalEvent controllers |
+| API contract DTOs | `server/.../schema/Dtos.kt` | 007: PageResponse, ApiError, JobDetail, JobEventDto, BlueprintDetail |
+| Job lifecycle + recovery | `server/.../service/JobService.kt` | 008: idempotent events, atomic blueprint, stale-heartbeat sweep |
+| Spring → Python dispatch | `server/.../service/PythonTaskDispatcher.kt` | 009: multipart to /v1/tasks; internal thread pool (no @Async) |
+| Python callback endpoint | `server/.../api/InternalEventController.kt` | `/internal/jobs/{id}/events` |
+| DB schema (Flyway) | `server/src/main/resources/db/migration/V1__initial_schema.sql` | 6 tables + indexes + CHECKs |
+| Python image-service | `image_service/app/` | main.py (API), worker.py (OCR loop), event_sender.py (backoff) |
+| Shared OCR core | `ocr_core/` | CRNN + checkpoint I/O + inference + charset + code library |
+| Checkpoint publish | `training/scripts/publish_checkpoint.py` | legacy migrate + immutable artifact dir |
+| Baseline / acceptance | `training/scripts/eval_cell_baseline.py`, `training/docs/baseline-2026-07-31.md` | zip exact_match 0.7008 (crnn_real_m) |
+| CRNN training | `training/scripts/train_crnn.py` | writes format_version=1 checkpoints |
+| Real bead images | `examples/` (root) | stand crops + annotation zips (moved from training/data/real) |
+| Trained checkpoints | `training/checkpoints/*.pt` (gitignored) | crnn_real_m.pt = baseline pick |
+| Model artifacts | `artifacts/models/` | immutable dirs + `current` pointer (symlink) |
+| Compose topology | `docker-compose.yml` | 3 services; model :ro mount; healthchecks |
+| Wayfinder decisions | `.scratch/spring-kotlin-python-rewrite/` | 14 closed tickets + IMPLEMENTATION-NOTES |
+| Frontend API client | `frontend/src/api/client.ts` | axios baseURL `/api/v1`, error interceptor (007 shape) |
+| Job trace page | `frontend/src/pages/JobDetailPage.tsx` | 2s polling, events timeline, terminal → blueprint |
+| Crop interaction | `frontend/src/pages/UploadPage.tsx` | single-region crop: 8 handles, keyboard nudge, numeric inputs |
+| Canvas rendering | `frontend/src/components/BeadBoard.tsx` | Canvas 2D (legacy; blueprint page renders DOM grid) |
 
 ## CONVENTIONS
 
-- **No CI/CD pipeline** — no `.github/workflows/`, no Makefile, only `docker-compose.yml`
-- **No `pyproject.toml`** — not installable as package; run via `uvicorn app.main:app`, conda env `bead-app`
-- **CORS hardcoded** to `http://localhost:5173` (not configurable via env)
-- **DB file checked in** — `backend/bead_app.db` in git (should be gitignored)
-- **No versioned API prefix** — routes at `/api/colors`, `/api/blueprints`
-- **Services imported as namespace** — `import app.services.X as svc`
-- **`PaginatedResponse[T]` duplicated** — exists in both `schemas/common.py` and `frontend/src/types/api.ts`
-- **ESLint flat config** — `frontend/eslint.config.js` (ESLint v10+ format, no `.eslintrc`)
-- **Tailwind v4 CSS-based config** — no `tailwind.config.*`, config in `frontend/src/index.css`
-- **Test infrastructure** — 15 backend pytest files, 12 frontend vitest files, see `backend/tests/AGENTS.md` and frontend test dir for details
-- **No Prettier** — no formatter configured
+- **No CI/CD pipeline** — no `.github/workflows/`, no Makefile; only `docker-compose.yml`
+- **No `pyproject.toml`** — run via `uvicorn image_service.app.main:app` / `gradle bootJar`; conda envs `bead-train` (Python) + `bead-java` (JDK21/Gradle) on Windows
+- **DB**: remote `192.168.5.88:5432` (admin/123456, `bead_app` + `bead_app_test`); compose provides its own db; Flyway manages schema
+- **Model artifacts** (010 R3): immutable `artifacts/models/<name>-<version>/`, `current` symlink, `:ro` mount into image_service
+- **Checkpoint metadata** (010 R2): hard-check `format_version/model_arch/num_classes/input_size/input_channels/blank_index/charset_hash`; legacy 3-key checkpoints rejected (migrate via publish_checkpoint.py)
+- **Event protocol** (009): Spring writes JOB_STARTED at sequence=0; Python sequences 1..N; at-least-once with 1s..16s backoff ×5; 409 = terminal treated as delivered
+- **`PaginatedResponse[T]` mirrored** in `server/schema/Dtos.kt` and `frontend/src/types/api.ts` — keep aligned
+- **ESLint flat config** — `frontend/eslint.config.js` (v10+); **Tailwind v4 CSS-based** (`frontend/src/index.css`); no Prettier
+- **Tests**: server 9 (MockMvc + jsonPath, contract-locked), frontend 138 (vitest), training eval via eval_cell_baseline
 
 ## ANTI-PATTERNS (THIS PROJECT)
 
-- **Mixed sync/async test clients** — `httpx.AsyncClient` vs `TestClient` inconsistency across files
-- **Module-level DB init in tests** — `asyncio.run(_init_db())` at import time in `test_api_upload.py`, `test_api_blueprints.py`
-- **Hardcoded test image paths** — `tests/` references real images not in repo
-- **No centralized error codes** — `HTTPException` with ad-hoc status codes, no error enum
-- **Silent swallow in API** — `except Exception: db.rollback()` in blueprints.py handler, loses error detail
-- **Hardcoded DB credentials** — `admin:123456` in `docker-compose.yml` and `.env.example`
-- **No `.dockerignore`** — Docker context includes tests, migrations, and `__pycache__`
-- **No gitignored uploads** — `uploads/` directories may accumulate files
+- **Kotlin @Async on final classes silently fails** — use explicit thread pools (see PythonTaskDispatcher)
+- **Event sequence collisions** — internal events must use `appendInternalEvent` (next free seq in attempt); never reuse seq=0 for RETRY_SCHEDULED
+- **`cmd &` background stdout unreliable on Windows** — verify via DB state, not process logs
+- **Multiple app instances** — check `Get-NetTCPConnection :8080` OwningProcess before debugging "dispatch not working"
+- **`.scratch/pgdata`** — local PostgreSQL data dir; never commit (gitignored)
+- **model.pt in artifacts** — gitignored; commit only manifest/charset/library.json
 
 ## UNIQUE STYLES
 
-- **OCR pipeline architecture** — `BeadPatternParser` (bead_parser.py) orchestrates grid detection → OCR → color library lookup sequentially
-- **Conda env** (`bead-app`) for Python deps — `environment.yml`, not pip/uv
-- **Seed on startup** — `seed_default_colors()` in FastAPI lifespan, idempotent
-- **No external API calls** — all image processing is local (OpenCV + EasyOCR, no cloud dependency)
-- **Mutable default args** in some Pydantic schemas — `Field(default_factory=list)`
-- **Canvas-based rendering** — `BeadBoard.tsx` uses HTML5 Canvas 2D context, not DOM grid
+- **Three-tier recognition pipeline**: Spring orchestrates (job + events + persistence) → Python does OCR (ocr_core) → callbacks flow back as idempotent events
+- **Single source of truth for charset** in `ocr_core/charset.py`; color codes from artifact snapshot (not backend path)
+- **Confidence normalization**: `exp(score/T)` per-step (F1 fix) — old `exp(score/len)` rejected everything
+- **Wayfinder tracker in-repo**: `.scratch/spring-kotlin-python-rewrite/` holds all architecture decisions (14 tickets) + implementation notes
+- **Immutable model artifacts** with hard compatibility validation at load time
 
 ## DEAD CODE (HISTORICAL, REMOVED)
 
-The following services were part of the original **color-pixel-matching** pipeline, replaced when the project pivoted to OCR-based recognition (commit `8a69fc7` and earlier). Listed for historical context only — none of these files exist in the current tree:
+The old **FastAPI backend** (`backend/`) was fully removed in commit `77d564d` (014 phase 3, 2026-08-01):
 
-| Service | Replaced by | Notes |
-|---------|------|-------|
-| `BlueprintParser` orchestrator | `BeadPatternParser` in `backend/app/services/bead_parser.py` | Old ML+CV chain |
-| YOLO bead board detection | — | YOLOv8n ONNX inference, class 73 |
-| Color matching (CIEDE2000) | Code lookup against `default_colors.json` | Lab-space perceptual matching |
-| Color card extraction | — | Region detection + polarity |
-| Cell color extraction | — | Dominant color from cell crops |
-| Region processing | — | Perspective warp + KMeans swatches |
-
-Also deleted in the 3-part refactor:
-
-- `backend/app/ml/` (entire dir) — training scripts moved to `training/scripts/`
-- `backend/app/services/{bead_ocr_crnn,synth_generator,bead_ocr_vlm}.py` — moved to `training/models/`
-- `backend/checkpoints/` — moved to `training/checkpoints/`
-- `backend/scripts/{crop_examples,redraw_ocr_results,build_gt_from_ocr,augment}.py` — moved to `training/scripts/`
-- `backend/data/{README.md,data.yaml,train/,val/}` — YOLO training leftovers; YOLO pipeline was removed
-- `docs/bead_crnn_plan.md` — moved to `training/docs/PLAN.md`
-- `examples/` (entire dir) — moved to `training/data/real/`, `training/data/annotations/`, `training/crops/`
-- Root-level `主体裁剪图纸.jpg`, `完整拼豆图纸.jpg`, `标准裁剪图纸.jpg`, `标准裁剪图纸line.jpg` — moved to `training/data/real/raw/` with cleaner filenames
-- Root-level `59db8b6a8f90c2c91620979332cc25bf.jpg` — orphan upload, deleted
-- `backend/=1.2.0` — malformed pip install artifact, deleted
+- `backend/app/services/*` — OCR engines (easy/template/deepseek/crnn_inference), bead_parser orchestrator, grid detector — replaced by `ocr_core/` + `image_service/`
+- `backend/app/api/*`, `models/*`, `schemas/*`, `db.py`, `seed.py`, `config.py` — replaced by `server/` (Spring Boot)
+- `backend/migrations/` (Alembic) — replaced by Flyway (`server/src/main/resources/db/migration/`)
+- `backend/tests/` (15 pytest files) — replaced by `server/src/test/` (9 MockMvc tests)
+- `training/scripts/build_gt_from_ocr.py`, `redraw_ocr_results.py` — EasyOCR-based, deleted with backend
+- `training/models/bead_ocr_crnn.py` — moved verbatim to `ocr_core/bead_ocr_crnn.py` (+ metadata)
+- EasyOCR/PaddleOCR/template/DeepSeek-OCR — all OCR engines except CRNN removed (002)
+- `training/crops/`, `training/data/real/`, `training/data/annotations/` — real data now lives in `examples/`
 
 ## COMMANDS
 
 ```bash
-# Backend (PART 3)
-conda activate bead-app
-cd backend && uvicorn app.main:app --reload --port 8000
+# Server (PART 3) — JDK 21 + Gradle (conda env bead-java or ./gradlew)
+cd server && gradle test --no-daemon        # 9 contract tests
+cd server && gradle bootJar --no-daemon     # build jar
+java -jar server/build/libs/bead-server-0.1.0.jar   # :8080
+
+# Image service (PART 3b) — conda env bead-train, from repo root
+MODEL_ARTIFACT_DIR=artifacts/models/current \
+  python -m uvicorn image_service.app.main:app --port 8001
+
+# Training (PART 2) — run from repo root so `ocr_core`/`training.*` imports resolve
+python -m training.scripts.train_crnn --synth-n 50000 --epochs 30
+python -m training.scripts.publish_checkpoint --checkpoint <ckpt> --name <n> --version <v>
+python -m training.scripts.eval_cell_baseline --checkpoint training/checkpoints/crnn_real_m.pt --legacy
 
 # Frontend (PART 1)
-cd frontend && npm install && npm run dev
-
-# Training (PART 2) — run from repo root so `training.*` imports resolve
-python -m training.scripts.train_crnn --synth-n 50000 --epochs 30
-python -m training.scripts.eval_stand
-python -m training.scripts.crop_examples
+cd frontend && npm install && npm run dev   # :5173, proxies /api → :8080
 
 # Tests
-cd backend && pytest -v
+cd server && gradle test --no-daemon        # 9
+cd frontend && npm test                     # 138
 
-# Docker (postgres + backend; frontend runs via npm run dev)
-docker-compose up -d
+# Docker (013: postgres + spring + python; frontend runs via npm run dev)
+docker compose up -d --build
 
 # DB migrations
-cd backend && alembic upgrade head
-cd backend && alembic revision --autogenerate -m "description"
+cd server && gradle bootJar --no-daemon     # Flyway runs on startup (validate mode)
 ```
 
 ## NOTES
 
-- Frontend dev proxy: `/api` → `http://localhost:8000` (configured in `vite.config.ts`)
-- API docs at `http://localhost:8000/docs` (Swagger UI)
-- Default DB creds: `admin:123456@localhost:5432/bead_app`
-- Complexity hotspot: `CropBox.tsx` (1017 lines, drag-based, was 714)
+- Frontend dev proxy: `/api` → `http://localhost:8080` (configured in `vite.config.ts`)
+- API docs at `http://localhost:8080/swagger-ui` (Springdoc not yet added; use /api/v1 endpoints directly)
+- Dev DB: `admin:123456@192.168.5.88:5432/bead_app`; test DB `bead_app_test`
 - Upload size limit: 20MB, allowed types: JPEG/PNG only
-- `docker-compose.yml` has no frontend service — frontend runs via `npm run dev` separately
-- Training scripts need `torch` + `torchvision` (install separately; not in `environment.yml` yet)
-- Subdirectory AGENTS.md: `backend/`, `frontend/`, `frontend/src/components/`, `backend/tests/`, `backend/app/services/`, `frontend/src/pages/`; `training/README.md` for the training part
+- Baseline model: `crnn_real_m.pt` — zip exact_match **0.7008** (011 acceptance: new service ≥ 0.7008±0.005)
+- Legacy checkpoints (no format_version) must go through `publish_checkpoint.py` before use
+- Complexity hotspot: `frontend/src/pages/UploadPage.tsx` (crop interaction, ~400 LOC)
+- Wayfinder tracker: `.scratch/spring-kotlin-python-rewrite/` — 14 decisions closed; map state: closed
+- Old FastAPI backend removed (commit `77d564d`); master branch still at `5da0097` until merge

@@ -69,7 +69,7 @@ Output (T=11, B, num_classes=37)
 - JPEG 压缩（30%）：quality 60–90
 - 亮度抖动（20%）：±10
 
-`backend/app/services/synth_generator.py` 已实现。生成时直接 `generate_dataset(n)` 返回 `Sample` 列表（`Sample.image` 为 (48, 48, 3) RGB ndarray）。
+`ocr_core/models/synth_generator.py` 已实现。生成时直接 `generate_dataset(n)` 返回 `Sample` 列表（`Sample.image` 为 (48, 48, 3) RGB ndarray）。（注：重写后 synth_generator 位于 `training/models/`，charset 复用 `ocr_core.charset`）
 
 ## 5. GPU 训练步骤
 
@@ -130,13 +130,13 @@ OVERALL exact_match_rate = 0.3483  (1365/3861)
 
 ### 5.4 接入线上
 
-`backend/.env`：
+（注：重写后不再需要 backend/.env——模型经 `MODEL_ARTIFACT_DIR` 指向 `artifacts/models/current`，识别由内部 image_service 完成。）
 ```
 OCR_ENGINE=crnn
 CRNN_MODEL_PATH=checkpoints/crnn_v1.pt
 ```
 
-启动后端（`uvicorn app.main:app --reload --port 8000`），前端走 `user_bbox` 路径就会用 CRNN。
+（注：重写后启动方式为 `MODEL_ARTIFACT_DIR=artifacts/models/current python -m uvicorn image_service.app.main:app --port 8001`，Spring 通过 `POST /v1/tasks` 派发任务。）
 
 ## 6. 训练结果决策树
 
@@ -161,10 +161,10 @@ CRNN_MODEL_PATH=checkpoints/crnn_v1.pt
 | 文件 | 状态 | 说明 |
 |---|---|---|
 | `backend/app/services/synth_generator.py` | ✅ 已写 | 合成数据生成 |
-| `backend/app/services/bead_ocr_crnn.py` | ✅ 已写 | CRNN 模型 + 字典约束 decode |
-| `backend/app/services/bead_ocr_crnn_inference.py` | ✅ 已写 | 推理入口（crop → CRNN → 结果） |
-| `backend/app/services/bead_ocr.py` | ✅ 已加分支 | `OCR_ENGINE=crnn` 走这条 |
-| `backend/app/config.py` | ✅ 已加配置 | `CRNN_MODEL_PATH` |
+| `ocr_core/bead_ocr_crnn.py` | ✅ 已写 | CRNN 模型 + 字典约束 decode（自 training/models 平移，010） |
+| `ocr_core/inference.py` | ✅ 已写 | 推理入口（crop → CRNN → 结果，F1 置信度修复） |
+| `image_service/app/worker.py` | ✅ 已写 | 逐 cell 回调（009） |
+| `server/.../service/PythonTaskDispatcher.kt` | ✅ 已写 | Spring → Python 派发（009 反向） |
 | `training/models/__init__.py` | ✅ 已加 | 模型包 |
 | `training/scripts/train_crnn.py` | ✅ 已写 | 训练脚本 |
 | `training/scripts/eval_stand.py` | ✅ 已写 | 种子图基准评估 |
