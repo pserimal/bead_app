@@ -267,26 +267,73 @@ def _global_frequency_merge(
 
 
 def _code_font_size(draw: ImageDraw.ImageDraw, code: str, cell: int,
-                    font_paths: list[str]) -> ImageFont.FreeTypeFont:
+                    font_path: str) -> ImageFont.FreeTypeFont:
     """Reference font size: max(8, floor(cell * 0.4)) px, bold sans-serif.
 
-    The reference export uses a fixed `fontSize = Math.max(8, floor(cellSize
-    * 0.4))` with `bold sans-serif` (imageDownloader.ts) — no per-code
-    scaling.  We keep the same rule, with a safety fallback that shrinks
-    only when the code would overflow the cell (long codes like `80-15089`).
+    Same rule as the reference export (imageDownloader.ts).  With crop
+    jitter being a WHOLE-GRID offset (never per-cell), the text stays fully
+    inside its cell: 19 px text centered in a 48 px cell leaves ~14 px
+    margins, and a ±10 px grid shift reaches at most 58 px — the neighbour's
+    text starts at 64 px.
     """
     size = max(8, int(cell * 0.4))
-    font = ImageFont.truetype(font_paths[0], size)
+    font = ImageFont.truetype(font_path, size)
     bbox = draw.textbbox((0, 0), code, font=font)
     if (bbox[2] - bbox[0]) <= cell * 0.95 and (bbox[3] - bbox[1]) <= cell * 0.9:
         return font
     # Overflow fallback: shrink until it fits (rare, long codes only).
     for s in range(size - 1, max(6, int(cell * 0.2)) - 1, -1):
-        f = ImageFont.truetype(font_paths[0], s)
+        f = ImageFont.truetype(font_path, s)
         b = draw.textbbox((0, 0), code, font=f)
         if (b[2] - b[0]) <= cell * 0.95 and (b[3] - b[1]) <= cell * 0.9:
             return f
-    return ImageFont.truetype(font_paths[0], max(6, int(cell * 0.2)))
+    return ImageFont.truetype(font_path, max(6, int(cell * 0.2)))
+
+
+def _distort_board(arr: np.ndarray, rng: random.Random) -> np.ndarray:
+    """Apply font-renderer-like distortion to the whole rendered board.
+
+    Different tools/diagrams use different typefaces and stroke weights.
+    Deliberately SUBTLE — a 42 % pixel change made codes unrecognizable
+    (val dropped to ~70 %).  Current bounds: stretch ±1.5 %, shear ±0.004,
+    stroke morph 20 % probability, kernel 1 px.
+    """
+    import cv2
+    import numpy as _np
+
+    h, w = arr.shape[:2]
+    sx = 1.0 + rng.uniform(-0.015, 0.015)
+    sy = 1.0 + rng.uniform(-0.008, 0.008)
+    shear = rng.uniform(-0.004, 0.004)
+    new_w = max(w - 2, int(round(w * sx)))
+    new_h = max(h - 2, int(round(h * sy)))
+
+    # Affine: scale + shear around the image center, in one warp.
+    cx, cy = w / 2.0, h / 2.0
+    M = _np.array([[sx, shear * sy, 0.0], [0.0, sy, 0.0]], dtype=float)
+    # Compose: translate center → origin, apply M, translate back.
+    T1 = _np.array([[1, 0, -cx], [0, 1, -cy], [0, 0, 1]])
+    M3 = _np.array([[M[0, 0], M[0, 1], 0], [M[1, 0], M[1, 1], 0], [0, 0, 1]])
+    T2 = _np.array([[1, 0, cx], [0, 1, cy], [0, 0, 1]])
+    full = T2 @ M3 @ T1
+    bgr = cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
+    warped = cv2.warpAffine(bgr, full[:2], (w, h),
+                            flags=cv2.INTER_LINEAR,
+                            borderMode=cv2.BORDER_REPLICATE)
+
+    # Stroke weight: erode/dilate the text via the luminance channel.
+    if rng.random() < 0.2:
+        op = rng.choice(["erode", "dilate"])
+        k = 1
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (k, k))
+        gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
+        gray = cv2.erode(gray, kernel, iterations=1) if op == "erode" \
+            else cv2.dilate(gray, kernel, iterations=1)
+        warped[:, :, 0] = gray
+        warped[:, :, 1] = gray
+        warped[:, :, 2] = gray
+
+    return cv2.cvtColor(warped, cv2.COLOR_BGR2RGB)
 
 
 def _contrast_text_color(hex_color: str) -> tuple[int, int, int]:
@@ -306,7 +353,8 @@ def _render_board(
     grid_color: tuple[int, int, int],
     watermark: bool,
     rng: random.Random,
-    fonts: list[str],
+    font_paths: list[str],
+    cell_fonts: bool = True,
 ) -> np.ndarray:
     rows, cols = grid_idx.shape
     W, H = cols * cell_size, rows * cell_size
@@ -317,8 +365,20 @@ def _render_board(
     text_colors = [_contrast_text_color(palette[i]["color_hex"])
                    for i in range(len(palette))]
 
-    # Cache fonts per cell size (code length varies → size varies).
+    # Font per cell: pick randomly per CELL when cell_fonts=True (max
+    # diversity — the model learns glyph shapes, not one typeface), else
+    # one font for the whole board.
     font_cache: dict[str, ImageFont.FreeTypeFont] = {}
+
+    def _font_for(code: str) -> ImageFont.FreeTypeFont:
+        if cell_fonts:
+            fp = rng.choice(font_paths)
+            return _code_font_size(draw, code, cell_size, fp)
+        font = font_cache.get(code)
+        if font is None:
+            font = _code_font_size(draw, code, cell_size, font_paths[0])
+            font_cache[code] = font
+        return font
 
     for r in range(rows):
         for c in range(cols):
@@ -335,10 +395,7 @@ def _render_board(
             idx = int(grid_idx[r, c])
             entry = palette[idx]
             code = entry["render_code"]
-            font = font_cache.get(code)
-            if font is None:
-                font = _code_font_size(draw, code, cell_size, fonts)
-                font_cache[code] = font
+            font = _font_for(code)
             bbox = draw.textbbox((0, 0), code, font=font)
             tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
             cx = c * cell_size + (cell_size - tw) / 2 - bbox[0]
@@ -421,6 +478,8 @@ def generate_board(
     watermark_prob: float = WATERMARK_PROB,
     seed: int = 0,
     source_path: str | None = None,
+    font_path: str | None = None,
+    distort: bool = True,
 ) -> Board:
     """Generate a synthetic bead board from a real image.
 
@@ -434,6 +493,11 @@ def generate_board(
         watermark_prob: probability of adding a semi-transparent watermark.
         seed: RNG seed for reproducible generation.
         source_path: original image path recorded in metadata (optional).
+        font_path: force a specific font for code text (default: random pick
+            from all available fonts — font diversity makes the model
+            font-agnostic; see experiment 002).
+        distort: apply per-board stroke/geometry distortion (horizontal
+            stretch ±4 %, stroke erode/dilate) to mimic different renderers.
     """
     rng = random.Random(seed)
     if image.ndim != 3 or image.shape[2] != 3:
@@ -456,10 +520,20 @@ def generate_board(
     fonts = available_fonts()
     if not fonts:
         raise RuntimeError("no fonts available for rendering (see synth_generator)")
+    if font_path is None:
+        # Cell-level font diversity (default): every cell picks a random
+        # font — the model learns glyph shapes instead of one typeface, which
+        # is what makes it generalise to unseen boards.  A fixed font_path
+        # forces one face for the whole board (testing/ablation).
+        font_list = fonts
+    else:
+        font_list = [font_path]
     rendered = _render_board(
         grid_idx, palette, cell_size, interval, grid_color,
-        watermark, rng, fonts,
+        watermark, rng, font_list, cell_fonts=(font_path is None),
     )
+    if distort:
+        rendered = _distort_board(rendered, rng)
 
     cells = [
         CellMeta(
@@ -486,6 +560,8 @@ def generate_board(
             "grid_color": f"#{grid_color[0]:02X}{grid_color[1]:02X}{grid_color[2]:02X}",
             "merge_threshold": merge_threshold,
             "watermark": watermark,
+            "font_path": font_path or "cell-random",
+            "distort": distort,
             "seed": seed,
         },
         "generator": {

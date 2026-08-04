@@ -43,7 +43,7 @@ Synthesized cells and "marked" labeled cells are **NOT the same input space**:
 | Resolution | 96×96 rendered → 48×48 downsampled | Already 48×48 (or 48×49) |
 | Polarity   | Adaptive per background brightness        | Often inverted: white text on black, OR dark text on white |
 | Background| Solid color from color library             | Normalized: either pure-black or near-white background |
-| Colors     | True RGB with library hex                  | Effectively grayscale (R=G=B everywhere) |
+| Colors     | True RGB with library hex                  | Mixed: ~56 % color (deep bg + white text), ~44 % grayscale; varies by code (A/C/E/F/M codes fully colored, H codes mostly grayscale) |
 | Text content| A-Z arbitrary (2860 combinations)         | Only the actual codes seen on real boards |
 
 Implication: training CRNN directly on synthetic-vs-real creates a domain gap that is much smaller than originally imagined, because the labeled data is itself a **preprocessed** input format. Mixing synth + real cells requires matching this preprocessing on the synth side.

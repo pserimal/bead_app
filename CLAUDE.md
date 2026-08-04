@@ -116,6 +116,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build  # 
 - **Model artifact contract (010 R3)**: `artifacts/models/<name>-<version>/{model.pt, charset.json, manifest.json}`; `artifacts/models/current` points to the active one; `image_service` loads via `MODEL_ARTIFACT_DIR`. Legacy 3-key checkpoints are **rejected** by `ocr_core.load_checkpoint` (must migrate via `publish_checkpoint.py`).
 - **Checkpoint metadata hard-checks (010 R2)**: `format_version`, `model_arch`, `num_classes`, `input_size`, `charset_hash` mismatch → `CheckpointFormatError` at load.
 - **Confidence fix (011 F1)**: `ocr_core.inference` normalizes confidence as `exp(score/T)` (per-step log-prob), not `exp(score/len(code))` — the old formula rejected everything at min_conf=0.5.
+- **CTC constrained decode (F5, exp 002)**: `constrained_decode` must be CTC-aware — blank frames don't advance the trie, and only *consecutive* identical frames collapse (`2 _ 2` ≠ `22`). `blank_penalty` default is now 0.0 (penalizing blank hurt trained models; 0 is optimal for both old and new checkpoints). Without this, board-trained models decode at ~6 % vs 98 % greedy.
 - **Board generator renders huge images**: `board_generator` disables PIL's decompression-bomb guard (`Image.MAX_IMAGE_PIXELS = None`) — boards can exceed 178 MP (e.g. 300 cols × tall portrait source). Don't re-add the guard inside that module.
 - **Diagrams print brand-native codes (`render_code`)**: the color library stores conflict prefixes (`COCO-H07`) but boards must print `H07` — `-` is outside the OCR charset. `load_brand_palette` strips prefixes; never print raw library codes into cells.
 - **Frontend proxies `/api` → `http://localhost:8080`** via `vite.config.ts`. Use `apiClient` from `frontend/src/api/client.ts` (baseURL `/api/v1`, 30s timeout, error interceptor mapping `{code, message, details, traceId}`).
@@ -139,6 +140,9 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build  # 
 | Color library build | `training/scripts/build_color_library.py` (017) |
 | Palette merge (Zippland) | `training/scripts/import_zippland_palette.py` (ADR 0005) |
 | Synthetic boards | `training/models/board_generator.py` + `training/scripts/generate_board.py` (ADR 0005) |
+| Board cell cropping | `training/scripts/crop_board.py` |
+| Board-model eval | `training/scripts/eval_board_model.py` (zip/heldout/val + per-board) |
+| CTC decode fix | `ocr_core/bead_ocr_crnn.py` `constrained_decode` (F5, exp 002) |
 | Baseline + acceptance (011) | `training/scripts/eval_cell_baseline.py`, `training/docs/baseline-2026-07-31.md` |
 | CRNN training | `training/scripts/train_crnn.py` |
 | Real bead images (input data) | `examples/` (stand crops + annotation zips) |

@@ -154,19 +154,32 @@ def collate(batch):
 
 
 def _parse_code_from_filename(name: str) -> str | None:
-    """Extract bead code from a marked image filename like `H7_0000_marked.png`.
+    """Extract bead code from a marked image filename.
 
-    The first underscore-delimited token is the code. Returns None if the
-    first token doesn't look like a code (a letter followed by digits).
+    Supported patterns:
+      - legacy labeled cells: `H7_0000_marked.png` (first token is the code)
+      - board-crop cells:     `r001_c002_A10.png` (code after the coords)
+      - sample cells:         `sample_000_H15.png` (last token)
+    Returns None if no token looks like a code (letter followed by digits).
     """
-    first = name.split("_", 1)[0]
-    if not first:
-        return None
-    if not first[0].isalpha():
-        return None
-    if not any(ch.isdigit() for ch in first[1:]):
-        return None
-    return first.upper()
+    stem = name.rsplit(".", 1)[0]
+    # r<row>_c<col>_<CODE>.png — coords first, code last.
+    parts = stem.split("_")
+    if len(parts) >= 3 and parts[0].startswith("r") and parts[1].startswith("c"):
+        candidate = parts[2]
+    elif parts and parts[0].startswith("sample"):
+        candidate = parts[-1] if len(parts) >= 2 else ""
+    else:
+        candidate = parts[0] if parts else ""
+
+    def _looks_like_code(tok: str) -> bool:
+        if not tok or not tok[0].isalpha():
+            return False
+        return any(ch.isdigit() for ch in tok[1:])
+
+    if _looks_like_code(candidate):
+        return candidate.upper()
+    return None
 
 
 def _load_real_samples(

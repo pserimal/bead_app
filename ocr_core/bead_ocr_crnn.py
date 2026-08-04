@@ -66,6 +66,7 @@ class CRNN(nn.Module):
             _ConvBlock(128, 256, pool=(2, 1)),  # H 12 →  6, W 12 → 12
             _ConvBlock(256, 256, pool=(2, 1)),  # H  6 →  3, W 12 → 12
             _ConvBlock(256, 512, pool=(3, 1)),  # H  3 →  1, W 12 → 12
+            # W stays 12 → T=12 time steps (was (1,2) → W 6 → T=6).
             nn.Conv2d(512, 512, kernel_size=(1, 2), bias=False),  # W 12 → 6
         )
         self.rnn = nn.LSTM(
@@ -132,21 +133,34 @@ def constrained_decode(
     code_trie: dict,
     char_to_idx: dict[str, int],
     blank: int = 0,
-    blank_penalty: float = 2.0,
+    blank_penalty: float = 0.0,
 ) -> list[tuple[str, float]]:
     """Beam-free constrained decode: walk the trie top-down at each time step.
 
     ``char_to_idx`` is passed explicitly (pure function — no module global).
     ``blank_penalty`` subtracts from log-prob of the blank token to bias the
     decoder toward emitting a character. Returns ``[(code, score), ...]``.
+
+    CTC-aware: at each step the decoder compares the best *trie child* logit
+    against the blank logit (after penalty).  If blank wins, the trie node is
+    NOT advanced (blank frames carry no character) and the current path is
+    kept — this is what makes the decoder work with real CTC models, which
+    emit long blank runs between characters (e.g. ``A_______110`` → ``A10``).
+    A repeated character (CTC collapse: ``A110`` → ``A10``) is also skipped
+    without advancing the trie — the second identical frame carries no new
+    information.
     """
     log_probs = F.log_softmax(logits, dim=2)  # (T, B, C)
     T, B, C = log_probs.shape
-    paths = [{"node": code_trie, "score": 0.0, "emitted": []} for _ in range(B)]
+    blank_logp = log_probs[:, :, blank]  # (T, B)
+    # Each path tracks (trie node, emitted chars, whether the PREVIOUS frame
+    # emitted a character).  The last flag distinguishes CTC collapse
+    # (``22`` consecutive frames → one ``2``) from distinct characters
+    # separated by a blank frame (``2 _ 2`` → ``22``).
+    paths = [{"node": code_trie, "score": 0.0, "emitted": [],
+              "prev_emitted": False} for _ in range(B)]
     for t in range(T):
         step = log_probs[t]  # (B, C)
-        step = step.clone()
-        step[:, blank] -= blank_penalty
         next_paths = []
         for b in range(B):
             p = paths[b]
@@ -163,15 +177,31 @@ def constrained_decode(
                 if s > best_score:
                     best_score = s
                     best_child = (ch, child)
-            if best_child is not None:
+            blank_s = blank_logp[t, b].item() - blank_penalty
+            if best_child is not None and best_score > blank_s:
                 ch, child = best_child
-                next_paths.append({
-                    "node": child,
-                    "score": cur_score + best_score,
-                    "emitted": emitted + [ch],
-                })
+                if (emitted and ch == emitted[-1] and p["prev_emitted"]):
+                    # CTC collapse: consecutive identical frames (no blank
+                    # between) emit the character once.  Stay on the same
+                    # trie node.
+                    next_paths.append({
+                        "node": node, "score": cur_score + best_score,
+                        "emitted": emitted, "prev_emitted": True,
+                    })
+                else:
+                    # Real character: advance down the trie.
+                    next_paths.append({
+                        "node": child,
+                        "score": cur_score + best_score,
+                        "emitted": emitted + [ch],
+                        "prev_emitted": True,
+                    })
             else:
-                next_paths.append(p)
+                # Blank (or no trie child): keep the node, no emission.
+                next_paths.append({
+                    "node": node, "score": cur_score, "emitted": emitted,
+                    "prev_emitted": False,
+                })
         paths = next_paths
     results: list[tuple[str, float]] = []
     for p in paths:

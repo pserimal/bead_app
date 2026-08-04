@@ -80,6 +80,8 @@ ai_dou/
 | CRNN training | `training/scripts/train_crnn.py` | writes format_version=1 checkpoints |
 | Synthetic cells | `training/models/synth_generator.py` | 48×48 cell-level synth (colored/marked styles) |
 | Synthetic boards | `training/models/board_generator.py` + `training/scripts/generate_board.py` | photo → bead board + board.json metadata (brand/code/coords); ADR 0005 |
+| Board cell cropping | `training/scripts/crop_board.py` | board.png → cells/ + manifest.csv (1-based coords in filenames) |
+| Board-model eval | `training/scripts/eval_board_model.py` | zip + held-out + val sets; per-board breakdown |
 | Palette import | `training/scripts/import_zippland_palette.py` | merges Zippland 291-color mapping (COCO/漫漫/盼盼/咪小窝) into library.json |
 | Real bead images | `examples/` (root) | stand crops + annotation zips (moved from training/data/real) |
 | Trained checkpoints | `training/checkpoints/*.pt` (gitignored) | crnn_real_m.pt = baseline pick |

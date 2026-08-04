@@ -64,7 +64,7 @@ from training.models.synth_generator import CODES
 ZIP_PATH = ROOT / "examples" / "stand" / "标注结果" / "1_标注结果_2026-07-26.zip"
 CELLS_DIR = ROOT / "examples" / "stand" / "cells"
 MIN_CONF = 0.5
-BLANK_PENALTY = 2.0
+BLANK_PENALTY = 0.0
 BATCH_SIZE = 128
 CELL_RE = re.compile(r"sample_\d+_([A-Z]\d{1,3})\.png$")
 
