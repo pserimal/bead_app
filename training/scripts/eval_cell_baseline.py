@@ -61,8 +61,8 @@ from ocr_core.bead_ocr_crnn import (
 from ocr_core.charset import charset_hash
 from training.models.synth_generator import CODES
 
-ZIP_PATH = ROOT / "examples" / "stand" / "标注结果" / "1_标注结果_2026-07-26.zip"
-CELLS_DIR = ROOT / "examples" / "stand" / "cells"
+ZIP_PATH = ROOT / "training" / "samples" / "stand" / "标注结果" / "1_标注结果_2026-07-26.zip"
+CELLS_DIR = ROOT / "training" / "samples" / "stand" / "cells"
 MIN_CONF = 0.5
 BLANK_PENALTY = 0.0
 BATCH_SIZE = 128

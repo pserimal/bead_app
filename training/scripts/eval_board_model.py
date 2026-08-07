@@ -7,13 +7,22 @@ a comparison table.  Also breaks the held-out set down per source board.
 """
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import sys
 from collections import defaultdict
 from pathlib import Path
 
-_REPO_ROOT = Path(__file__).resolve().parent.parent  # training/scripts/ → repo root
+# ── Parse --legacy / --min-conf early so they don't get consumed by ckpt argv ──
+_ap = argparse.ArgumentParser(add_help=False)
+_ap.add_argument("--legacy", action="store_true",
+                 help="migrate legacy 3-key checkpoints in memory (010 R2)")
+_args, _remaining = _ap.parse_known_args()
+LEGACY = _args.legacy
+sys.argv = [sys.argv[0]] + _remaining
+
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent  # training/scripts/ → repo root
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
@@ -24,20 +33,21 @@ import cv2
 import numpy as np
 import torch
 
-from ocr_core.bead_ocr_crnn import constrained_decode, load_checkpoint
+from ocr_core.bead_ocr_crnn import CheckpointFormatError, constrained_decode, load_checkpoint
 from training.scripts.eval_cell_baseline import (
     BLANK_PENALTY,
     MIN_CONF,
     evaluate,
     load_zip_cells,
     print_summary,
+    _load_legacy,
 )
 
 ROOT = _REPO_ROOT
 ZIP_PATH = ROOT / "training" / "samples" / "stand" / "标注结果" / "1_标注结果_2026-07-26.zip"
-HELDOUT_DIR = ROOT / "training" / "data" / "board_cells_train2" / "heldout"
-VAL_DIR = ROOT / "training" / "data" / "board_cells_train2" / "val"
-HELDOUT_BOARDS = ["09_23", "05_16", "08_22", "22_8"]
+HELDOUT_DIR = ROOT / "training" / "data" / "mixed_v11" / "heldout"
+VAL_DIR = ROOT / "training" / "data" / "mixed_v11" / "heldout"  # single split in mixed_v11
+HELDOUT_BOARDS = []  # populated per-run from manifest's 来源 col if present
 
 
 def load_manifest_dir(cells_dir: Path) -> tuple[list[np.ndarray], list[str], list[str]]:
@@ -115,7 +125,12 @@ def main() -> int:
         if not ck.exists():
             print(f"[skip] {ck} not found")
             continue
-        model, chars = load_checkpoint(ck, device="cpu")
+        try:
+            model, chars = load_checkpoint(ck, device="cpu")
+        except CheckpointFormatError:
+            if not LEGACY:
+                raise
+            model, chars = _load_legacy(ck)
         print(f"\n===== {ck.name} (chars={len(chars)}) =====")
         r_zip = evaluate(model, chars, zip_imgs, zip_labels, zip_codes)
         r_ho = evaluate(model, chars, ho_imgs, ho_labels, ho_codes)
