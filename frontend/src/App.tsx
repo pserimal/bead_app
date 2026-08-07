@@ -7,6 +7,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { ToastProvider } from './components/ToastContext';
 import { pageSlideUpFadeOut } from './lib/animations';
 import UploadPage from './pages/UploadPage';
+import CropPage from './pages/CropPage';
 import HistoryPage from './pages/HistoryPage';
 import JobDetailPage from './pages/JobDetailPage';
 import BlueprintDetailPage from './pages/BlueprintDetailPage';
@@ -26,12 +27,20 @@ function AnimatedRoutes() {
 
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+      <Routes location={location} key={location.key}>
         <Route
           path="/"
           element={
             <AnimatedPage variants={pageSlideUpFadeOut}>
               <UploadPage />
+            </AnimatedPage>
+          }
+        />
+        <Route
+          path="/crop"
+          element={
+            <AnimatedPage variants={pageSlideUpFadeOut}>
+              <CropPage />
             </AnimatedPage>
           }
         />

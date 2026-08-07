@@ -19,8 +19,8 @@ spring:
     clean-disabled: false
   servlet:
     multipart:
-      max-file-size: 20MB
-      max-request-size: 21MB
+      max-file-size: 30MB
+      max-request-size: 31MB
 
 bead:
   # 017 决议：开发期每次启动重建全部表 + 重新 seed 官方颜色库（不保证兼容性）

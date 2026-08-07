@@ -99,8 +99,8 @@ class JobController(
         if (contentType != "image/jpeg" && contentType != "image/png") {
             throw ApiException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "UNSUPPORTED_MEDIA_TYPE", "仅支持 JPEG/PNG 图片")
         }
-        if (image.size > 20L * 1024 * 1024) {
-            throw ApiException(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_TOO_LARGE", "文件超过 20MB 上限")
+        if (image.size > 30L * 1024 * 1024) {
+            throw ApiException(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_TOO_LARGE", "文件超过 30MB 上限")
         }
     }
 

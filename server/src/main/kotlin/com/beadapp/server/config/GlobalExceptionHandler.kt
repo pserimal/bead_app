@@ -59,7 +59,7 @@ class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException::class)
     fun handleMaxSize(e: MaxUploadSizeExceededException): ResponseEntity<ApiError> =
         ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-            .body(ApiError("FILE_TOO_LARGE", "文件超过 20MB 上限", null, traceId()))
+            .body(ApiError("FILE_TOO_LARGE", "文件超过 30MB 上限", null, traceId()))
 
     @ExceptionHandler(IllegalArgumentException::class)
     fun handleIllegalArgument(e: IllegalArgumentException): ResponseEntity<ApiError> =
