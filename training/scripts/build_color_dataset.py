@@ -72,6 +72,9 @@ def build(name: str, sources: list[Path], boards_per_source: int,
             code = f.name.split("_")[0]
             if not code or not code[0].isalpha():
                 continue
+            # 空白格导出为 blank_* (旧导出为 EMPTY_*), 无 OCR 编码含义, 不进入训练集
+            if code == "blank" or code == "EMPTY":
+                continue
             shutil.copy(f, out / f.name)
             real_cells += 1
             codes_seen.add(code)

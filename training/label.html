@@ -1045,7 +1045,8 @@ async function unlabelAll(){
 
 async function exportLabels(){
   if(!_dir)return;
-  var labeled=_cells.filter(function(c){return c.c&&c.c!==_EMPTY});
+  /* 空白格子(_EMPTY)也导出, 编码记为 blank */
+  var labeled=_cells.filter(function(c){return c.c});
   if(!labeled.length){alert('没有已标注的格子');return}
   if(typeof JSZip==='undefined'){alert('JSZip 未加载, 请检查网络后刷新页面');return}
   _progShow('导出标注结果',labeled.length);
@@ -1054,13 +1055,17 @@ async function exportLabels(){
   var done=0,failed=0;
   for(var i=0;i<labeled.length;i++){
     var c=labeled[i];
+    var isBlank=(c.c===_EMPTY);
+    var code=isBlank?'blank':c.c;
+    /* 空白格子磁盘名为 EMPTY_*, 导出包内统一改为 blank_* 与编码一致 */
+    var nm=isBlank?_diskName(c).replace(/^EMPTY_/,'blank_'):_diskName(c);
     try{
       var f=await c.h.getFile();
       var buf=await f.arrayBuffer();
-      zip.file(_diskName(c),buf,{binary:true});
-      manifest+=c.c+','+_diskName(c)+','+(c.r>=0?c.r+1:'')+','+(c.l>=0?c.l+1:'')+','+(c.hue!=null?Math.round(c.hue):'')+','+(c.bri!=null?c.bri:'')+'\n';
+      zip.file(nm,buf,{binary:true});
+      manifest+=code+','+nm+','+(c.r>=0?c.r+1:'')+','+(c.l>=0?c.l+1:'')+','+(c.hue!=null?Math.round(c.hue):'')+','+(c.bri!=null?c.bri:'')+'\n';
     }catch(e){console.error('export failed for',c.n,e);failed++}
-    done++;_progUpdate(done,labeled.length,c.c);
+    done++;_progUpdate(done,labeled.length,code);
   }
   zip.file('manifest.csv',manifest);
   _progUpdate(done,labeled.length,'打包中…');
