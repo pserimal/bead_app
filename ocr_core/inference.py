@@ -35,10 +35,29 @@ def load_runtime_model(model_path: str) -> tuple[CRNN, list[str]]:
     return _MODEL
 
 
-def _crop_cell(image_bgr, x0, y0, x1, y1) -> np.ndarray:
+def _crop_cell(image_bgr, x0, y0, x1, y1, color: bool = False) -> np.ndarray:
+    """Crop a cell and letterbox to (48, 48).
+
+    Returns grayscale (48, 48) for the 1-channel CRNN, or RGB (48, 48, 3)
+    for the RGB CRNN (BGR→RGB conversion so channel order matches training).
+    """
     crop = image_bgr[y0:y1, x0:x1]
     if crop.size == 0:
+        if color:
+            return np.full((48, 48, 3), 255, dtype=np.uint8)
         return np.zeros((48, 48), dtype=np.uint8)
+    if color:
+        rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+        h, w = rgb.shape[:2]
+        scale = min(48 / h, 48 / w) if h > 0 and w > 0 else 1.0
+        new_h = max(1, int(round(h * scale)))
+        new_w = max(1, int(round(w * scale)))
+        resized = cv2.resize(rgb, (new_w, new_h), interpolation=cv2.INTER_AREA)
+        canvas = np.full((48, 48, 3), 255, dtype=np.uint8)  # white background
+        yoff = (48 - new_h) // 2
+        xoff = (48 - new_w) // 2
+        canvas[yoff : yoff + new_h, xoff : xoff + new_w] = resized
+        return canvas
     gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
     # Letterbox to (48, 48) preserving aspect ratio.
     h, w = gray.shape
@@ -80,6 +99,7 @@ def ocr_cells_from_crop(
     import torch
 
     model, chars = _MODEL if _MODEL is not None else load_runtime_model(_default_model_path())
+    color = getattr(model, "input_channels", 1) == 3
     # 显式字符映射：以 checkpoint 自己的 chars 为准（010 R2）
     char_to_idx = {ch: i for i, ch in enumerate(chars)}
 
@@ -109,7 +129,7 @@ def ocr_cells_from_crop(
             # Inset slightly to skip blue grid lines.
             iy = max(1, int(round((cy1 - cy0) * 0.10)))
             ix = max(1, int(round((cx1 - cx0) * 0.10)))
-            cell_imgs.append(_crop_cell(image_bgr, cx0 + ix, cy0 + iy, cx1 - ix, cy1 - iy))
+            cell_imgs.append(_crop_cell(image_bgr, cx0 + ix, cy0 + iy, cx1 - ix, cy1 - iy, color=color))
             coords.append((r, c))
 
     batch_size = 128
@@ -117,7 +137,11 @@ def ocr_cells_from_crop(
     with torch.no_grad():
         for i in range(0, len(cell_imgs), batch_size):
             batch_imgs = np.stack(cell_imgs[i : i + batch_size])
-            tensor = torch.from_numpy(batch_imgs).float().unsqueeze(1) / 255.0
+            if color:
+                # (B, 48, 48, 3) → (B, 3, 48, 48)
+                tensor = torch.from_numpy(batch_imgs).float().permute(0, 3, 1, 2) / 255.0
+            else:
+                tensor = torch.from_numpy(batch_imgs).float().unsqueeze(1) / 255.0
             logits = model(tensor)  # (T, B, C)
             T = logits.shape[0]
             decoded = constrained_decode(logits, trie, char_to_idx, blank=0)

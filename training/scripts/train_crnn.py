@@ -51,7 +51,7 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from ocr_core.bead_ocr_crnn import CRNN, ctc_greedy_decode, save_checkpoint  # noqa: E402
+from ocr_core.bead_ocr_crnn import CRNN, CRNNRGB, ctc_greedy_decode, save_checkpoint  # noqa: E402
 from training.models.synth_generator import (  # noqa: E402
     CODES,
     Sample,
@@ -63,21 +63,39 @@ from training.models.synth_generator import (  # noqa: E402
 
 
 def _to_gray(img: np.ndarray) -> np.ndarray:
-    """Convert (H, W, 3) RGB uint8 → (H, W) grayscale uint8 (pass-through if already 2d)."""
+    """Convert RGB uint8 to grayscale (pass-through if already 2d)."""
     if img.ndim == 2:
         return img
     return (0.299 * img[:, :, 0] + 0.587 * img[:, :, 1] + 0.114 * img[:, :, 2]).astype(np.uint8)
 
 
+def _to_rgb(img: np.ndarray) -> np.ndarray:
+    """Return an RGB uint8 image, repeating grayscale inputs across channels."""
+    if img.ndim == 2:
+        return np.stack([img] * 3, axis=-1)
+    if img.shape[-1] > 3:
+        return img[:, :, :3]
+    return img
+
+
 def _resize_to_48(arr: np.ndarray) -> np.ndarray:
     """Resize a 48-ish grayscale or RGB image to (48, 48) uint8."""
     from PIL import Image
-    if arr.ndim == 2:
-        arr = np.stack([arr] * 3, axis=-1)
+    arr = _to_rgb(arr)
     if arr.shape[:2] != (48, 48):
         img = Image.fromarray(arr.astype(np.uint8)).resize((48, 48), Image.LANCZOS)
         arr = np.array(img)
     return arr
+
+
+def _to_model_tensor(arr: np.ndarray, color: bool) -> torch.Tensor:
+    """Convert resized pixels to normalized model input (CHW)."""
+    arr = _resize_to_48(arr)
+    if color:
+        pixels = np.ascontiguousarray(arr)
+        return torch.from_numpy(pixels).float().permute(2, 0, 1) / 255.0
+    gray = np.ascontiguousarray(_to_gray(arr))
+    return torch.from_numpy(gray).float().unsqueeze(0) / 255.0
 
 
 class SampleLike:
@@ -103,9 +121,10 @@ class CellDataset(Dataset):
     brightness jitter ±10%) on __getitem__ — only for training, not validation.
     """
 
-    def __init__(self, samples: list, augment: bool = False):
+    def __init__(self, samples: list, augment: bool = False, color: bool = False):
         self.samples = samples
         self.augment = augment
+        self.color = color
         from PIL import Image
         self._Image = Image
 
@@ -114,8 +133,7 @@ class CellDataset(Dataset):
 
     def __getitem__(self, idx: int):
         s = self.samples[idx]
-        arr = s.image if s.image.ndim == 3 else np.stack([s.image] * 3, axis=-1)
-        arr = _resize_to_48(arr)
+        arr = _resize_to_48(s.image)
 
         if self.augment:
             from PIL import Image, ImageEnhance
@@ -132,9 +150,15 @@ class CellDataset(Dataset):
                 img = Image.fromarray(arr.astype(np.uint8))
                 img = ImageEnhance.Brightness(img).enhance(factor)
                 arr = np.array(img)
+            # RGB: saturation jitter ±15% (keeps model color-robust)
+            if self.color:
+                color_factor = _rng.uniform(0.85, 1.15)
+                if abs(color_factor - 1.0) > 0.03:
+                    img = Image.fromarray(arr.astype(np.uint8))
+                    img = ImageEnhance.Color(img).enhance(color_factor)
+                    arr = np.array(img)
 
-        gray = _to_gray(arr)
-        img = torch.from_numpy(gray).float().unsqueeze(0) / 255.0
+        img = _to_model_tensor(arr, color=self.color)
         target = torch.tensor(s.token_indices, dtype=torch.long)
         return img, target, len(s.token_indices)
 
@@ -202,7 +226,7 @@ def _load_real_samples(
     # Optional manifest: filename → code lookup
     manifest_lookup: dict[str, str] = {}
     if manifest_path is not None and manifest_path.exists():
-        with open(manifest_path, encoding="utf-8") as f:
+        with open(manifest_path, encoding="utf-8-sig") as f:
             reader = csv.reader(f)
             rows = list(reader)
         if len(rows) > 1:
@@ -365,10 +389,10 @@ def evaluate(model: CRNN, samples: list, device: str,
             chunk = samples[i : i + bs]
             arrs = []
             for s in chunk:
-                arr = s.image if s.image.ndim == 3 else np.stack([s.image] * 3, axis=-1)
-                arr = _resize_to_48(arr)
-                arrs.append(_to_gray(arr))
-            imgs = torch.from_numpy(np.stack(arrs)).float().unsqueeze(1) / 255.0
+                arrs.append(_to_model_tensor(
+                    s.image, color=getattr(model, "input_channels", 1) == 3
+                ))
+            imgs = torch.stack(arrs)
             imgs = imgs.to(device)
             logits = model(imgs)  # (T, B, C)
             preds = ctc_greedy_decode(logits, idx_to_char)
@@ -471,7 +495,7 @@ def train(args):
         )
 
     train_loader = DataLoader(
-        CellDataset(train_samples, augment=args.augment),
+        CellDataset(train_samples, augment=args.augment, color=args.color),
         batch_size=args.batch_size,
         shuffle=(sampler is None),
         sampler=sampler,
@@ -480,7 +504,8 @@ def train(args):
     )
 
     # ── Model / optimizer / scheduler ──
-    model = CRNN(num_classes=len(chars)).to(device)
+    model_cls = CRNNRGB if args.color else CRNN
+    model = model_cls(num_classes=len(chars)).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     ctc_loss = nn.CTCLoss(blank=0, zero_infinity=True)
@@ -525,7 +550,8 @@ def train(args):
             save_checkpoint(
                 out_path, model, len(chars), chars,
                 code_dict=list(codes_set) if codes_set else None,
-                training={"seed": args.seed, "epochs": args.epochs, "synth_n": args.synth_n},
+                training={"seed": args.seed, "epochs": args.epochs,
+                           "synth_n": args.synth_n, "color": args.color},
             )
             print(f"  → saved checkpoint → {out_path} (val_em={em:.3f})")
 
@@ -582,7 +608,9 @@ def parse_args():
     p.add_argument("--out", type=str, default="checkpoints/crnn.pt")
     p.add_argument("--augment", action="store_true", default=False,
                    help="Apply light data augmentation (rotation ±5°, "
-                        "brightness ±12%) during training.")
+                        "brightness ±12%; RGB saturation ±15% in --color mode).")
+    p.add_argument("--color", action="store_true",
+                   help="Train the RGB-input CRNN (crnn-v2-rgb) to preserve bead/background color.")
     p.add_argument("--debug-mismatches", action="store_true",
                    help="Print first few (gt, pred) mismatches per epoch.")
     return p.parse_args()

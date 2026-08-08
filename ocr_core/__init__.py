@@ -17,6 +17,7 @@ from ocr_core.charset import (
 from ocr_core.code_library import load_codes, load_library
 from ocr_core.bead_ocr_crnn import (
     CRNN,
+    CRNNRGB,
     CheckpointFormatError,
     ctc_greedy_decode,
     constrained_decode,
@@ -38,6 +39,7 @@ __all__ = [
     "load_codes",
     "load_library",
     "CRNN",
+    "CRNNRGB",
     "CheckpointFormatError",
     "ctc_greedy_decode",
     "constrained_decode",

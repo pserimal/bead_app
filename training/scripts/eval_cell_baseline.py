@@ -91,8 +91,24 @@ def _load_legacy(path: Path) -> tuple[object, list[str]]:
     return model, chars
 
 
-def _prep_cell(cell_bgr: np.ndarray) -> np.ndarray:
-    """Convert BGR cell to the model's (48, 48) grayscale input space."""
+def _prep_cell(cell_bgr: np.ndarray, color: bool = False) -> np.ndarray:
+    """Convert a BGR cell to the model input space.
+
+    Grayscale (48, 48) for the 1-channel CRNN; RGB (48, 48, 3) for the
+    RGB CRNN (BGR→RGB so channel order matches training).
+    """
+    if color:
+        rgb = cv2.cvtColor(cell_bgr, cv2.COLOR_BGR2RGB)
+        h, w = rgb.shape[:2]
+        scale = min(48 / h, 48 / w) if h > 0 and w > 0 else 1.0
+        new_h = max(1, int(round(h * scale)))
+        new_w = max(1, int(round(w * scale)))
+        resized = cv2.resize(rgb, (new_w, new_h), interpolation=cv2.INTER_AREA)
+        canvas = np.full((48, 48, 3), 255, dtype=np.uint8)
+        yoff = (48 - new_h) // 2
+        xoff = (48 - new_w) // 2
+        canvas[yoff : yoff + new_h, xoff : xoff + new_w] = resized
+        return canvas
     gray = cv2.cvtColor(cell_bgr, cv2.COLOR_BGR2GRAY)
     h, w = gray.shape
     scale = min(48 / h, 48 / w) if h > 0 and w > 0 else 1.0
@@ -179,8 +195,9 @@ def evaluate(
     char_to_idx = {ch: i for i, ch in enumerate(chars)}
     trie = build_code_trie(valid_codes)
     codes_set = set(valid_codes)
+    color = getattr(model, "input_channels", 1) == 3
 
-    prepped = [_prep_cell(c) for c in cell_imgs]
+    prepped = [_prep_cell(c, color=color) for c in cell_imgs]
     raw_preds: list[str] = []          # constrained decode, never rejected
     runtime_preds: list[str | None] = []  # None when min_conf/codeset rejects
     confs: list[float] = []
@@ -188,8 +205,11 @@ def evaluate(
     t0 = time.perf_counter()
     with torch.no_grad():
         for i in range(0, len(prepped), BATCH_SIZE):
-            batch = np.stack(prepped[i : i + BATCH_SIZE])  # (B, 48, 48)
-            tensor = torch.from_numpy(batch).float().unsqueeze(1) / 255.0
+            batch = np.stack(prepped[i : i + BATCH_SIZE])
+            if color:
+                tensor = torch.from_numpy(batch).float().permute(0, 3, 1, 2) / 255.0
+            else:
+                tensor = torch.from_numpy(batch).float().unsqueeze(1) / 255.0
             logits = model(tensor)
             decoded = constrained_decode(logits, trie, char_to_idx, blank=0, blank_penalty=BLANK_PENALTY)
             for code, score in decoded:

@@ -57,11 +57,13 @@ class CRNN(nn.Module):
     INPUT_CHANNELS = 1
     BLANK_INDEX = 0
 
-    def __init__(self, num_classes: int, hidden: int = 128):
+    def __init__(self, num_classes: int, hidden: int = 128,
+                 input_channels: int | None = None):
         super().__init__()
+        self.input_channels = input_channels if input_channels is not None else self.INPUT_CHANNELS
         # CNN: collapse H=48 → 1 across the layers.
         self.cnn = nn.Sequential(
-            _ConvBlock(1, 64, pool=(2, 2)),     # H 48 → 24, W 48 → 24
+            _ConvBlock(self.input_channels, 64, pool=(2, 2)),  # H 48 → 24, W 48 → 24
             _ConvBlock(64, 128, pool=(2, 2)),   # H 24 → 12, W 24 → 12
             _ConvBlock(128, 256, pool=(2, 1)),  # H 12 →  6, W 12 → 12
             _ConvBlock(256, 256, pool=(2, 1)),  # H  6 →  3, W 12 → 12
@@ -82,7 +84,7 @@ class CRNN(nn.Module):
         self.hidden = hidden
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: (B, 1, H, W)
+        # x: (B, C, H, W), where C is 1 for v1 or 3 for RGB v2
         feat = self.cnn(x)               # (B, 512, 1, T_w)
         assert feat.size(2) == 1, f"expected H=1 after CNN, got {feat.size(2)}"
         feat = feat.squeeze(2)           # (B, 512, T_w)
@@ -90,6 +92,13 @@ class CRNN(nn.Module):
         out, _ = self.rnn(feat)          # (T_w, B, 2*hidden)
         logits = self.fc(out)            # (T_w, B, num_classes)
         return logits
+
+
+class CRNNRGB(CRNN):
+    """RGB-input CRNN variant that preserves bead/background color."""
+
+    ARCH_ID = "crnn-v2-rgb"
+    INPUT_CHANNELS = 3
 
 
 # ── CTC greedy decode + dictionary constraint (pure functions) ───────
@@ -230,14 +239,15 @@ def save_checkpoint(
     training: dict | None = None,
 ) -> None:
     """Save checkpoint with full metadata (010 R2)."""
+    model_cls = type(model)
     ckpt = {
         "format_version": 1,
-        "model_arch": CRNN.ARCH_ID,
+        "model_arch": getattr(model_cls, "ARCH_ID", CRNN.ARCH_ID),
         "num_classes": num_classes,
         "hidden": getattr(model, "hidden", 128),
-        "input_size": CRNN.INPUT_SIZE,
-        "input_channels": CRNN.INPUT_CHANNELS,
-        "blank_index": CRNN.BLANK_INDEX,
+        "input_size": list(getattr(model_cls, "INPUT_SIZE", CRNN.INPUT_SIZE)),
+        "input_channels": getattr(model, "input_channels", CRNN.INPUT_CHANNELS),
+        "blank_index": getattr(model_cls, "BLANK_INDEX", CRNN.BLANK_INDEX),
         "chars": chars,
         "charset_hash": charset_hash(),
         "code_dict_version": _code_dict_version(code_dict),
@@ -264,27 +274,37 @@ def load_checkpoint(path: str | Path, device: str = "cpu") -> tuple[CRNN, list[s
 
     chars = ckpt["chars"]
     num_classes = ckpt["num_classes"]
+    model_arch = ckpt.get("model_arch")
+    model_classes = {
+        CRNN.ARCH_ID: CRNN,
+        CRNNRGB.ARCH_ID: CRNNRGB,
+    }
+    model_cls = model_classes.get(model_arch)
+    if model_cls is None:
+        raise CheckpointFormatError(
+            f"model_arch mismatch: checkpoint={model_arch!r}; supported={sorted(model_classes)}"
+        )
 
     # ── Hard checks ──
-    if ckpt.get("model_arch") != CRNN.ARCH_ID:
+    if model_arch != model_cls.ARCH_ID:
         raise CheckpointFormatError(
-            f"model_arch mismatch: checkpoint={ckpt.get('model_arch')} != runtime={CRNN.ARCH_ID}"
+            f"model_arch mismatch: checkpoint={model_arch} != runtime={model_cls.ARCH_ID}"
         )
     if num_classes != len(chars):
         raise CheckpointFormatError(
             f"num_classes mismatch: {num_classes} != len(chars)={len(chars)}"
         )
-    if list(ckpt.get("input_size") or []) != CRNN.INPUT_SIZE:
+    if list(ckpt.get("input_size") or []) != model_cls.INPUT_SIZE:
         raise CheckpointFormatError(
-            f"input_size mismatch: {ckpt.get('input_size')} != {CRNN.INPUT_SIZE}"
+            f"input_size mismatch: {ckpt.get('input_size')} != {model_cls.INPUT_SIZE}"
         )
-    if ckpt.get("input_channels") != CRNN.INPUT_CHANNELS:
+    if ckpt.get("input_channels") != model_cls.INPUT_CHANNELS:
         raise CheckpointFormatError(
-            f"input_channels mismatch: {ckpt.get('input_channels')} != {CRNN.INPUT_CHANNELS}"
+            f"input_channels mismatch: {ckpt.get('input_channels')} != {model_cls.INPUT_CHANNELS}"
         )
-    if ckpt.get("blank_index") != CRNN.BLANK_INDEX:
+    if ckpt.get("blank_index") != model_cls.BLANK_INDEX:
         raise CheckpointFormatError(
-            f"blank_index mismatch: {ckpt.get('blank_index')} != {CRNN.BLANK_INDEX}"
+            f"blank_index mismatch: {ckpt.get('blank_index')} != {model_cls.BLANK_INDEX}"
         )
     ckpt_charset_hash = ckpt.get("charset_hash")
     if ckpt_charset_hash and ckpt_charset_hash != charset_hash():
@@ -302,7 +322,7 @@ def load_checkpoint(path: str | Path, device: str = "cpu") -> tuple[CRNN, list[s
             )
 
     hidden = ckpt.get("hidden", 128)
-    model = CRNN(num_classes=num_classes, hidden=hidden)
+    model = model_cls(num_classes=num_classes, hidden=hidden)
     model.load_state_dict(ckpt["state_dict"])
     model.to(device)
     model.eval()
