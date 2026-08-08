@@ -87,11 +87,12 @@ function controlStyle(): React.CSSProperties {
 
 function drawBoard(
   canvas: HTMLCanvasElement,
-  cells: BlueprintCellDto[],
   rows: number,
   cols: number,
   cellSize: number,
   scale: number,
+  cellsByPosition: Map<string, BlueprintCellDto>,
+  longestCode: string,
 ) {
   const dpr = window.devicePixelRatio || 1;
   const boardWidth = cols * cellSize;
@@ -118,15 +119,10 @@ function drawBoard(
   context.setTransform(dpr * renderScale, 0, 0, dpr * renderScale, 0, 0);
   context.clearRect(0, 0, width, height);
 
-  const cellsByPosition = new Map(cells.map((cell) => [`${cell.row}:${cell.col}`, cell]));
   const fontFamily = monoFontFamily();
-  // 编码填满单元格 ≈85% 宽度：实测最长编码在 100px 字号下的宽度，
-  // 反推 fontSize 使最长编码宽度 = 0.85 × cellSize（不同字体/字距都精确）。
+  // 编码填满单元格 ≈85% 宽度：最长编码宽度（mono 字符宽 ≈ 0.62em）≈ 0.85 × cellSize，
+  // 用 measureText 实测最长编码在 100px 字号下的宽度反推 fontSize（不同字体/字距都精确）。
   // 下限 2 字符：避免全 1 字符编码时字号超过格高被裁切。
-  const longestCode = cells.reduce(
-    (acc, cell) => (cell.code && cell.code.length > acc.length ? cell.code : acc),
-    '',
-  );
   const maxCodeLen = Math.max(2, longestCode.length);
   context.font = `700 100px ${fontFamily}`;
   const probe = Math.max(0.1, context.measureText(longestCode || 'MM').width) / 100;
@@ -257,6 +253,7 @@ export default function BlueprintDetailPage() {
   const { data: blueprint, isLoading, error } = useBlueprint(id ?? null);
   const viewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<ViewState>({ scale: 1, panX: 0, panY: 0 });
   const dragRef = useRef<PointerDrag | null>(null);
   // 已渲染位图的蓝图 id + 分辨率倍数（用于判断何时需要重绘）
@@ -271,6 +268,28 @@ export default function BlueprintDetailPage() {
     () => blueprint?.cells.filter((cell) => cell.status === 'UNMAPPED') ?? [],
     [blueprint],
   );
+  // 按 position 索引的格子 Map：只建一次（drawBoard 每帧重绘都复用，省 14k 次分配/GC）
+  const cellsByPosition = useMemo(() => {
+    const map = new Map<string, BlueprintCellDto>();
+    if (blueprint) {
+      for (const cell of blueprint.cells) map.set(`${cell.row}:${cell.col}`, cell);
+    }
+    return map;
+  }, [blueprint]);
+  // 最长编码：只算一次（hover tooltip 和 drawBoard 共用）
+  const longestCode = useMemo(() => {
+    if (!blueprint) return '';
+    let best = '';
+    for (const cell of blueprint.cells) {
+      if (cell.code && cell.code.length > best.length) best = cell.code;
+    }
+    return best;
+  }, [blueprint]);
+  // 拖动时直接改 DOM transform，不走 React state（省每帧重渲染 + GC）；松手时才同步回 state
+  const applyTransform = useCallback((panX: number, panY: number, scale: number) => {
+    const el = wrapperRef.current;
+    if (el) el.style.transform = `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${scale})`;
+  }, []);
   const cellSize = blueprint ? Math.max(12, Math.min(48, 1440 / Math.max(blueprint.cols, blueprint.rows))) : 48;
   const boardWidth = (blueprint?.cols ?? 0) * cellSize + AXIS_GUTTER * 2;
   const boardHeight = (blueprint?.rows ?? 0) * cellSize + AXIS_GUTTER * 2;
@@ -301,7 +320,7 @@ export default function BlueprintDetailPage() {
     const col = Math.floor((localX - AXIS_GUTTER) / cellSize);
     const row = Math.floor((localY - AXIS_GUTTER) / cellSize);
     if (row < 0 || row >= blueprint.rows || col < 0 || col >= blueprint.cols) return null;
-    const cell = blueprint.cells.find((item) => item.row === row && item.col === col);
+    const cell = cellsByPosition.get(`${row}:${col}`);
     return {
       row,
       col,
@@ -309,7 +328,7 @@ export default function BlueprintDetailPage() {
       x: clientX - rect.left + 14,
       y: clientY - rect.top + 14,
     };
-  }, [blueprint, boardHeight, boardWidth, cellSize]);
+  }, [blueprint, boardHeight, boardWidth, cellSize, cellsByPosition]);
 
   const zoomBy = useCallback((factor: number) => {
     setView((previous) => {
@@ -358,7 +377,7 @@ export default function BlueprintDetailPage() {
       if (!canvas) return;
       const target = viewRef.current.scale;
       if (drawnRef.current.blueprintId === blueprint.id && target <= drawnRef.current.scale) return;
-      drawBoard(canvas, blueprint.cells, blueprint.rows, blueprint.cols, cellSize, target);
+      drawBoard(canvas, blueprint.rows, blueprint.cols, cellSize, target, cellsByPosition, longestCode);
       drawnRef.current = { blueprintId: blueprint.id, scale: target };
     };
     if (force || targetPx <= 16_000_000) {
@@ -373,7 +392,7 @@ export default function BlueprintDetailPage() {
         draw();
       }, 180);
     }
-  }, [blueprint, cellSize, view.scale]);
+  }, [blueprint, cellSize, view.scale, cellsByPosition, longestCode]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -390,7 +409,11 @@ export default function BlueprintDetailPage() {
         startPanY: current.panY,
       };
       viewport.style.cursor = 'grabbing';
-      viewport.setPointerCapture(event.pointerId);
+      try {
+        viewport.setPointerCapture(event.pointerId);
+      } catch {
+        // 指针可能已释放（合成事件/快速松开），忽略
+      }
       event.preventDefault();
     };
 
@@ -403,12 +426,15 @@ export default function BlueprintDetailPage() {
           panY: drag.startPanY + event.clientY - drag.startY,
         };
         viewRef.current = next;
-        setView(next);
+        // 拖动直接改 DOM transform，不走 React state（省每帧重渲染 + GC）
+        applyTransform(next.panX, next.panY, next.scale);
         setHover(null);
         event.preventDefault();
         return;
       }
-      setHover(cellAt(event.clientX, event.clientY));
+      // 同格内移动不更新 tooltip（React 同引用 bail-out，省重渲染）
+      const next = cellAt(event.clientX, event.clientY);
+      setHover((prev) => (prev && next && prev.row === next.row && prev.col === next.col ? prev : next));
     };
 
     const finishPointer = (event: PointerEvent) => {
@@ -416,6 +442,8 @@ export default function BlueprintDetailPage() {
       dragRef.current = null;
       viewport.style.cursor = 'grab';
       if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
+      // 拖动结束，把最新 pan 同步回 React state（100%/缩放显示依赖它）
+      setView(viewRef.current);
     };
 
     const onWheel = (event: WheelEvent) => {
@@ -454,7 +482,7 @@ export default function BlueprintDetailPage() {
       viewport.removeEventListener('wheel', onWheel);
       viewport.removeEventListener('pointerleave', onPointerLeave);
     };
-  }, [cellAt]);
+  }, [cellAt, applyTransform]);
 
   if (isLoading) return <p style={{ color: 'var(--color-text-muted)' }}>加载中…</p>;
   if (error) return <p style={{ color: 'var(--color-error)' }}>加载失败：{(error as Error).message}</p>;
@@ -497,6 +525,7 @@ export default function BlueprintDetailPage() {
             style={{ height: 'min(72vh, 760px)', minHeight: 360, background: '#e9e2d8', border: '1px solid var(--color-border)', cursor: 'grab', touchAction: 'none', userSelect: 'none' }}
           >
             <div
+              ref={wrapperRef}
               style={{
                 position: 'absolute',
                 left: '50%',
