@@ -67,16 +67,17 @@ def render_cell(rng: random.Random, code: str, hex_color: str,
 
     # Font / size / position jitter (mirror real diagram variance).
     # Larger text (marked style covers 40-60 % of the cell).
-    font_size = rng.randint(44, 60)
+    font_size = rng.randint(40, 62)
     font = ImageFont.truetype(rng.choice(fonts), font_size)
     bbox = draw.textbbox((0, 0), code, font=font)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    jx = rng.randint(-8, 8)
-    jy = rng.randint(-8, 8)
+    jx = rng.randint(-10, 10)
+    jy = rng.randint(-10, 10)
     cx = (SZ - tw) / 2 - bbox[0] + jx
     cy = (SZ - th) / 2 - bbox[1] + jy
-    # Bold stroke (marking tool overlays a heavy pen).
-    draw.text((cx, cy), code, fill=text_rgb, font=font, stroke_width=2,
+    # Bold stroke thickness varies (marking tools differ) — 0..3 px.
+    stroke = rng.randint(0, 3)
+    draw.text((cx, cy), code, fill=text_rgb, font=font, stroke_width=stroke,
               stroke_fill=text_rgb)
 
     # Light grid-line residue on the left/top edge (like crop_board output).
@@ -87,24 +88,44 @@ def render_cell(rng: random.Random, code: str, hex_color: str,
         else:
             draw.line([(0, 0), (0, SZ)], fill="#DDDDDD", width=1)
 
-    # Rotation ±3° (production crops are near axis-aligned).
-    angle = rng.uniform(-3, 3)
+    # Rotation ±5° (production crops are near axis-aligned but photos
+    # can be slightly tilted).
+    angle = rng.uniform(-5, 5)
     if abs(angle) > 0.3:
         img = img.rotate(angle, resample=Image.BILINEAR,
                          fillcolor=bg)
+
+    # Affine warp (perspective/camera skew) — subtle ±0.02 shear.
+    if rng.random() < 0.4:
+        import cv2
+        arr_w = np.array(img)
+        M = np.float32([[1, rng.uniform(-0.02, 0.02), 0],
+                        [rng.uniform(-0.02, 0.02), 1, 0]])
+        arr_w = cv2.warpAffine(arr_w, M, (SZ, SZ),
+                               flags=cv2.INTER_LINEAR,
+                               borderMode=cv2.BORDER_REPLICATE)
+        img = Image.fromarray(arr_w)
 
     # Downscale + LANCZOS (same as synth pipeline).
     img = img.resize((cell_size, cell_size), Image.LANCZOS)
     arr = np.array(img)
 
-    # Brightness jitter ±8 %.
-    if rng.random() < 0.4:
-        delta = rng.randint(-20, 20)
+    # Brightness jitter ±12 %.
+    if rng.random() < 0.5:
+        delta = rng.randint(-30, 30)
         arr = np.clip(arr.astype(np.int16) + delta, 0, 255).astype(np.uint8)
 
+    # Saturation jitter (keep color hue, vary intensity like camera WB).
+    if rng.random() < 0.5:
+        import cv2
+        hsv = cv2.cvtColor(arr, cv2.COLOR_RGB2HSV).astype(np.int16)
+        hsv[:, :, 1] = np.clip(hsv[:, :, 1] * rng.uniform(0.7, 1.3), 0, 255)
+        hsv[:, :, 2] = np.clip(hsv[:, :, 2] * rng.uniform(0.85, 1.15), 0, 255)
+        arr = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2RGB)
+
     # Mild Gaussian blur (camera softness).
-    if rng.random() < 0.4:
-        radius = rng.uniform(0.2, 0.8)
+    if rng.random() < 0.5:
+        radius = rng.uniform(0.2, 1.2)
         arr = np.array(Image.fromarray(arr).filter(
             ImageFilter.GaussianBlur(radius=radius)))
 
