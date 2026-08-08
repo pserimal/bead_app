@@ -10,12 +10,12 @@ import org.springframework.context.annotation.Configuration
 /**
  * 017 决议：开发期数据库初始化策略 —— 不保证兼容性，按配置每次启动重建。
  *
- * `bead.db.recreate-on-start=true`（默认）：
- *   启动时先 flyway.clean()（drop 全部表）→ flyway.migrate()（按 V1/V2 重建）
- *   → ColorSeedRunner 幂等 seed 官方颜色库（1950 码，含 brand）。
+ * `bead.db.recreate-on-start=false`（默认）：
+ *   保留既有数据，仅执行迁移（Spring Boot 默认行为）。
  *
- * `bead.db.recreate-on-start=false`：
- *   保留既有数据，仅执行迁移（默认 Spring Boot 行为）。
+ * `bead.db.recreate-on-start=true`：
+ *   仅在显式开发/重置场景下，启动时先 flyway.clean()（drop 全部表）
+ *   → flyway.migrate() → ColorSeedRunner 幂等 seed 官方颜色库。
  */
 @Configuration
 class DatabaseInitConfig {
@@ -24,7 +24,7 @@ class DatabaseInitConfig {
 
     @Bean
     fun flywayMigrationStrategy(
-        @Value("\${bead.db.recreate-on-start:true}") recreateOnStart: Boolean,
+        @Value("\${bead.db.recreate-on-start:false}") recreateOnStart: Boolean,
     ): FlywayMigrationStrategy {
         return FlywayMigrationStrategy { flyway: Flyway ->
             if (recreateOnStart) {
