@@ -56,15 +56,14 @@ from PIL import Image  # noqa: E402
 # Decompression-bomb guard: boards are our own output, can exceed 178 MP.
 Image.MAX_IMAGE_PIXELS = None
 
-GRID_JITTER_PX = 0    # whole-grid offset, default 0 — production divides the
-                         # user's grid region exactly (ocr_cells_from_crop), so
-                         # no offset exists inside the grid; jitter only makes
-                         # sense as an EDGE tolerance test, not for training.
-GRID_JITTER_MAX = 10  # edge-tolerance bound (kept for robustness testing)
-# Per-cell jitter is intentionally ZERO: production crops divide the user's
-# grid region evenly, so a selection error shifts ALL cells by the same
-# offset (content stays correct, labels stay valid).  Random per-cell
-# offsets would cut neighbouring cells and poison labels.
+# Simulate a user-selected crop box that is slightly off the true grid.
+# Most crops are off by 1–2 px; a smaller fraction are visibly off by up to
+# 8 px.  The same global offset is applied to every cell, matching production
+# where rows/cols divide one imperfect crop rectangle evenly.
+GRID_JITTER_PX = 2
+GRID_JITTER_MAX = 8
+# Do not add independent per-cell jitter: that would create artificial label
+# corruption instead of simulating a real crop-box offset.
 CELL_JITTER_PX = 0
 
 
@@ -104,9 +103,9 @@ def crop_board_dir(board_dir: Path, seed: int = 0) -> dict:
     cells_dir.mkdir(parents=True, exist_ok=True)
 
     rng = random.Random(seed)
-    # Mixed jitter: 80 % small (±GRID_JITTER_PX), 20 % large (±GRID_JITTER_MAX)
-    # — mimics real user selection error (mostly small, occasionally big).
-    if rng.random() < 0.8:
+    # Mixed jitter: 75 % small (±2 px), 25 % larger (±8 px) — mimics
+    # normal user selection error with occasional rough crop boundaries.
+    if rng.random() < 0.75:
         gdx = rng.randint(-GRID_JITTER_PX, GRID_JITTER_PX)
         gdy = rng.randint(-GRID_JITTER_PX, GRID_JITTER_PX)
     else:
