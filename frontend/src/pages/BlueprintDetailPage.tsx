@@ -36,6 +36,26 @@ function normalizeHex(hex: string | null | undefined): string | null {
   return /^[0-9a-f]{6}$/i.test(value) ? `#${value}` : null;
 }
 
+let cachedMonoFamily: string | null = null;
+
+/**
+ * ctx.font 不支持 CSS 变量：赋含 var(--font-mono) 的字体串会被静默忽略，
+ * 画布回退到默认 10px sans-serif，导致大图纸文字/刻度大于单元格。
+ * 这里把 var() 解析成真实字体族（带纯 monospace 兜底）再交给画布。
+ */
+function monoFontFamily(): string {
+  if (cachedMonoFamily) return cachedMonoFamily;
+  if (typeof document !== 'undefined') {
+    const resolved = getComputedStyle(document.body).getPropertyValue('--font-mono').trim();
+    if (resolved) {
+      cachedMonoFamily = resolved;
+      return resolved;
+    }
+  }
+  cachedMonoFamily = "ui-monospace, 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace";
+  return cachedMonoFamily;
+}
+
 function readableTextColor(hex: string | null): string {
   if (!hex) return '#3e3832';
   const value = hex.slice(1);
@@ -71,29 +91,50 @@ function drawBoard(
   rows: number,
   cols: number,
   cellSize: number,
+  scale: number,
 ) {
   const dpr = window.devicePixelRatio || 1;
   const boardWidth = cols * cellSize;
   const boardHeight = rows * cellSize;
   const width = boardWidth + AXIS_GUTTER * 2;
   const height = boardHeight + AXIS_GUTTER * 2;
-  canvas.width = Math.ceil(width * dpr);
-  canvas.height = Math.ceil(height * dpr);
+  // 清晰渲染：位图分辨率随缩放提升（renderScale = max(1, scale)），放大不模糊。
+  // 但分辨率无需 1:1 追到极限：MAX_RENDER_SCALE=3 封顶（最大位图 ≈34M px），
+  // 兼顾拖动流畅（巨纹理合成卡顿）与可读性，超过后由 CSS 放大（轻微变糊可接受）。
+  // 画布尺寸/面积上限（Chrome 2D ≈ 32767 边 / 268M 面积）作为硬性兜底。
+  const MAX_RENDER_SCALE = 3;
+  const MAX_CANVAS_DIM = 32767;
+  const MAX_CANVAS_AREA = 268_000_000;
+  const dimCap = MAX_CANVAS_DIM / (Math.max(width, height) * dpr);
+  const areaCap = Math.sqrt(MAX_CANVAS_AREA / (width * height * dpr * dpr));
+  const renderScale = Math.max(1, Math.min(scale, MAX_RENDER_SCALE, dimCap, areaCap));
+  canvas.width = Math.ceil(width * renderScale * dpr);
+  canvas.height = Math.ceil(height * renderScale * dpr);
   canvas.style.width = `${width}px`;
   canvas.style.height = `${height}px`;
 
   const context = canvas.getContext('2d');
   if (!context) return;
-  context.setTransform(dpr, 0, 0, dpr, 0, 0);
+  context.setTransform(dpr * renderScale, 0, 0, dpr * renderScale, 0, 0);
   context.clearRect(0, 0, width, height);
 
   const cellsByPosition = new Map(cells.map((cell) => [`${cell.row}:${cell.col}`, cell]));
-  // 字号必须保证不超单元格宽度：单字符宽度 ≈ 0.62 × fontSize，
-  // 三字符编码宽度 ≈ 1.86 × fontSize，留 8% 边距后得 fontSize ≤ cellSize / 2.16。
-  const idealFont = Math.max(5, Math.min(9, cellSize * 0.16));
-  const fontSize = Math.min(idealFont, Math.max(5, cellSize / 2.16));
-  const idealAxis = Math.max(5, Math.min(7, cellSize * 0.12));
-  const axisFontSize = Math.min(idealAxis, Math.max(5, cellSize / 5));
+  const fontFamily = monoFontFamily();
+  // 编码填满单元格 ≈85% 宽度：实测最长编码在 100px 字号下的宽度，
+  // 反推 fontSize 使最长编码宽度 = 0.85 × cellSize（不同字体/字距都精确）。
+  // 下限 2 字符：避免全 1 字符编码时字号超过格高被裁切。
+  const longestCode = cells.reduce(
+    (acc, cell) => (cell.code && cell.code.length > acc.length ? cell.code : acc),
+    '',
+  );
+  const maxCodeLen = Math.max(2, longestCode.length);
+  context.font = `700 100px ${fontFamily}`;
+  const probe = Math.max(0.1, context.measureText(longestCode || 'MM').width) / 100;
+  const fontSize = Math.min((0.85 * cellSize) / probe, cellSize / (0.62 * maxCodeLen));
+  // 小字号才需要描边加强对比；放大到字号足够大后省掉 strokeText（每格一次调用）
+  const useStroke = fontSize * scale < 28;
+  // 坐标刻度画在固定 56px 轴边距内，不受单元格限制；保留 5-9px 可读下限。
+  const axisFontSize = Math.max(5, Math.min(9, cellSize * 0.12));
   const left = AXIS_GUTTER;
   const top = AXIS_GUTTER;
 
@@ -131,40 +172,40 @@ function drawBoard(
 
       const code = cell?.code ?? '';
       if (code) {
-        context.font = `700 ${fontSize}px var(--font-mono), ui-monospace, monospace`;
+        context.font = `700 ${fontSize}px ${fontFamily}`;
         context.textAlign = 'center';
         context.textBaseline = 'middle';
         context.lineJoin = 'round';
-        // 文字裁到单元格内，跨格文字会被截断而不是重叠
-        context.save();
-        context.beginPath();
-        context.rect(x + 1, y + 1, cellSize - 2, cellSize - 2);
-        context.clip();
-        context.lineWidth = Math.max(0.4, fontSize / 8);
-        context.strokeStyle = readableTextColor(hex) === '#fffaf0'
-          ? 'rgba(0, 0, 0, 0.32)'
-          : 'rgba(255, 250, 240, 0.55)';
-        context.strokeText(code, x + cellSize / 2, y + cellSize / 2);
-        context.fillStyle = readableTextColor(hex);
+        const textColor = readableTextColor(hex);
+        // 编码按 85% 格宽布局，任意长度都不溢出，无需逐格裁切（省 save/clip/restore × 14k）
+        if (useStroke) {
+          context.lineWidth = Math.max(0.4, fontSize / 8);
+          context.strokeStyle = textColor === '#fffaf0'
+            ? 'rgba(0, 0, 0, 0.32)'
+            : 'rgba(255, 250, 240, 0.55)';
+          context.strokeText(code, x + cellSize / 2, y + cellSize / 2);
+        }
+        context.fillStyle = textColor;
         context.fillText(code, x + cellSize / 2, y + cellSize / 2);
-        context.restore();
       }
     }
   }
 
-  // 网格线：默认浅灰；每 5 格加一条更粗的蓝色参考线
+  // 网格线：默认浅灰；每 5 格加一条更粗的蓝色参考线。
+  // 半像素偏移随 renderScale 缩放（0.5/(renderScale×dpr)），避免高分辨率下错位。
+  const halfDevicePx = 0.5 / (renderScale * dpr);
   context.beginPath();
   context.strokeStyle = '#d6d1c5';
   context.lineWidth = Math.max(0.5, 0.5 / dpr);
   for (let col = 1; col < cols; col += 1) {
     if (col % 5 === 0) continue;
-    const x = left + col * cellSize + 0.5;
+    const x = left + col * cellSize + halfDevicePx;
     context.moveTo(x, top);
     context.lineTo(x, top + boardHeight);
   }
   for (let row = 1; row < rows; row += 1) {
     if (row % 5 === 0) continue;
-    const y = top + row * cellSize + 0.5;
+    const y = top + row * cellSize + halfDevicePx;
     context.moveTo(left, y);
     context.lineTo(left + boardWidth, y);
   }
@@ -174,12 +215,12 @@ function drawBoard(
   context.strokeStyle = '#3D72D8';
   context.lineWidth = Math.max(1.4, 1.4 / dpr);
   for (let col = 5; col < cols; col += 5) {
-    const x = left + col * cellSize + 0.5;
+    const x = left + col * cellSize + halfDevicePx;
     context.moveTo(x, top);
     context.lineTo(x, top + boardHeight);
   }
   for (let row = 5; row < rows; row += 5) {
-    const y = top + row * cellSize + 0.5;
+    const y = top + row * cellSize + halfDevicePx;
     context.moveTo(left, y);
     context.lineTo(left + boardWidth, y);
   }
@@ -192,7 +233,7 @@ function drawBoard(
 
   // Column labels above and below; row labels on both sides. All are 1-based.
   context.fillStyle = '#655c53';
-  context.font = `600 ${axisFontSize}px var(--font-mono), ui-monospace, monospace`;
+  context.font = `600 ${axisFontSize}px ${fontFamily}`;
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   for (let col = 0; col < cols; col += 1) {
@@ -218,11 +259,18 @@ export default function BlueprintDetailPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const viewRef = useRef<ViewState>({ scale: 1, panX: 0, panY: 0 });
   const dragRef = useRef<PointerDrag | null>(null);
+  // 已渲染位图的蓝图 id + 分辨率倍数（用于判断何时需要重绘）
+  const drawnRef = useRef<{ blueprintId: string | null; scale: number }>({ blueprintId: null, scale: 0 });
+  const redrawTimerRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [view, setView] = useState<ViewState>({ scale: 1, panX: 0, panY: 0 });
   const [hover, setHover] = useState<HoverCell | null>(null);
 
-  const unmapped = blueprint?.cells.filter((cell) => cell.status === 'UNMAPPED') ?? [];
+  const unmapped = useMemo(
+    () => blueprint?.cells.filter((cell) => cell.status === 'UNMAPPED') ?? [],
+    [blueprint],
+  );
   const cellSize = blueprint ? Math.max(12, Math.min(48, 1440 / Math.max(blueprint.cols, blueprint.rows))) : 48;
   const boardWidth = (blueprint?.cols ?? 0) * cellSize + AXIS_GUTTER * 2;
   const boardHeight = (blueprint?.rows ?? 0) * cellSize + AXIS_GUTTER * 2;
@@ -289,8 +337,43 @@ export default function BlueprintDetailPage() {
 
   useEffect(() => {
     if (!blueprint || !canvasRef.current) return;
-    drawBoard(canvasRef.current, blueprint.cells, blueprint.rows, blueprint.cols, cellSize);
-  }, [blueprint, cellSize]);
+    // 位图分辨率随缩放提升，保证任意缩放级别都清晰：
+    // - 新蓝图/小幅放大（位图 ≤ 16M px，≈2×）：rAF 立即重绘，逐级清晰；
+    // - 大幅放大：180ms 防抖合并成一次重绘（滚轮/连点不卡顿，停下即清晰）；
+    // - 缩小到已渲染分辨率以下：不重绘（CSS 降采样依然清晰）。
+    if (redrawTimerRef.current !== null) {
+      window.clearTimeout(redrawTimerRef.current);
+      redrawTimerRef.current = null;
+    }
+    const force = drawnRef.current.blueprintId !== blueprint.id;
+    const scale = view.scale;
+    if (!force && scale <= drawnRef.current.scale) return;
+    const dpr = window.devicePixelRatio || 1;
+    const canvasW = blueprint.cols * cellSize + AXIS_GUTTER * 2;
+    const canvasH = blueprint.rows * cellSize + AXIS_GUTTER * 2;
+    const renderScale = Math.max(1, scale);
+    const targetPx = canvasW * renderScale * dpr * canvasH * renderScale * dpr;
+    const draw = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const target = viewRef.current.scale;
+      if (drawnRef.current.blueprintId === blueprint.id && target <= drawnRef.current.scale) return;
+      drawBoard(canvas, blueprint.cells, blueprint.rows, blueprint.cols, cellSize, target);
+      drawnRef.current = { blueprintId: blueprint.id, scale: target };
+    };
+    if (force || targetPx <= 16_000_000) {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        draw();
+      });
+    } else {
+      redrawTimerRef.current = window.setTimeout(() => {
+        redrawTimerRef.current = null;
+        draw();
+      }, 180);
+    }
+  }, [blueprint, cellSize, view.scale]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
