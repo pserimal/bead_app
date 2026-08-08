@@ -95,8 +95,13 @@ class JobService(
         val row = (payload["row"] as? Number)?.toInt() ?: throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_EVENT", "CELL_PROCESSED 缺少 row")
         val col = (payload["col"] as? Number)?.toInt() ?: throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_EVENT", "CELL_PROCESSED 缺少 col")
         val code = (payload["code"] as? String)?.uppercase() ?: throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_EVENT", "CELL_PROCESSED 缺少 code")
-        val color = colorRepo.findByCodeIgnoreCase(code)
-        val status = if (color != null) CellStatus.MAPPED else CellStatus.UNMAPPED
+        val isBlank = code == "BLANK"
+        val color = if (isBlank) null else colorRepo.findByCodeIgnoreCase(code)
+        val status = when {
+            isBlank -> CellStatus.BLANK
+            color != null -> CellStatus.MAPPED
+            else -> CellStatus.UNMAPPED
+        }
         cellRepo.save(
             RecognitionJobCell(
                 jobId = job.id, row = row, col = col, code = code, status = status,

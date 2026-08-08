@@ -17,7 +17,7 @@ export interface ApiError {
 
 export type JobStatus = 'PENDING' | 'PROCESSING' | 'SUCCEEDED' | 'SUCCEEDED_WITH_WARNINGS' | 'FAILED';
 export type JobStage = 'QUEUED' | 'OCR';
-export type CellStatus = 'MAPPED' | 'UNMAPPED';
+export type CellStatus = 'MAPPED' | 'UNMAPPED' | 'BLANK';
 export type EventType =
   | 'JOB_STARTED'
   | 'CELL_PROCESSED'

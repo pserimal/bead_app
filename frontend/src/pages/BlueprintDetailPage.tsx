@@ -145,11 +145,26 @@ function drawBoard(
       const x = left + col * cellSize;
       const y = top + row * cellSize;
       const hex = normalizeHex(cell?.color?.hex);
+      const isBlank = cell?.status === 'BLANK' || cell?.code === 'BLANK';
 
-      context.fillStyle = hex ?? '#e6e0d7';
-      context.fillRect(x, y, cellSize, cellSize);
+      if (isBlank) {
+        // BLANK is a recognized empty cell, not an unmapped color. Keep it
+        // visually neutral and distinct from the diagonal UNMAPPED hatch.
+        context.fillStyle = '#faf9f5';
+        context.fillRect(x, y, cellSize, cellSize);
+        context.save();
+        context.setLineDash([2, 2]);
+        context.strokeStyle = 'rgba(112, 103, 92, 0.42)';
+        context.lineWidth = Math.max(0.7, cellSize / 32);
+        context.strokeRect(x + cellSize * 0.18, y + cellSize * 0.18,
+          cellSize * 0.64, cellSize * 0.64);
+        context.restore();
+      } else {
+        context.fillStyle = hex ?? '#e6e0d7';
+        context.fillRect(x, y, cellSize, cellSize);
+      }
 
-      if (!hex || cell?.status === 'UNMAPPED') {
+      if (!isBlank && (!hex || cell?.status === 'UNMAPPED')) {
         context.save();
         context.beginPath();
         context.rect(x, y, cellSize, cellSize);
@@ -166,7 +181,7 @@ function drawBoard(
         context.restore();
       }
 
-      const code = cell?.code ?? '';
+      const code = isBlank ? '' : (cell?.code ?? '');
       if (code) {
         context.font = `700 ${fontSize}px ${fontFamily}`;
         context.textAlign = 'center';
@@ -268,6 +283,10 @@ export default function BlueprintDetailPage() {
     () => blueprint?.cells.filter((cell) => cell.status === 'UNMAPPED') ?? [],
     [blueprint],
   );
+  const blankCells = useMemo(
+    () => blueprint?.cells.filter((cell) => cell.status === 'BLANK' || cell.code === 'BLANK') ?? [],
+    [blueprint],
+  );
   // 按 position 索引的格子 Map：只建一次（drawBoard 每帧重绘都复用，省 14k 次分配/GC）
   const cellsByPosition = useMemo(() => {
     const map = new Map<string, BlueprintCellDto>();
@@ -281,7 +300,7 @@ export default function BlueprintDetailPage() {
     if (!blueprint) return '';
     let best = '';
     for (const cell of blueprint.cells) {
-      if (cell.code && cell.code.length > best.length) best = cell.code;
+      if (cell.status !== 'BLANK' && cell.code !== 'BLANK' && cell.code && cell.code.length > best.length) best = cell.code;
     }
     return best;
   }, [blueprint]);
@@ -324,7 +343,7 @@ export default function BlueprintDetailPage() {
     return {
       row,
       col,
-      code: cell?.code ?? '—',
+      code: cell?.status === 'BLANK' || cell?.code === 'BLANK' ? '空白' : (cell?.code ?? '—'),
       x: clientX - rect.left + 14,
       y: clientY - rect.top + 14,
     };
@@ -513,6 +532,13 @@ export default function BlueprintDetailPage() {
             <span style={{ color: '#D4802B', fontWeight: 600 }}>⚠ {unmapped.length} 个格子编码不在颜色库：</span>
             {unmapped.slice(0, 20).map((cell) => `(${cell.row + 1},${cell.col + 1}) ${cell.code}`).join('、')}
             {unmapped.length > 20 && ` 等 ${unmapped.length} 处`}
+          </motion.div>
+        )}
+
+        {blankCells.length > 0 && (
+          <motion.div variants={staggerItem} className="px-4 py-3 rounded-lg text-sm" style={{ background: '#F5F5F2', border: '1px solid #D8D6CE', color: '#625E57' }}>
+            <span style={{ fontWeight: 600 }}>□ {blankCells.length} 个空白单元格</span>
+            <span style={{ marginLeft: 8 }}>这些格子已识别为空白，不属于颜色库未映射项。</span>
           </motion.div>
         )}
 

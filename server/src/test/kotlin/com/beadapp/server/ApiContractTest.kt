@@ -194,6 +194,47 @@ class ApiContractTest {
     }
 
     @Test
+    fun `BLANK cell is a recognized empty state and does not warn`() {
+        val id = createJob()
+        fun send(seq: Long, row: Int, col: Int, code: String) {
+            mockMvc.perform(
+                post("/internal/jobs/$id/events")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(mapOf(
+                        "jobId" to id.toString(), "attempt" to 0, "sequence" to seq,
+                        "type" to "CELL_PROCESSED", "payload" to mapOf("row" to row, "col" to col, "code" to code),
+                    )))
+            ).andExpect(status().isOk)
+        }
+        send(2, 0, 0, "H1")
+        send(3, 0, 1, "BLANK")
+        send(4, 1, 0, "H2")
+        send(5, 1, 1, "H1")
+
+        mockMvc.perform(
+            post("/internal/jobs/$id/events")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(mapOf(
+                    "jobId" to id.toString(), "attempt" to 0, "sequence" to 6L,
+                    "type" to "JOB_SUCCEEDED", "payload" to mapOf("processedCells" to 4),
+                )))
+        ).andExpect(status().isOk)
+
+        mockMvc.perform(get("/api/v1/jobs/$id"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.status").value("SUCCEEDED"))
+
+        val bpId = objectMapper.readTree(
+            mockMvc.perform(get("/api/v1/jobs/$id")).andReturn().response.contentAsString
+        ).get("blueprintId").asText()
+        mockMvc.perform(get("/api/v1/blueprints/$bpId"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.cells[1].code").value("BLANK"))
+            .andExpect(jsonPath("$.cells[1].status").value("BLANK"))
+            .andExpect(jsonPath("$.cells[1].color").doesNotExist())
+    }
+
+    @Test
     fun `终态后事件拒绝 409`() {
         val id = createJob()
         mockMvc.perform(

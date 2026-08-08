@@ -9,7 +9,7 @@ enum class JobStage {
 }
 
 enum class CellStatus {
-    MAPPED, UNMAPPED
+    MAPPED, UNMAPPED, BLANK
 }
 
 enum class EventType {
