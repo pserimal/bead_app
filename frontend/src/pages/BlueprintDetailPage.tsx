@@ -129,8 +129,12 @@ function drawBoard(
   const fontSize = Math.min((0.85 * cellSize) / probe, cellSize / (0.62 * maxCodeLen));
   // 小字号才需要描边加强对比；放大到字号足够大后省掉 strokeText（每格一次调用）
   const useStroke = fontSize * scale < 28;
-  // 坐标刻度画在固定 56px 轴边距内，不受单元格限制；保留 5-9px 可读下限。
-  const axisFontSize = Math.max(5, Math.min(9, cellSize * 0.12));
+  // 坐标刻度：≈60% 单元格大小；实测最长刻度（行/列数）宽度，
+  // 保证不溢出固定 56px 轴边距（小图 2 位数 43px、大图 3 位数 28px 封顶）。
+  const longestAxisLabel = String(Math.max(rows, cols));
+  context.font = `600 100px ${fontFamily}`;
+  const axisProbe = Math.max(0.1, context.measureText(longestAxisLabel).width) / 100;
+  const axisFontSize = Math.min(0.6 * cellSize, (AXIS_GUTTER * 0.9) / axisProbe);
   const left = AXIS_GUTTER;
   const top = AXIS_GUTTER;
 
@@ -203,7 +207,7 @@ function drawBoard(
   }
 
   // 网格线：默认浅灰；每 5 格加一条更粗的蓝色参考线。
-  // 半像素偏移随 renderScale 缩放（0.5/(renderScale×dpr)），避免高分辨率下错位。
+  // 延伸贯穿轴边距，框住坐标数字（半像素偏移随 renderScale 缩放避免高分辨率错位）。
   const halfDevicePx = 0.5 / (renderScale * dpr);
   context.beginPath();
   context.strokeStyle = '#d6d1c5';
@@ -211,14 +215,14 @@ function drawBoard(
   for (let col = 1; col < cols; col += 1) {
     if (col % 5 === 0) continue;
     const x = left + col * cellSize + halfDevicePx;
-    context.moveTo(x, top);
-    context.lineTo(x, top + boardHeight);
+    context.moveTo(x, 0);
+    context.lineTo(x, height);
   }
   for (let row = 1; row < rows; row += 1) {
     if (row % 5 === 0) continue;
     const y = top + row * cellSize + halfDevicePx;
-    context.moveTo(left, y);
-    context.lineTo(left + boardWidth, y);
+    context.moveTo(0, y);
+    context.lineTo(width, y);
   }
   context.stroke();
 
@@ -227,38 +231,35 @@ function drawBoard(
   context.lineWidth = Math.max(1.4, 1.4 / dpr);
   for (let col = 5; col < cols; col += 5) {
     const x = left + col * cellSize + halfDevicePx;
-    context.moveTo(x, top);
-    context.lineTo(x, top + boardHeight);
+    context.moveTo(x, 0);
+    context.lineTo(x, height);
   }
   for (let row = 5; row < rows; row += 5) {
     const y = top + row * cellSize + halfDevicePx;
-    context.moveTo(left, y);
-    context.lineTo(left + boardWidth, y);
+    context.moveTo(0, y);
+    context.lineTo(width, y);
   }
   context.stroke();
 
-  // 外边框
-  context.strokeStyle = '#2E5BAA';
-  context.lineWidth = Math.max(1.5, 1.5 / dpr);
-  context.strokeRect(left, top, boardWidth, boardHeight);
-
   // Column labels above and below; row labels on both sides. All are 1-based.
-  context.fillStyle = '#655c53';
+  context.fillStyle = 'rgba(101, 92, 83, 0.55)';
   context.font = `600 ${axisFontSize}px ${fontFamily}`;
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   for (let col = 0; col < cols; col += 1) {
     const x = left + (col + 0.5) * cellSize;
     const label = String(col + 1);
-    context.fillText(label, x, top * 0.48);
-    context.fillText(label, x, top + boardHeight + top * 0.52);
+    // 上/下刻度贴近棋盘：中心距棋盘边 0.26×56px（原 0.52，减半）
+    context.fillText(label, x, top * 0.74);
+    context.fillText(label, x, top + boardHeight + top * 0.26);
   }
   context.textAlign = 'center';
   for (let row = 0; row < rows; row += 1) {
     const y = top + (row + 0.5) * cellSize;
     const label = String(row + 1);
-    context.fillText(label, left * 0.48, y);
-    context.fillText(label, left + boardWidth + left * 0.52, y);
+    // 左/右刻度同样贴近棋盘
+    context.fillText(label, left * 0.74, y);
+    context.fillText(label, left + boardWidth + left * 0.26, y);
   }
 }
 
