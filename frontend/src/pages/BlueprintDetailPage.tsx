@@ -280,7 +280,8 @@ export default function BlueprintDetailPage() {
   const [hover, setHover] = useState<HoverCell | null>(null);
 
   const unmapped = useMemo(
-    () => blueprint?.cells.filter((cell) => cell.status === 'UNMAPPED') ?? [],
+    // 兼容旧 blueprint：历史 BLANK 可能曾被保存为 UNMAPPED；编码优先。
+    () => blueprint?.cells.filter((cell) => cell.status === 'UNMAPPED' && cell.code !== 'BLANK') ?? [],
     [blueprint],
   );
   // 按 position 索引的格子 Map：只建一次（drawBoard 每帧重绘都复用，省 14k 次分配/GC）
