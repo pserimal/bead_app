@@ -94,17 +94,18 @@ ai_dou/
 | Crop interaction | `frontend/src/pages/UploadPage.tsx` | single-region crop: 8 handles, keyboard nudge, numeric inputs |
 | Canvas rendering | `frontend/src/components/BeadBoard.tsx` | Canvas 2D (legacy; blueprint page renders DOM grid) |
 
-## COLOR LIBRARY (017)
+## COLOR LIBRARY (017 → 018)
 
-**Source**: official multi-brand bead color data from [maxcleme/beadcolors](https://github.com/maxcleme/beadcolors) (`gen/v1/*.csv`, 15 brands). **1950 codes** after dedup/conflict resolution, replacing the old 65-code custom snapshot.
+**Source**: official multi-brand bead color data from [maxcleme/beadcolors](https://github.com/maxcleme/beadcolors) (`gen/v1/*.csv`, 15 brands). **1950+ codes** after dedup/conflict resolution, replacing the old 65-code custom snapshot.
 
-- **Generator**: `training/scripts/build_color_library.py` — CSV → JSON (same-code/same-color merge; cross-brand conflicts get brand prefix e.g. `MARD-A10`, all ≤ 8 chars; validate: unique code, hex format, brand non-empty)
-- **Runtime snapshots**: `artifacts/colors/library.json` (OCR/trie, 3113 codes after ADR 0005 merge) + `server/src/main/resources/default_colors.json` (Spring seed, 1950 codes — NOT synced; merge is training-side only, see ADR 0005)
+- **Generator**: `training/scripts/build_color_library.py` — CSV → JSON (same-code/same-color merge; cross-brand conflicts get brand prefix e.g. `ARKA-A10`, all ≤ 8 chars; validate: unique code, hex format, brand non-empty)
+- **Active brand (018)**: `--prefer-brand mard` (default) — the preferred brand **always keeps its bare codes** on conflict (real beads print `A10`, not `MARD-A10`; `-` is outside the OCR charset). mard 291 codes are all bare. Switch later = re-run with `--prefer-brand <other>`
+- **Runtime snapshots**: `artifacts/colors/library.json` (OCR/trie, 2993 codes incl. ADR 0005 merge) + `server/src/main/resources/default_colors.json` (**mard-only 291 codes**, Spring seed — 018; full multi-brand data stays in library.json)
 - **DB table**: `color_library` (code PK ≤ 8, name, hex, **brand** VARCHAR(32) NOT NULL, version); schema in `V1__initial_schema.sql` (V2 merged into V1, 017)
-- **Seed**: `ColorSeedRunner` (CommandLineRunner) reads classpath `default_colors.json` → `saveAll`; version `seed-2`
+- **Seed**: `ColorSeedRunner` (CommandLineRunner) reads classpath `default_colors.json` → `saveAll`; version **`seed-3`** (018: mard-only)
 - **DB init policy (017)**: `bead.db.recreate-on-start=true` (default) → Flyway `clean()` + `migrate()` + reseed on every boot; `false` keeps data. Config in `application.yml` (`DatabaseInitConfig.kt`)
 - **Sorting**: entries sorted by `brand → code`; JSON key order `brand, code, color_name, color_hex, sort_order`
-- **API**: `ColorController` `/api/v1/colors` returns `ColorDto(code, name, hex, brand)`
+- **API**: `ColorController` `/api/v1/colors` returns `ColorDto(code, name, hex, brand)`; job snapshot `colorLibraryVersion` read from DB (018, no hardcode)
 
 ## SYNTHETIC BOARD GENERATION (ADR 0005)
 

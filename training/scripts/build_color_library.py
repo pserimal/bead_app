@@ -12,15 +12,21 @@ Processing rules:
   1. Merge entries with the same (code, hex) across brands — a code with the
      same color in several brands is stored once (first brand kept).
   2. Real conflicts (same code, different hex) keep the original code for the
-     highest-priority brand and prefix the others with a short brand id,
-     e.g. `MARD-A10`.  All codes stay <= 8 chars (DB VARCHAR(8) PK).
+     preferred brand (`--prefer-brand`, default `mard`) and prefix the others
+     with a short brand id, e.g. `COCO-A10`.  All codes stay <= 8 chars
+     (DB VARCHAR(8) PK).  The preferred brand therefore always carries its
+     bare codes exactly as printed on real beads (OCR charset has no `-`).
   3. Entries are sorted by (brand, code); JSON key order is
      brand, code, color_name, color_hex, sort_order.
+
+Switching the active brand later = re-run with `--prefer-brand <other>`;
+all brands stay in the output, only conflict prefixes move.
 
 Usage:
     python -m training.scripts.build_color_library \
         --csv-dir <dir-with-15-csvs> \
         --out <output.json> \
+        [--prefer-brand mard] \
         [--dry-run]
 
 Exit code is non-zero on any validation failure.
@@ -62,6 +68,11 @@ BRAND_PRIORITY: list[str] = [
     "hama_mini", "hama_maxi", "perler_mini", "perler_caps", "diamondDotz",
 ]
 
+# The active brand always keeps its bare codes on conflict (real beads print
+# e.g. `A10`, never `MARD-A10`; the `-` prefix is outside the OCR charset).
+# Switch later by re-running with `--prefer-brand <other>`.
+DEFAULT_PREFER_BRAND = "mard"
+
 MAX_CODE_LEN = 8  # matches color_library.code VARCHAR(8) PK
 
 
@@ -96,8 +107,15 @@ def load_csvs(csv_dir: Path) -> list[tuple[str, str, str, str]]:
 
 def build_final_entries(
     entries: list[tuple[str, str, str, str]],
+    prefer_brand: str = DEFAULT_PREFER_BRAND,
 ) -> list[dict]:
-    """Merge same (code, hex); resolve cross-brand code conflicts with prefixes."""
+    """Merge same (code, hex); resolve cross-brand code conflicts with prefixes.
+
+    The preferred brand (default ``mard``) always keeps its bare code on
+    conflict — its codes are exactly what real beads print, and the ``-``
+    prefix is outside the OCR charset.  Every other brand stays in the
+    output; only conflicting codes get a brand prefix.
+    """
     # Group by (code, hex) → [(name, brand), ...]
     grouped: "OrderedDict[tuple[str, str], list[tuple[str, str]]]" = OrderedDict()
     for code, name, hexv, brand in entries:
@@ -109,13 +127,23 @@ def build_final_entries(
         code_hexs[code].add(hexv)
 
     priority = {b: i for i, b in enumerate(BRAND_PRIORITY)}
+    prefer_rank = -1  # preferred brand always ranks first on conflicts
 
     def rank(nb: tuple[str, str]) -> int:
+        if nb[1] == prefer_brand:
+            return prefer_rank
         return priority.get(nb[1], len(BRAND_PRIORITY))
 
     result: list[dict] = []
     used: set[str] = set()
-    for (code, hexv), variants in grouped.items():
+    # Process (code, hex) groups so that the preferred brand's group for each
+    # code is handled first — otherwise an earlier brand in CSV order grabs the
+    # bare code and the preferred brand ends up prefixed (e.g. `MARD-A10`).
+    items = sorted(
+        grouped.items(),
+        key=lambda kv: 0 if any(b == prefer_brand for _, b in kv[1]) else 1,
+    )
+    for (code, hexv), variants in items:
         is_conflict = len(code_hexs[code]) > 1
         if not is_conflict:
             name = variants[0][0]
@@ -126,7 +154,7 @@ def build_final_entries(
 
         ordered = sorted(variants, key=rank)
         if code not in used:
-            # Highest-priority brand keeps the bare code.
+            # Preferred (or highest-priority) brand keeps the bare code.
             name, brand = ordered[0]
             result.append({"brand": brand, "code": code,
                            "color_name": name, "color_hex": hexv})
@@ -177,6 +205,10 @@ def main() -> int:
                     help="directory containing <brand>.csv files (gen/v1 format)")
     ap.add_argument("--out", type=Path, required=True,
                     help="output JSON path")
+    ap.add_argument("--prefer-brand", default=DEFAULT_PREFER_BRAND,
+                    help=f"brand that keeps bare codes on conflict "
+                         f"(default: {DEFAULT_PREFER_BRAND}); switch the active "
+                         f"brand later by passing a different brand id")
     ap.add_argument("--dry-run", action="store_true",
                     help="validate and print summary without writing")
     args = ap.parse_args()
@@ -188,7 +220,7 @@ def main() -> int:
         return 1
     print(f"  loaded {len(entries)} raw rows")
 
-    final = build_final_entries(entries)
+    final = build_final_entries(entries, prefer_brand=args.prefer_brand)
     # Sort by (brand, code), then assign sort_order 1..N.
     final.sort(key=lambda e: (e["brand"], e["code"]))
     for i, e in enumerate(final, start=1):

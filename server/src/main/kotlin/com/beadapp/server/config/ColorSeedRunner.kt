@@ -11,7 +11,8 @@ import org.springframework.stereotype.Component
 /**
  * 005 决议：默认颜色库是 Spring Boot 的 seed 资源，幂等。
  * 数据源：`default_colors.json`（由 `build_color_library.py` 从 beadcolors 官方 CSV 生成，
- * 1950 码，含 brand 字段）。任务创建时快照 colorLibraryVersion="seed-2"。
+ * 018：只含 mard 品牌 291 码（全部裸码，与珠子印刷/OCR charset 一致）；
+ * 全品牌数据保留在 `artifacts/colors/library.json`（OCR trie 用）。任务创建时快照 colorLibraryVersion="seed-3"。
  */
 @Component
 class ColorSeedRunner(
@@ -26,7 +27,7 @@ class ColorSeedRunner(
             log.info("color library already seeded ({} entries)", colorRepo.count())
             return
         }
-        val version = "seed-2"
+        val version = "seed-3"
         val colors = loadColors()
         colorRepo.saveAll(colors.map { ColorLibrary(it.code, it.name, it.hex, it.brand, version) })
         log.info("seeded {} colors (version {})", colors.size, version)

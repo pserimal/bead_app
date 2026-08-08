@@ -4,6 +4,7 @@ import com.beadapp.server.config.ApiException
 import com.beadapp.server.model.JobStage
 import com.beadapp.server.model.RecognitionJob
 import com.beadapp.server.model.CropBox
+import com.beadapp.server.repository.ColorLibraryRepository
 import com.beadapp.server.schema.*
 import com.beadapp.server.service.JobService
 import com.beadapp.server.service.StorageService
@@ -24,11 +25,16 @@ import java.util.UUID
 class JobController(
     private val jobService: JobService,
     private val storageService: StorageService,
+    private val colorRepo: ColorLibraryRepository,
 ) {
 
     /** 实际部署的模型快照名（image_service 加载 artifacts/models/current）。 */
     @Value("\${bead.ocr.model-snapshot:crnn_color_v1}")
     private lateinit var modelSnapshot: String
+
+    /** 018：从颜色库读取当前 seed 版本（不再硬编码，避免与 ColorSeedRunner 脱节）。 */
+    private fun currentColorLibraryVersion(): String =
+        colorRepo.findAll().firstOrNull()?.version ?: "seed-3"
 
     /** 007：创建任务。multipart: image + cropBoxX/Y/Width/Height + rows + cols + codes */
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
@@ -51,7 +57,7 @@ class JobController(
             cropBox = CropBox(cropBoxX, cropBoxY, cropBoxWidth, cropBoxHeight),
             validCodes = parsedCodes,
             inputImagePath = path,
-            colorLibraryVersion = "seed-1",
+            colorLibraryVersion = currentColorLibraryVersion(),
             modelSnapshot = modelSnapshot,
         )
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(job.toDetail())
