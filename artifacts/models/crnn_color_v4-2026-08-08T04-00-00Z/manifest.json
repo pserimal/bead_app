@@ -1,0 +1,16 @@
+{
+  "model_name": "crnn_color_v4",
+  "version": "2026-08-08T04-00-00Z",
+  "format_version": 1,
+  "model_arch": "crnn-v2-rgb",
+  "num_classes": 35,
+  "charset_hash": "6c8166975e62b54c5d26bf2f0655590333b1eca9368516cb646cd24978b065f6",
+  "code_dict_version": "sha256:b010ef7de1e4fac571bbe0c9af87fb55eab7ced4a40750556c486644355d349a",
+  "created_at": "2026-08-08T12:21:06.978619+00:00",
+  "training": {
+    "seed": 0,
+    "epochs": 30,
+    "synth_n": 0,
+    "color": true
+  }
+}
