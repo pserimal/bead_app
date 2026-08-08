@@ -11,6 +11,7 @@ import com.beadapp.server.service.toDetail
 import com.beadapp.server.service.toSummary
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
@@ -24,6 +25,10 @@ class JobController(
     private val jobService: JobService,
     private val storageService: StorageService,
 ) {
+
+    /** 实际部署的模型快照名（image_service 加载 artifacts/models/current）。 */
+    @Value("\${bead.ocr.model-snapshot:crnn_color_v1}")
+    private lateinit var modelSnapshot: String
 
     /** 007：创建任务。multipart: image + cropBoxX/Y/Width/Height + rows + cols + codes */
     @PostMapping(consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
@@ -47,7 +52,7 @@ class JobController(
             validCodes = parsedCodes,
             inputImagePath = path,
             colorLibraryVersion = "seed-1",
-            modelSnapshot = "crnn_real_m",
+            modelSnapshot = modelSnapshot,
         )
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(job.toDetail())
     }
