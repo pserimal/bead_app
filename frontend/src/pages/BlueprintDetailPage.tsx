@@ -283,10 +283,6 @@ export default function BlueprintDetailPage() {
     () => blueprint?.cells.filter((cell) => cell.status === 'UNMAPPED') ?? [],
     [blueprint],
   );
-  const blankCells = useMemo(
-    () => blueprint?.cells.filter((cell) => cell.status === 'BLANK' || cell.code === 'BLANK') ?? [],
-    [blueprint],
-  );
   // 按 position 索引的格子 Map：只建一次（drawBoard 每帧重绘都复用，省 14k 次分配/GC）
   const cellsByPosition = useMemo(() => {
     const map = new Map<string, BlueprintCellDto>();
@@ -535,12 +531,6 @@ export default function BlueprintDetailPage() {
           </motion.div>
         )}
 
-        {blankCells.length > 0 && (
-          <motion.div variants={staggerItem} className="px-4 py-3 rounded-lg text-sm" style={{ background: '#F5F5F2', border: '1px solid #D8D6CE', color: '#625E57' }}>
-            <span style={{ fontWeight: 600 }}>□ {blankCells.length} 个空白单元格</span>
-            <span style={{ marginLeft: 8 }}>这些格子已识别为空白，不属于颜色库未映射项。</span>
-          </motion.div>
-        )}
 
         <motion.div variants={staggerItem}>
           <div
