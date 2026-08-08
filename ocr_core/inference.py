@@ -104,6 +104,12 @@ def ocr_cells_from_crop(
     char_to_idx = {ch: i for i, ch in enumerate(chars)}
 
     codes_set = set(valid_codes) if valid_codes is not None else set(load_codes())
+    # BLANK is a model label, not a color-library code. Include it only for
+    # checkpoints trained with blank annotations so old models keep their
+    # original closed vocabulary.
+    supported_codes = getattr(model, "supported_codes", frozenset())
+    if "BLANK" in supported_codes:
+        codes_set.add("BLANK")
     trie = build_code_trie(sorted(codes_set))
 
     h, w = image_bgr.shape[:2]

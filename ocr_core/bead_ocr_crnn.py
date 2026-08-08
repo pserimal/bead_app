@@ -324,6 +324,10 @@ def load_checkpoint(path: str | Path, device: str = "cpu") -> tuple[CRNN, list[s
     hidden = ckpt.get("hidden", 128)
     model = model_cls(num_classes=num_classes, hidden=hidden)
     model.load_state_dict(ckpt["state_dict"])
+    # Keep the checkpoint's accepted code dictionary available to inference.
+    # This is needed for special non-color labels such as BLANK, which are
+    # intentionally absent from the mard color library.
+    model.supported_codes = frozenset(ckpt.get("code_dict") or ())
     model.to(device)
     model.eval()
     return model, chars

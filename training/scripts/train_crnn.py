@@ -187,6 +187,10 @@ def _parse_code_from_filename(name: str) -> str | None:
     Returns None if no token looks like a code (letter followed by digits).
     """
     stem = name.rsplit(".", 1)[0]
+    # Empty cells are a real special label, not the CTC blank token.
+    # Normalize both current ``blank_*`` and historical ``EMPTY_*`` exports.
+    if stem.lower().startswith(("blank_", "empty_")):
+        return "BLANK"
     # r<row>_c<col>_<CODE>.png — coords first, code last.
     parts = stem.split("_")
     if len(parts) >= 3 and parts[0].startswith("r") and parts[1].startswith("c"):
