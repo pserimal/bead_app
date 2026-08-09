@@ -126,6 +126,7 @@ function CellThumb({
           className="absolute flex items-center justify-center rounded cursor-pointer"
           style={{ top: -3, left: -3, width: 17, height: 17, background: checked ? 'var(--color-accent)' : 'rgba(255,255,255,0.9)', border: '1px solid var(--color-border)' }}
           title="勾选（可跨组批量）"
+          onClick={(e) => e.stopPropagation()}
         >
           <input type="checkbox" className="sr-only" checked={checked} onChange={onToggle} aria-label={`勾选格子 ${cell.row + 1},${cell.col + 1}`} />
           {checked && <span className="text-white text-[10px] leading-none">✓</span>}
