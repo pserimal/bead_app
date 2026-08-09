@@ -82,6 +82,7 @@ ai_dou/
 | Synthetic cells | `training/models/synth_generator.py` | 48×48 cell-level synth (colored/marked styles) |
 | Synthetic boards | `training/models/board_generator.py` + `training/scripts/generate_board.py` | photo → bead board + board.json metadata (brand/code/coords); ADR 0005 |
 | Board cell cropping | `training/scripts/crop_board.py` | board.png → cells/ + manifest.csv (1-based coords in filenames) |
+| Dataset builder | `training/scripts/build_color_dataset_v2.py` | 合成图纸 + **全部** `training/samples/标注数据/` 真实标注 → 统一 manifest |
 | Board-model eval | `training/scripts/eval_board_model.py` | zip + held-out + val sets; per-board breakdown |
 | Palette import | `training/scripts/import_zippland_palette.py` | merges Zippland 291-color mapping (COCO/漫漫/盼盼/咪小窝) into library.json |
 | Real bead images | `examples/` (root) | stand crops + annotation zips (moved from training/data/real) |
@@ -204,6 +205,7 @@ cd server && gradle bootJar --no-daemon     # Flyway runs on startup (validate m
 - Baseline model: `crnn_real_m.pt` — zip exact_match **0.9405** post-CTC-fix (2026-08-07, blank_penalty=0); historical 0.7008 pre-fix (011 acceptance rule was written against the old number; new service must beat 0.9405 on zip + ≥0.79 on board heldout, see `crnn_mixed_v12`)
 - **Model acceptance gate (2026-08-09)**: 任何新 checkpoint 部署前必须跑 `python -m training.scripts.eval_acceptance --candidate <new> --production <current>`。固定基准 = 4 个真实标注集 + 1 个独立 seed(13579) 合成 heldout；候选在每集的 blank_acc/code_acc/overall 必须 ≥ 生产 - 0.005，否则 exit 1。基准集和容差固定，不允许为让候选通过而悄悄增删。详见 `docs/acceptance.md`。
 - **模型命名规范 (2026-08-09)**: 只用 mard 编码合集训练（合成图纸全 mard + mard 专属标注）的模型属于 **mard 专属模型**，名称必须体现：`crnn_color_mard_v<N>`（color=RGB 输入, mard=品牌专属）。多品牌/非 mard 模型用 `crnn_mixed_*` 等名称，不得混用。生产 current 当前指向 `crnn_color_mard_v8`。
+- **真实样本收集 (2026-08-09)**: 新真实标注直接丢进 `training/samples/标注数据/<新目录>/`（命名：`CODE_*.png` / `blank_*.png` / `CODE_r.._c.._h.._v..png` / `BLANK_r.._c.._h.._v..png`），跑 `python -m training.scripts.build_color_dataset_v2 --name color_v<N>` 即自动并入训练集（自动扫描该目录下所有子目录）。corrections 目录（用户手工校正）是最高质量真实样本，主攻方向。
 - Legacy checkpoints (no format_version) must go through `publish_checkpoint.py` before use
 - Color library: 1950 codes from [maxcleme/beadcolors](https://github.com/maxcleme/beadcolors); regenerate via `training/scripts/build_color_library.py`; `ColorSeedRunner` seeds DB on boot (`bead.db.recreate-on-start`)
 - Complexity hotspot: `frontend/src/pages/UploadPage.tsx` (crop interaction, ~400 LOC)
