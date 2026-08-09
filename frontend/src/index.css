@@ -2,10 +2,10 @@
    拼豆助手 — 温润手作 (Warm Handcrafted) Design System
    ============================================ */
 
-@import "tailwindcss";
-
-/* --- Google Fonts --- */
+/* --- Google Fonts（必须位于所有 @import 之前，Tailwind v4 展开后会违反 CSS 规范） --- */
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,900;1,400&family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
 
 /* --- Design Tokens: Warm Handcrafted Palette --- */
 :root {

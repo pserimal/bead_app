@@ -1,12 +1,30 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useColors } from '../hooks/useColorLibrary';
+import { useQuery } from '@tanstack/react-query';
+import { getColors } from '../api/colors';
 import { staggerContainer, staggerItem } from '../lib/animations';
+import type { ColorDto } from '../types/api';
 
 // 007 决议：颜色库首版只读（seed 资源 + 快照，无写接口）
 export default function ColorLibraryPage() {
   const [q, setQ] = useState('');
-  const { data, isLoading, error } = useColors(q || undefined);
+  // 全量拉取（291 色，3 页 × 100 合并）——列表直接展示全部，不做分页
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['colors', 'all', q ?? ''],
+    queryFn: async () => {
+      const items: ColorDto[] = [];
+      let page = 1;
+      let total = 0;
+      for (;;) {
+        const res = await getColors({ q: q || undefined, pageSize: 100, page });
+        items.push(...res.items);
+        total = res.total;
+        if (res.page >= res.totalPages) break;
+        page += 1;
+      }
+      return { items, total };
+    },
+  });
 
   return (
     <div className="max-w-4xl mx-auto">
