@@ -8,298 +8,22 @@ import { getColors } from '../api/colors';
 import apiClient from '../api/client';
 import { useToast } from '../components/ToastContext';
 import { staggerContainer, staggerItem } from '../lib/animations';
+import CellThumb from '../components/CellThumb';
+import CorrectionEditorModal from '../components/CorrectionEditorModal';
+import {
+  buildCodeList,
+  computeBreakdown,
+  computeReviewCells,
+  computeVisibleCells,
+  normalizeHex,
+} from '../lib/correctionModel';
 import type { BlueprintCellDto, CellCorrectionUpdate, ColorDto, CropBoxDto } from '../types/api';
 
 // 置信度档位：标记 conf < 档位的 MAPPED/BLANK 格（UNMAPPED 无条件进列表）
 const THRESHOLDS = [0.9, 0.8, 0.7] as const;
 const DEFAULT_THRESHOLD: (typeof THRESHOLDS)[number] = 0.9;
-const THUMB = 56;
 
 /** 与 ocr_core.inference 相同的格子裁剪数学（含 10% 内缩跳过网格线） */
-function cellCropRect(cropBox: CropBoxDto, rows: number, cols: number, row: number, col: number) {
-  const cellW = cropBox.width / cols;
-  const cellH = cropBox.height / rows;
-  const ix = Math.max(1, Math.round(cellW * 0.1));
-  const iy = Math.max(1, Math.round(cellH * 0.1));
-  return {
-    sx: cropBox.x + col * cellW + ix,
-    sy: cropBox.y + row * cellH + iy,
-    sw: Math.max(1, cellW - 2 * ix),
-    sh: Math.max(1, cellH - 2 * iy),
-  };
-}
-
-function normalizeHex(hex: string | null | undefined): string | null {
-  const value = (hex ?? '').replace(/^#/, '').trim();
-  return /^[0-9a-f]{6}$/i.test(value) ? `#${value}` : null;
-}
-
-function CellThumb({
-  cell,
-  rows,
-  cols,
-  cropBox,
-  image,
-  checked,
-  onToggle,
-  onEdit,
-}: {
-  cell: BlueprintCellDto;
-  rows: number;
-  cols: number;
-  cropBox: CropBoxDto | null;
-  image: HTMLImageElement | null;
-  checked: boolean;
-  onToggle: () => void;
-  onEdit: () => void;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const drawnRef = useRef(false);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !image || !cropBox) return;
-    const draw = () => {
-      if (drawnRef.current) return;
-      drawnRef.current = true;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      const rect = cellCropRect(cropBox, rows, cols, cell.row, cell.col);
-      try {
-        ctx.drawImage(image, rect.sx, rect.sy, rect.sw, rect.sh, 0, 0, THUMB, THUMB);
-      } catch {
-        // 裁剪越界等罕见情况：留空即可
-      }
-    };
-    // 懒裁剪：进入视口才画（大组一次渲染不卡）；jsdom 无 IntersectionObserver 时直接画
-    if (typeof IntersectionObserver === 'undefined') {
-      draw();
-      return;
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            draw();
-            observer.unobserve(entry.target);
-          }
-        }
-      },
-      { rootMargin: '300px' },
-    );
-    observer.observe(canvas);
-    return () => observer.disconnect();
-  }, [image, cropBox, rows, cols, cell]);
-
-  const corrected = cell.correctedCode != null;
-
-  return (
-    <div className="flex flex-col items-center gap-0.5 select-none" title={`行 ${cell.row + 1} · 列 ${cell.col + 1} · 识别 ${cell.code}${corrected ? ` → 修正 ${cell.correctedCode}` : ''}`}>
-      <div className="relative block cursor-pointer" onClick={onEdit} role="button" aria-label={`修改格子 ${cell.row + 1},${cell.col + 1}`}>
-          <span
-            className="block rounded border overflow-hidden transition-shadow hover:shadow-[var(--shadow-sm)]"
-            style={{
-              width: THUMB,
-              height: THUMB,
-              borderColor: checked ? 'var(--color-accent)' : 'var(--color-border)',
-              boxShadow: checked ? '0 0 0 2px var(--color-accent)' : undefined,
-            }}
-          >
-            <canvas ref={canvasRef} width={THUMB} height={THUMB} className="block" style={{ width: THUMB, height: THUMB }} />
-          </span>
-        {corrected && (
-          <span
-            className="absolute rounded-full text-white text-[9px] leading-none flex items-center justify-center"
-            style={{ top: -3, right: -3, width: 15, height: 15, background: 'var(--color-success)' }}
-          >
-            ✓
-          </span>
-        )}
-        <label
-          className="absolute flex items-center justify-center rounded cursor-pointer"
-          style={{ top: -3, left: -3, width: 17, height: 17, background: checked ? 'var(--color-accent)' : 'rgba(255,255,255,0.9)', border: '1px solid var(--color-border)' }}
-          title="勾选（可跨组批量）"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <input type="checkbox" className="sr-only" checked={checked} onChange={onToggle} aria-label={`勾选格子 ${cell.row + 1},${cell.col + 1}`} />
-          {checked && <span className="text-white text-[10px] leading-none">✓</span>}
-        </label>
-      </div>
-      <span className="text-[10px] leading-none" style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)' }}>
-        {cell.row + 1}:{cell.col + 1}
-      </span>
-      <span
-        className="text-[10px] leading-tight font-semibold"
-        style={{ fontFamily: 'var(--font-mono)', color: corrected ? 'var(--color-success)' : (cell.status === 'BLANK' || cell.code === 'BLANK' ? 'var(--color-text-muted)' : 'var(--color-text)') }}
-      >
-        {cell.code === 'BLANK' ? '空白' : cell.code}
-        {corrected && ` → ${cell.correctedCode}`}
-      </span>
-    </div>
-  );
-}
-
-function useBreakdown(keys: readonly string[], cellsByPos: Map<string, BlueprintCellDto>) {
-  return useMemo(() => {
-    const map = new Map<string, number>();
-    for (const key of keys) {
-      const cell = cellsByPos.get(key);
-      if (!cell) continue;
-      const code = cell.correctedCode ?? cell.code;
-      map.set(code, (map.get(code) ?? 0) + 1);
-    }
-    return [...map.entries()].map(([code, count]) => ({ code, count })).sort((a, b) => b.count - a.count);
-  }, [keys, cellsByPos]);
-}
-
-function EditorModal({
-  editor,
-  cellsByPos,
-  swatches,
-  validCodes,
-  onClose,
-  onConfirmSet,
-  onConfirmRevert,
-}: {
-  editor: { keys: string[] };
-  cellsByPos: Map<string, BlueprintCellDto>;
-  swatches: ColorDto[];
-  validCodes: string[];
-  onClose: () => void;
-  onConfirmSet: (code: string) => void;
-  onConfirmRevert: () => void;
-}) {
-  const [code, setCode] = useState('');
-  const [filter, setFilter] = useState('');
-  const [busy, setBusy] = useState(false);
-  const breakdown = useBreakdown(editor.keys, cellsByPos);
-
-  const upper = code.trim().toUpperCase();
-  const valid = validCodes.includes(upper) || upper === 'BLANK';
-  const shownSwatches = filter
-    ? swatches.filter((c) => c.code.includes(filter.toUpperCase()) || c.name.toLowerCase().includes(filter.toLowerCase()))
-    : swatches;
-
-  const handleSet = async () => {
-    if (!valid || busy) return;
-    setBusy(true);
-    try {
-      await onConfirmSet(upper);
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleRevert = async () => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      await onConfirmRevert();
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-30 flex items-center justify-center p-4"
-      style={{ background: 'rgba(61, 43, 31, 0.45)' }}
-      onClick={onClose}
-    >
-      <div
-        className="w-[min(560px,92vw)] max-h-[85vh] overflow-y-auto rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-xl)]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-xl)' }}>
-            修正 {editor.keys.length} 格
-          </h2>
-          <button type="button" onClick={onClose} style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-lg)', lineHeight: 1 }} aria-label="关闭">×</button>
-        </div>
-
-        {breakdown.length > 0 && (
-          <p className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
-            当前识别：
-            <span style={{ fontFamily: 'var(--font-mono)' }}>{breakdown.map((b) => `${b.code}×${b.count}`).join('、')}</span>
-          </p>
-        )}
-
-        <div className="flex gap-2 mb-3">
-          <input
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            placeholder="输入编码（如 A10），或从下方色板选择"
-            autoFocus
-            list="correction-codes"
-            style={{
-              ...controlStyle(),
-              flex: 1,
-              height: 38,
-              borderColor: code && !valid ? 'var(--color-error)' : undefined,
-            }}
-            aria-label="修正编码"
-          />
-          <datalist id="correction-codes">
-            {validCodes.map((c) => <option key={c} value={c} />)}
-          </datalist>
-          {code && !valid && (
-            <span className="text-xs self-center" style={{ color: 'var(--color-error)', whiteSpace: 'nowrap' }}>
-              编码不在颜色库
-            </span>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-2 mb-3">
-          <button type="button" onClick={handleSet} disabled={!valid || busy} style={actionBtn('var(--color-accent)', !valid || busy)}>
-            设为 {valid ? upper : '…'}（{editor.keys.length} 格）
-          </button>
-          <button type="button" onClick={handleRevert} disabled={busy} style={actionBtn('var(--color-success)', busy)}>
-            恢复原码
-          </button>
-          <button
-            type="button"
-            onClick={() => setCode('BLANK')}
-            style={{ padding: '8px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)', background: 'transparent', color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', fontWeight: 500, cursor: 'pointer' }}
-          >空白格 BLANK</button>
-        </div>
-
-        <div className="flex gap-2 items-center mb-2">
-          <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>色板</span>
-          <input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="按编码或名称筛选"
-            style={{ ...controlStyle(), height: 30, flex: 1 }}
-            aria-label="筛选色板"
-          />
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {shownSwatches.map((c) => (
-            <button
-              key={c.code}
-              type="button"
-              title={`${c.code} · ${c.name}`}
-              onClick={() => setCode(c.code)}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: 7,
-                background: normalizeHex(c.hex) ?? '#eee',
-                border: upper === c.code ? '2px solid var(--color-accent)' : '1px solid rgba(0,0,0,0.12)',
-                cursor: 'pointer',
-              }}
-              aria-label={c.code}
-            />
-          ))}
-          {shownSwatches.length === 0 && (
-            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>没有匹配的颜色</span>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default function CorrectionPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -397,41 +121,17 @@ export default function CorrectionPage() {
 
   const reviewCells = useMemo(() => {
     if (!blueprint) return [];
-    return blueprint.cells.filter(
-      (c) => c.status === 'UNMAPPED' || (c.confidence != null && c.confidence < threshold),
-    );
+    return computeReviewCells(blueprint.cells, threshold);
   }, [blueprint, threshold]);
 
   const visibleCells = useMemo(() => {
     if (!blueprint) return [];
-    let list = mode === 'review' ? reviewCells : blueprint.cells;
-    if (mode === 'all' && search.trim()) {
-      const q = search.trim().toUpperCase();
-      list = list.filter((c) => {
-        const coord = `${c.row + 1}:${c.col + 1}`;
-        return coord.includes(q) || c.code.includes(q) || (c.correctedCode ?? '').includes(q);
-      });
-    }
-    if (fixFilter === 'unfixed') list = list.filter((c) => c.correctedCode == null);
-    if (fixFilter === 'fixed') list = list.filter((c) => c.correctedCode != null);
-    return list;
+    return computeVisibleCells(blueprint.cells, reviewCells, mode, search, fixFilter);
   }, [blueprint, mode, reviewCells, search, fixFilter]);
 
   // 左栏编码列表（按有效码 = corrected ?? code 分组，自然序：A2 < A10，空白排最后）
   const codeList = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const cell of visibleCells) {
-      const eff = cell.correctedCode ?? cell.code;
-      map.set(eff, (map.get(eff) ?? 0) + 1);
-    }
-    const natural = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
-    return [...map.entries()]
-      .map(([code, count]) => ({ code, count }))
-      .sort((a, b) => {
-        if (a.code === 'BLANK') return 1;
-        if (b.code === 'BLANK') return -1;
-        return natural(a.code, b.code);
-      });
+    return buildCodeList(visibleCells);
   }, [visibleCells]);
   const activeCode = selectedCode != null && codeList.some((l) => l.code === selectedCode)
     ? selectedCode
@@ -463,7 +163,7 @@ export default function CorrectionPage() {
   const renderedCells = codeCells.slice(0, renderLimit);
 
   const selectedKeys = useMemo(() => [...selected], [selected]);
-  const selectedBreakdown = useBreakdown(selectedKeys, cellsByPos);
+  const selectedBreakdown = useMemo(() => computeBreakdown(selectedKeys, cellsByPos), [selectedKeys, cellsByPos]);
 
   const toggleCell = useCallback((key: string) => {
     setSelected((prev) => {
@@ -776,7 +476,7 @@ export default function CorrectionPage() {
 
       {/* 编辑弹窗 */}
       {editor && (
-        <EditorModal
+        <CorrectionEditorModal
           editor={editor}
           cellsByPos={cellsByPos}
           swatches={swatches}
