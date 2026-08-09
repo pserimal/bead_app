@@ -101,3 +101,8 @@ surface the same trade-off rather than assuming PASS.
 4. New real annotation sets are added to `REAL_SETS` when they represent a
    new production domain; that is a benchmark version bump, not a
    per-training tweak.
+5. **Naming**: a model trained only on the mard palette is mard-exclusive
+   and must be named `crnn_color_mard_v<N>` (color=RGB input). The current
+   production model is `crnn_color_mard_v8` (previously published as
+   `crnn_color_v8`; the mard suffix was added on 2026-08-09 to make the
+   brand scope explicit).
