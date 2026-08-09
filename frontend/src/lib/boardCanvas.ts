@@ -153,6 +153,9 @@ export function drawBoard(
       const y = top + row * cellSize;
       const hex = normalizeHex(cell?.color?.hex);
       const isBlank = cell?.status === 'BLANK' || (cell?.correctedCode ?? cell?.code) === 'BLANK';
+      // 锁定模式：非目标格整体透明化（底色/虚线/文字/标记都淡出，露出背景；目标格 100%）
+      const isTarget = highlightCode !== null && (cell?.correctedCode ?? cell?.code) === highlightCode;
+      context.globalAlpha = highlightCode !== null && !isTarget ? 0.35 : 1;
 
       if (isBlank) {
         // BLANK is a recognized empty cell, not an unmapped color. Keep it
@@ -214,22 +217,14 @@ export function drawBoard(
         context.arc(x + cellSize - r, y + r, r, 0, Math.PI * 2);
         context.fill();
       }
+      context.globalAlpha = 1;
     }
   }
 
   // ── 锁定高亮（编码文字之上、网格线之下）──
   if (highlightCode !== null) {
-    // 非目标格：暖褐遮罩（与弹窗/CropBox 遮罩同色系）——环境沉下去，目标格如亮灯
-    context.fillStyle = 'rgba(61, 43, 31, 0.42)';
-    for (let row = 0; row < rows; row += 1) {
-      for (let col = 0; col < cols; col += 1) {
-        const cell = cellsByPosition.get(`${row}:${col}`);
-        if ((cell?.correctedCode ?? cell?.code) !== highlightCode) {
-          context.fillRect(left + col * cellSize, top + row * cellSize, cellSize, cellSize);
-        }
-      }
-    }
-    // 目标格：外圈白色 halo（1px 不透明环，暗环境中先亮起）+ accent 细边框（2px，品牌标记）
+    // 非目标格已在格子绘制时以 35% 全局透明淡出（露出背景，画面保持明亮）
+    // 目标格：外圈白色 halo（1px 不透明环）+ accent 细边框（2px，品牌标记）
     const accent = accentColor();
     context.fillStyle = '#fffaf0';
     for (let row = 0; row < rows; row += 1) {
