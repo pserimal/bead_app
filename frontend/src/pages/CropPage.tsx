@@ -142,6 +142,9 @@ export default function CropPage() {
   const cropRef = useRef(crop);
   const viewRef = useRef(view);
   const dragRef = useRef<DragState | null>(null);
+  // 多指触摸：活跃指针 + 捏合基准（触屏双指缩放）
+  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchRef = useRef<{ startDist: number; startScale: number } | null>(null);
   // fit 时的 scale（缩放下限基准；初始与 ZOOM_MIN 一致）
   const fitScaleRef = useRef(ZOOM_MIN);
   imageSizeRef.current = imageSize;
@@ -234,6 +237,26 @@ export default function CropPage() {
     if (!stage || !hasImage) return;
 
     const finishPointer = (e: PointerEvent) => {
+      pointersRef.current.delete(e.pointerId);
+      if (pinchRef.current && pointersRef.current.size < 2) pinchRef.current = null;
+      if (pointersRef.current.size === 1) {
+        // 捏合中抬起一指：剩余手指继续拖动（以当前位置为基准）
+        const current = viewRef.current;
+        const [remaining] = [...pointersRef.current.entries()];
+        dragRef.current = {
+          mode: 'pan',
+          pointerId: remaining[0],
+          startClientX: remaining[1].x,
+          startClientY: remaining[1].y,
+          startImgX: 0,
+          startImgY: 0,
+          startView: { ...current },
+          origin: { ...cropRef.current },
+        };
+        stage.style.cursor = 'grab';
+        return;
+      }
+      if (pointersRef.current.size > 1) return;
       const active = dragRef.current;
       if (!active || active.pointerId !== e.pointerId) return;
       dragRef.current = null;
@@ -247,6 +270,24 @@ export default function CropPage() {
 
     const onPointerDown = (e: PointerEvent) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
+      pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointersRef.current.size === 2) {
+        // 第二指落下：进入双指捏合（取消拖动）
+        dragRef.current = null;
+        const [a, b] = [...pointersRef.current.values()];
+        pinchRef.current = {
+          startDist: Math.hypot(b.x - a.x, b.y - a.y),
+          startScale: viewRef.current.scale,
+        };
+        stage.style.cursor = 'grabbing';
+        try {
+          stage.setPointerCapture(e.pointerId);
+        } catch {
+          // Pointer capture is unavailable in a few embedded browser contexts.
+        }
+        e.preventDefault();
+        return;
+      }
       const target = e.target instanceof Element ? e.target.closest('[data-crop-handle]') : null;
       const handle = target?.getAttribute('data-crop-handle') as ResizeHandle | null;
       const point = toImageCoord(e.clientX, e.clientY);
@@ -271,6 +312,35 @@ export default function CropPage() {
     };
 
     const onPointerMove = (e: PointerEvent) => {
+      // 双指捏合：围绕两指中点缩放（触屏核心手势）
+      if (pinchRef.current && pointersRef.current.has(e.pointerId)) {
+        pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        const [a, b] = [...pointersRef.current.values()];
+        const dist = Math.hypot(b.x - a.x, b.y - a.y);
+        if (dist > 0) {
+          const rect = stage.getBoundingClientRect();
+          const midX = (a.x + b.x) / 2 - rect.left;
+          const midY = (a.y + b.y) / 2 - rect.top;
+          const previous = viewRef.current;
+          const floor = zoomFloor(fitScaleRef.current);
+          const nextScale = Math.max(
+            floor,
+            Math.min(ZOOM_MAX, (pinchRef.current.startScale * dist) / pinchRef.current.startDist),
+          );
+          if (nextScale !== previous.scale) {
+            const ratio = nextScale / previous.scale;
+            const next = {
+              scale: nextScale,
+              x: midX - (midX - previous.x) * ratio,
+              y: midY - (midY - previous.y) * ratio,
+            };
+            viewRef.current = next;
+            setView(next);
+          }
+        }
+        e.preventDefault();
+        return;
+      }
       const active = dragRef.current;
       if (!active || active.pointerId !== e.pointerId) return;
       e.preventDefault();
