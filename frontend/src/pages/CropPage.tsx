@@ -379,15 +379,17 @@ export default function CropPage() {
   const screenCellHeight = Math.max(1, cellHeight * view.scale);
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto px-4 lg:px-6">
       <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-4">
-        <motion.div variants={staggerItem} className="flex items-center justify-between">
+        <motion.div variants={staggerItem} className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 700 }}>
               裁剪图纸区域
             </h1>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', marginTop: 4 }}>
-              拖动平移图片 · 滚轮缩放 · 四角手柄调框 · 方向键微调
+              {typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
+                ? '单指拖动图片 · 双指缩放 · 四角手柄调框'
+                : '拖动平移图片 · 滚轮缩放 · 四角手柄调框 · 方向键微调'}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>

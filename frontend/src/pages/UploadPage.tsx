@@ -297,7 +297,7 @@ export default function UploadPage() {
           )}
         </motion.div>
 
-        <motion.div variants={staggerItem} className="flex items-center justify-between">
+        <motion.div variants={staggerItem} className="flex flex-wrap items-center justify-between gap-3">
           <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
             网格：{rows} × {cols} = {rows * cols} 格
             {crop && imageSize && (
