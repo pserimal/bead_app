@@ -520,7 +520,15 @@ def train(args):
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     ctc_loss = nn.CTCLoss(blank=0, zero_infinity=True)
 
-    codes_set = set(CODES) | set(real_codes_seen)
+    codes_set = (set(CODES) | set(real_codes_seen))
+    # Keep the checkpoint's supported-code dictionary clean: only codes the
+    # model can actually emit (letter+digit, or the BLANK special label).
+    # Dirty entries from the multi-brand library (dashed prefixes like
+    # ``ARKA-A10``, bare digits like ``1``) have no training examples and
+    # must not leak into the inference trie.
+    codes_set = {c for c in codes_set
+                 if c == "BLANK"
+                 or (c[:1].isalpha() and c[1:].isdigit() and c[1:] != "")}
     best_val = 0.0
     out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)

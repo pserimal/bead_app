@@ -136,13 +136,23 @@ def ocr_cells_from_crop(
     # 显式字符映射：以 checkpoint 自己的 chars 为准（010 R2）
     char_to_idx = {ch: i for i, ch in enumerate(chars)}
 
-    codes_set = set(valid_codes) if valid_codes is not None else set(load_codes())
-    # BLANK is a model label, not a color-library code. Include it only for
-    # checkpoints trained with blank annotations so old models keep their
-    # original closed vocabulary.
+    # Default closed vocabulary = mard codes (the only brand with full
+    # synthetic training coverage) + BLANK. The checkpoint's stored code_dict
+    # may contain dirty codes from an older training run, so we build the
+    # inference trie from the color library's mard brand instead. Caller
+    # valid_codes are intersected with this vocabulary (never widened) so
+    # inference can only emit codes that have training examples.
+    from ocr_core.code_library import load_library as _load_lib
     supported_codes = getattr(model, "supported_codes", frozenset())
+    mard_codes = {e["code"] for e in _load_lib() if e.get("brand") == "mard"}
+    train_vocab = {c for c in mard_codes
+                   if c[:1].isalpha() and c[1:].isdigit() and c[1:] != ""}
     if "BLANK" in supported_codes:
-        codes_set.add("BLANK")
+        train_vocab.add("BLANK")
+    if valid_codes is not None:
+        codes_set = {c.upper() for c in valid_codes} & train_vocab
+    else:
+        codes_set = set(train_vocab)
     trie = build_code_trie(sorted(codes_set))
 
     h, w = image_bgr.shape[:2]
@@ -191,14 +201,21 @@ def ocr_cells_from_crop(
             greedy_codes, greedy_confs = _greedy_conf(log_probs, chars)
             for j, (code, score) in enumerate(decoded):
                 r, c = coords[i + j]
-                if j < len(greedy_codes) and greedy_codes[j] == code:
+                # If the trie stopped at a prefix (e.g. ``BLA`` for BLANK),
+                # prefer the free CTC decode when it completes to a valid code.
+                greedy_code = greedy_codes[j] if j < len(greedy_codes) else ""
+                if code not in codes_set and greedy_code in codes_set:
+                    code = greedy_code
+                # Drop non-complete prefixes entirely (they are not valid
+                # outputs — a trie walk that stops mid-code is noise).
+                if code not in codes_set:
+                    continue
+                if greedy_code == code:
                     # Both constrained and free paths agree — trust free conf.
                     norm_conf = greedy_confs[j]
                 else:
                     # Fallback: mean per-step log-prob over the trie path.
                     norm_conf = float(np.exp(score / max(1, T)))
-                if code not in codes_set and not include_all:
-                    continue
                 if norm_conf < min_conf and not include_all:
                     continue
                 prev = merged.get((r, c))
