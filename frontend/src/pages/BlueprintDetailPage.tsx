@@ -204,11 +204,6 @@ export default function BlueprintDetailPage() {
     const force = drawnRef.current.blueprintId !== blueprint.id;
     const scale = view.scale;
     if (!force && scale <= drawnRef.current.scale) return;
-    const dpr = window.devicePixelRatio || 1;
-    const canvasW = blueprint.cols * cellSize + AXIS_GUTTER * 2;
-    const canvasH = blueprint.rows * cellSize + AXIS_GUTTER * 2;
-    const renderScale = Math.max(1, scale);
-    const targetPx = canvasW * renderScale * dpr * canvasH * renderScale * dpr;
     const draw = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -217,7 +212,8 @@ export default function BlueprintDetailPage() {
       drawBoard(canvas, blueprint.rows, blueprint.cols, cellSize, target, cellsByPosition, longestCode);
       drawnRef.current = { blueprintId: blueprint.id, scale: target };
     };
-    if (force || targetPx <= 16_000_000) {
+    // 首次/换蓝图：rAF 立即；缩放：一律防抖（连续缩放期间只做 transform 拉伸，停止后清晰化）
+    if (force) {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => {
         rafRef.current = null;
@@ -227,7 +223,7 @@ export default function BlueprintDetailPage() {
       redrawTimerRef.current = window.setTimeout(() => {
         redrawTimerRef.current = null;
         draw();
-      }, 180);
+      }, 150);
     }
   }, [blueprint, cellSize, view.scale, cellsByPosition, longestCode]);
 

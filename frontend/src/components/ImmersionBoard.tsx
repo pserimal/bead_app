@@ -152,7 +152,7 @@ export default function ImmersionBoard({
     return () => observer.disconnect();
   }, []);
 
-  // 重绘：缩放或锁定变化时（锁定切换强制重绘；大图防抖）
+  // 重绘：缩放或锁定变化时（锁定切换/首次强制立即；其余一律防抖——连续缩放期间只做 transform 拉伸，停止后清晰化，移动端不卡顿）
   useEffect(() => {
     if (!canvasRef.current) return;
     if (redrawTimerRef.current !== null) {
@@ -163,11 +163,6 @@ export default function ImmersionBoard({
     const force = drawnRef.current.highlight !== highlight || drawnRef.current.scale === 0;
     const scale = view.scale;
     if (!force && scale <= drawnRef.current.scale) return;
-    const dpr = window.devicePixelRatio || 1;
-    const canvasW = blueprint.cols * cellSize + AXIS_GUTTER * 2;
-    const canvasH = blueprint.rows * cellSize + AXIS_GUTTER * 2;
-    const renderScale = Math.max(1, scale);
-    const targetPx = canvasW * renderScale * dpr * canvasH * renderScale * dpr;
     const draw = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -177,7 +172,7 @@ export default function ImmersionBoard({
       drawBoard(canvas, blueprint.rows, blueprint.cols, cellSize, target, cellsByPosition, longestCode, targetHighlight);
       drawnRef.current = { scale: target, highlight: targetHighlight };
     };
-    if (force || targetPx <= 16_000_000) {
+    if (force) {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => {
         rafRef.current = null;
@@ -187,7 +182,7 @@ export default function ImmersionBoard({
       redrawTimerRef.current = window.setTimeout(() => {
         redrawTimerRef.current = null;
         draw();
-      }, 180);
+      }, 150);
     }
   }, [blueprint, cellSize, view.scale, lockedCode, cellsByPosition, longestCode]);
 

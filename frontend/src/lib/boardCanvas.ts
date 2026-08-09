@@ -97,7 +97,8 @@ export function drawBoard(
   longestCode: string,
   highlightCode: string | null = null,
 ) {
-  const dpr = window.devicePixelRatio || 1;
+  // dpr 上限 2：移动设备 dpr 2-3 时位图面积翻 4-9 倍，视觉差异小、性能代价大
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
   const boardWidth = cols * cellSize;
   const boardHeight = rows * cellSize;
   const width = boardWidth + AXIS_GUTTER * 2;
