@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
@@ -14,6 +14,7 @@ import type { BlueprintCellDto, CellCorrectionUpdate, ColorDto, CropBoxDto } fro
 const THRESHOLDS = [0.9, 0.8, 0.7] as const;
 const DEFAULT_THRESHOLD: (typeof THRESHOLDS)[number] = 0.9;
 const PAGE_SIZE = 100;
+const ALL_PAGE_SIZE = 200;
 const THUMB = 56;
 
 /** 与 ocr_core.inference 相同的格子裁剪数学（含 10% 内缩跳过网格线） */
@@ -54,22 +55,20 @@ function CellThumb({
   onToggle: () => void;
   onEdit: () => void;
 }) {
-  const [src, setSrc] = useState<string | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    if (!image || !cropBox) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = THUMB;
-    canvas.height = THUMB;
+    const canvas = canvasRef.current;
+    if (!canvas || !image || !cropBox) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const rect = cellCropRect(cropBox, rows, cols, cell.row, cell.col);
+    ctx.clearRect(0, 0, THUMB, THUMB);
     try {
       ctx.drawImage(image, rect.sx, rect.sy, rect.sw, rect.sh, 0, 0, THUMB, THUMB);
     } catch {
-      return;
+      // 裁剪越界等罕见情况：留空即可
     }
-    setSrc(canvas.toDataURL('image/jpeg', 0.72));
   }, [image, cropBox, rows, cols, cell]);
 
   const corrected = cell.correctedCode != null;
@@ -87,11 +86,7 @@ function CellThumb({
             boxShadow: checked ? '0 0 0 2px var(--color-accent)' : undefined,
           }}
         >
-          {src ? (
-            <img src={src} alt="" width={THUMB} height={THUMB} className="block" draggable={false} />
-          ) : (
-            <span className="block" style={{ width: THUMB, height: THUMB, background: '#eee8de' }} />
-          )}
+          <canvas ref={canvasRef} width={THUMB} height={THUMB} className="block" style={{ width: THUMB, height: THUMB }} />
         </span>
         {corrected && (
           <span
@@ -296,6 +291,7 @@ export default function CorrectionPage() {
   const [editor, setEditor] = useState<{ keys: string[] } | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [pageOf, setPageOf] = useState<Record<string, number>>({});
+  const [globalPage, setGlobalPage] = useState(0);
 
   // 原图加载一次（校正页所有缩略图共用）
   useEffect(() => {
@@ -389,7 +385,7 @@ export default function CorrectionPage() {
     return list;
   }, [blueprint, mode, reviewCells, search, onlyUnfixed]);
 
-  // 分组：按当前识别码（cell.code 原始码），组内按 row,col 排序
+  // 分组：按当前识别码（cell.code 原始码），组内按 row,col 排序（仅待复核模式用）
   const groups = useMemo(() => {
     const map = new Map<string, BlueprintCellDto[]>();
     for (const cell of visibleCells) {
@@ -401,6 +397,14 @@ export default function CorrectionPage() {
       .map(([code, cells]) => ({ code, cells: cells.sort((a, b) => a.row - b.row || a.col - b.col) }))
       .sort((a, b) => b.cells.length - a.cells.length);
   }, [visibleCells]);
+
+  // 全部格子模式：平铺分页（切平分组，避免 82 组 × 100 格同时渲染）
+  const allTotalPages = Math.max(1, Math.ceil(visibleCells.length / ALL_PAGE_SIZE));
+  const safeGlobalPage = Math.min(globalPage, allTotalPages - 1);
+  const pageCells = useMemo(() => {
+    const start = safeGlobalPage * ALL_PAGE_SIZE;
+    return visibleCells.slice(start, start + ALL_PAGE_SIZE);
+  }, [visibleCells, safeGlobalPage]);
 
   const selectedKeys = useMemo(() => [...selected], [selected]);
   const selectedBreakdown = useBreakdown(selectedKeys, cellsByPos);
@@ -587,7 +591,45 @@ export default function CorrectionPage() {
         )}
 
         <div className="space-y-4">
-          {groups.map((group) => {
+          {mode === 'all' ? (
+            <motion.div variants={staggerItem}>
+              <div className="flex flex-wrap gap-2">
+                {pageCells.map((cell) => (
+                  <CellThumb
+                    key={`${cell.row}:${cell.col}`}
+                    cell={cell}
+                    rows={blueprint.rows}
+                    cols={blueprint.cols}
+                    cropBox={blueprint.cropBox}
+                    image={image}
+                    checked={selected.has(`${cell.row}:${cell.col}`)}
+                    onToggle={() => toggleCell(`${cell.row}:${cell.col}`)}
+                    onEdit={() => openEditor([`${cell.row}:${cell.col}`])}
+                  />
+                ))}
+              </div>
+              {allTotalPages > 1 && (
+                <div className="flex items-center justify-center gap-3 py-4">
+                  <button
+                    type="button"
+                    disabled={safeGlobalPage === 0}
+                    onClick={() => { setGlobalPage((p) => Math.max(0, p - 1)); window.scrollTo({ top: 0 }); }}
+                    style={smallBtn()}
+                  >上一页</button>
+                  <span className="text-xs" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
+                    {safeGlobalPage + 1} / {allTotalPages} · 共 {visibleCells.length} 格
+                  </span>
+                  <button
+                    type="button"
+                    disabled={safeGlobalPage >= allTotalPages - 1}
+                    onClick={() => { setGlobalPage((p) => Math.min(allTotalPages - 1, p + 1)); window.scrollTo({ top: 0 }); }}
+                    style={smallBtn()}
+                  >下一页</button>
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            groups.map((group) => {
             const page = pageOf[group.code] ?? 0;
             const pageCells = group.cells.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
             const totalPages = Math.max(1, Math.ceil(group.cells.length / PAGE_SIZE));
@@ -645,7 +687,7 @@ export default function CorrectionPage() {
                 </div>
               </motion.div>
             );
-          })}
+          }))}
         </div>
       </motion.div>
 
