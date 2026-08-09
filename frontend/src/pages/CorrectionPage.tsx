@@ -296,8 +296,7 @@ export default function CorrectionPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editor, setEditor] = useState<{ keys: string[] } | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
-  const [pageOf, setPageOf] = useState<Record<string, number>>({});
-  // 全部格子模式：左栏选中编码 + 右栏该编码的格子翻页
+  // 两栏布局：左栏选中编码 + 右栏该编码的格子翻页
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [codePage, setCodePage] = useState(0);
 
@@ -393,23 +392,13 @@ export default function CorrectionPage() {
     return list;
   }, [blueprint, mode, reviewCells, search, onlyUnfixed]);
 
-  // 分组：按当前识别码（cell.code 原始码），组内按 row,col 排序（仅待复核模式用）
-  const groups = useMemo(() => {
-    const map = new Map<string, BlueprintCellDto[]>();
-    for (const cell of visibleCells) {
-      const list = map.get(cell.code) ?? [];
-      list.push(cell);
-      map.set(cell.code, list);
-    }
-    return [...map.entries()]
-      .map(([code, cells]) => ({ code, cells: cells.sort((a, b) => a.row - b.row || a.col - b.col) }))
-      .sort((a, b) => b.cells.length - a.cells.length);
-  }, [visibleCells]);
-
-  // 全部格子模式：左栏编码列表（格数降序）
+  // 左栏编码列表（按有效码 = corrected ?? code 分组，格数降序）
   const codeList = useMemo(() => {
     const map = new Map<string, number>();
-    for (const cell of visibleCells) map.set(cell.code, (map.get(cell.code) ?? 0) + 1);
+    for (const cell of visibleCells) {
+      const eff = cell.correctedCode ?? cell.code;
+      map.set(eff, (map.get(eff) ?? 0) + 1);
+    }
     return [...map.entries()]
       .map(([code, count]) => ({ code, count }))
       .sort((a, b) => b.count - a.count || a.code.localeCompare(b.code));
@@ -417,11 +406,11 @@ export default function CorrectionPage() {
   const activeCode = selectedCode != null && codeList.some((l) => l.code === selectedCode)
     ? selectedCode
     : (codeList[0]?.code ?? null);
-  // 右栏：当前编码的全部格子，分页
+  // 右栏：当前编码（有效码）的全部格子，分页
   const codeCells = useMemo(() => {
     if (activeCode == null) return [];
     return visibleCells
-      .filter((c) => c.code === activeCode)
+      .filter((c) => (c.correctedCode ?? c.code) === activeCode)
       .sort((a, b) => a.row - b.row || a.col - b.col);
   }, [visibleCells, activeCode]);
   const codeTotalPages = Math.max(1, Math.ceil(codeCells.length / PAGE_SIZE));
@@ -443,20 +432,19 @@ export default function CorrectionPage() {
     });
   }, []);
 
-  const toggleGroup = useCallback((code: string) => {
+  /** 全选/取消全选当前编码的全部格子 */
+  const toggleCodeAll = useCallback(() => {
     setSelected((prev) => {
-      const group = groups.find((g) => g.code === code);
-      if (!group) return prev;
       const next = new Set(prev);
-      const allSelected = group.cells.every((c) => next.has(`${c.row}:${c.col}`));
-      for (const c of group.cells) {
+      const allSelected = codeCells.every((c) => next.has(`${c.row}:${c.col}`));
+      for (const c of codeCells) {
         const key = `${c.row}:${c.col}`;
         if (allSelected) next.delete(key);
         else next.add(key);
       }
       return next;
     });
-  }, [groups]);
+  }, [codeCells]);
 
   const applyUpdates = useCallback(
     async (updates: CellCorrectionUpdate[], message: string) => {
@@ -609,16 +597,15 @@ export default function CorrectionPage() {
           )}
         </motion.div>
 
-        {groups.length === 0 && (
+        {codeList.length === 0 && (
           <motion.p variants={staggerItem} style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
             {mode === 'review' ? '没有需要复核的格子 🎉' : '没有匹配的格子'}
           </motion.p>
         )}
 
         <div className="space-y-4">
-          {mode === 'all' ? (
-            <motion.div variants={staggerItem} className="flex items-start gap-4">
-              {/* 左栏：编码列表 */}
+          <motion.div variants={staggerItem} className="flex items-start gap-4">
+              {/* 左栏：编码列表（按有效码分组） */}
               <div
                 className="w-36 shrink-0 rounded-xl p-1.5 max-h-[70vh] overflow-y-auto"
                 style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)' }}
@@ -655,6 +642,14 @@ export default function CorrectionPage() {
                     {activeCode == null ? '—' : (activeCode === 'BLANK' ? '空白' : activeCode)}
                   </span>
                   <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{codeCells.length} 格</span>
+                  <button
+                    type="button"
+                    onClick={toggleCodeAll}
+                    disabled={codeCells.length === 0}
+                    style={smallBtn()}
+                  >
+                    {codeCells.length > 0 && codeCells.every((c) => selected.has(`${c.row}:${c.col}`)) ? '取消全选' : '全选'}
+                  </button>
                   {codeTotalPages > 1 && (
                     <span className="ml-auto flex items-center gap-1 text-xs" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
                       {safeCodePage + 1}/{codeTotalPages}
@@ -680,66 +675,6 @@ export default function CorrectionPage() {
                 </div>
               </div>
             </motion.div>
-          ) : (
-            groups.map((group) => {
-            const page = pageOf[group.code] ?? 0;
-            const pageCells = group.cells.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
-            const totalPages = Math.max(1, Math.ceil(group.cells.length / PAGE_SIZE));
-            const groupAllSelected = group.cells.every((c) => selected.has(`${c.row}:${c.col}`));
-            const correctedInGroup = group.cells.filter((c) => c.correctedCode != null).length;
-            return (
-              <motion.div
-                key={group.code}
-                variants={staggerItem}
-                className="rounded-xl p-3"
-                style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)' }}
-              >
-                <div className="flex flex-wrap items-center gap-3 mb-2">
-                  <span
-                    className="inline-block w-4 h-4 rounded"
-                    style={{ background: normalizeHex(group.cells[0]?.color?.hex) ?? '#e6e0d7' }}
-                  />
-                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: 'var(--text-sm)' }}>
-                    {group.code}
-                  </span>
-                  <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                    {group.cells.length} 格{correctedInGroup > 0 ? ` · 已修正 ${correctedInGroup}` : ''}
-                  </span>
-                  <label className="flex items-center gap-1 text-xs cursor-pointer" style={{ color: 'var(--color-text-muted)' }}>
-                    <input type="checkbox" checked={groupAllSelected} onChange={() => toggleGroup(group.code)} />
-                    全选
-                  </label>
-                  <div className="ml-auto flex items-center gap-1">
-                    <button type="button" onClick={() => openEditor(group.cells.map((c) => `${c.row}:${c.col}`))} style={smallBtn()}>
-                      整组设为…
-                    </button>
-                    {totalPages > 1 && (
-                      <span className="text-xs flex items-center gap-1" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
-                        {page + 1}/{totalPages}
-                        <button type="button" disabled={page === 0} onClick={() => setPageOf((p) => ({ ...p, [group.code]: page - 1 }))} style={smallBtn()}>‹</button>
-                        <button type="button" disabled={page >= totalPages - 1} onClick={() => setPageOf((p) => ({ ...p, [group.code]: page + 1 }))} style={smallBtn()}>›</button>
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {pageCells.map((cell) => (
-                    <CellThumb
-                      key={`${cell.row}:${cell.col}`}
-                      cell={cell}
-                      rows={blueprint.rows}
-                      cols={blueprint.cols}
-                      cropBox={blueprint.cropBox}
-                      image={image}
-                      checked={selected.has(`${cell.row}:${cell.col}`)}
-                      onToggle={() => toggleCell(`${cell.row}:${cell.col}`)}
-                      onEdit={() => openEditor([`${cell.row}:${cell.col}`])}
-                    />
-                  ))}
-                </div>
-              </motion.div>
-            );
-          }))}
         </div>
       </motion.div>
 
