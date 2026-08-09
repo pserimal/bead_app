@@ -92,7 +92,6 @@ function CellThumb({
   }, [image, cropBox, rows, cols, cell]);
 
   const corrected = cell.correctedCode != null;
-  const confPct = cell.confidence != null ? Math.round(cell.confidence * 100) : null;
 
   return (
     <div className="flex flex-col items-center gap-0.5 select-none" title={`行 ${cell.row + 1} · 列 ${cell.col + 1} · 识别 ${cell.code}${corrected ? ` → 修正 ${cell.correctedCode}` : ''}`}>
@@ -116,12 +115,6 @@ function CellThumb({
             ✓
           </span>
         )}
-        <span
-          className="absolute left-0 bottom-0 px-0.5 text-[9px] leading-tight text-white rounded-tr"
-          style={{ background: 'rgba(38,33,29,0.78)', fontFamily: 'var(--font-mono)' }}
-        >
-          {confPct != null ? `${confPct}%` : ''}
-        </span>
         <label
           className="absolute flex items-center justify-center rounded cursor-pointer"
           style={{ top: -3, left: -3, width: 17, height: 17, background: checked ? 'var(--color-accent)' : 'rgba(255,255,255,0.9)', border: '1px solid var(--color-border)' }}
@@ -420,16 +413,21 @@ export default function CorrectionPage() {
     return list;
   }, [blueprint, mode, reviewCells, search, onlyUnfixed]);
 
-  // 左栏编码列表（按有效码 = corrected ?? code 分组，格数降序）
+  // 左栏编码列表（按有效码 = corrected ?? code 分组，自然序：A2 < A10，空白排最后）
   const codeList = useMemo(() => {
     const map = new Map<string, number>();
     for (const cell of visibleCells) {
       const eff = cell.correctedCode ?? cell.code;
       map.set(eff, (map.get(eff) ?? 0) + 1);
     }
+    const natural = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
     return [...map.entries()]
       .map(([code, count]) => ({ code, count }))
-      .sort((a, b) => b.count - a.count || a.code.localeCompare(b.code));
+      .sort((a, b) => {
+        if (a.code === 'BLANK') return 1;
+        if (b.code === 'BLANK') return -1;
+        return natural(a.code, b.code);
+      });
   }, [visibleCells]);
   const activeCode = selectedCode != null && codeList.some((l) => l.code === selectedCode)
     ? selectedCode
@@ -441,6 +439,19 @@ export default function CorrectionPage() {
       .filter((c) => (c.correctedCode ?? c.code) === activeCode)
       .sort((a, b) => a.row - b.row || a.col - b.col);
   }, [visibleCells, activeCode]);
+  // 渐进渲染：初始只挂载前 N 个，右栏滚动近底部自动追加（避免大组一次渲染 5 千 DOM 卡顿）
+  const RENDER_STEP = 300;
+  const [renderLimit, setRenderLimit] = useState(RENDER_STEP);
+  useEffect(() => {
+    setRenderLimit(RENDER_STEP);
+  }, [activeCode]);
+  const onRightScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (el.scrollTop + el.clientHeight > el.scrollHeight - 600) {
+      setRenderLimit((n) => Math.min(codeCells.length, n + RENDER_STEP));
+    }
+  }, [codeCells.length]);
+  const renderedCells = codeCells.slice(0, renderLimit);
 
   const selectedKeys = useMemo(() => [...selected], [selected]);
   const selectedBreakdown = useBreakdown(selectedKeys, cellsByPos);
@@ -664,7 +675,7 @@ export default function CorrectionPage() {
                 )}
               </div>
               {/* 右栏：当前编码的全部格子（独立滚动，不影响左栏/工具栏） */}
-              <div className="flex-1 min-w-0 max-h-[70vh] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+              <div className="flex-1 min-w-0 max-h-[70vh] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }} onScroll={onRightScroll}>
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-sm" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
                     {activeCode == null ? '—' : (activeCode === 'BLANK' ? '空白' : activeCode)}
@@ -680,7 +691,7 @@ export default function CorrectionPage() {
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {codeCells.map((cell) => (
+                  {renderedCells.map((cell) => (
                     <CellThumb
                       key={`${cell.row}:${cell.col}`}
                       cell={cell}
