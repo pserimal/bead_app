@@ -82,6 +82,17 @@ export function clampZoom(scale: number): number {
   return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, scale));
 }
 
+/** 不透明混合：hex 与 accent 按 ratio 混合（高亮底色用，避免半透明覆盖层盖字/失效问题） */
+function blendWithAccent(hex: string, accent: string, ratio: number): string {
+  const h = hex.replace(/^#/, '');
+  const a = accent.replace(/^#/, '');
+  const mix = (c: number, ac: number) => Math.round(c * (1 - ratio) + ac * ratio);
+  const r = mix(parseInt(h.slice(0, 2), 16), parseInt(a.slice(0, 2), 16));
+  const g = mix(parseInt(h.slice(2, 4), 16), parseInt(a.slice(2, 4), 16));
+  const b = mix(parseInt(h.slice(4, 6), 16), parseInt(a.slice(4, 6), 16));
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 /**
  * 绘制整张图纸（含坐标轴 + 网格线 + 编码 + 修正标记）。
  * highlightCode 非空 = 锁定高亮：该编码的格子保持原色 + accent 描边，
@@ -151,13 +162,15 @@ export function drawBoard(
       const cell = cellsByPosition.get(`${row}:${col}`);
       const x = left + col * cellSize;
       const y = top + row * cellSize;
+      const isTarget = highlightCode !== null && (cell?.correctedCode ?? cell?.code) === highlightCode;
       const hex = normalizeHex(cell?.color?.hex);
       const isBlank = cell?.status === 'BLANK' || (cell?.correctedCode ?? cell?.code) === 'BLANK';
 
       if (isBlank) {
         // BLANK is a recognized empty cell, not an unmapped color. Keep it
         // visually neutral and distinct from the diagonal UNMAPPED hatch.
-        context.fillStyle = '#faf9f5';
+        // 锁定目标：accent 浅色底（不透明混合，文字/虚线框在其上保持清晰）
+        context.fillStyle = isTarget ? blendWithAccent('#faf9f5', accentColor(), 0.18) : '#faf9f5';
         context.fillRect(x, y, cellSize, cellSize);
         context.save();
         context.setLineDash([2, 2]);
@@ -167,7 +180,10 @@ export function drawBoard(
           cellSize * 0.64, cellSize * 0.64);
         context.restore();
       } else {
-        context.fillStyle = hex ?? '#e6e0d7';
+        // 锁定目标：accent 15% 与格子原色直接混合（不透明），文字仍清晰
+        context.fillStyle = isTarget && hex
+          ? blendWithAccent(hex, accentColor(), 0.15)
+          : (hex ?? '#e6e0d7');
         context.fillRect(x, y, cellSize, cellSize);
       }
 
@@ -219,7 +235,6 @@ export function drawBoard(
 
   // ── 锁定高亮（编码文字之上、网格线之下）──
   if (highlightCode !== null) {
-    const accent = accentColor();
     // 非目标格：45% 米白覆盖（温和变淡，编码仍可辨认）
     context.fillStyle = 'rgba(250, 246, 241, 0.45)';
     for (let row = 0; row < rows; row += 1) {
@@ -230,17 +245,17 @@ export function drawBoard(
         }
       }
     }
-    // 目标格：accent 描边（随格大小缩放）
-    const lw = Math.max(2, cellSize / 10);
-    context.strokeStyle = accent;
+    // 目标格：accent 细锐边框（整数坐标对齐，底色已在格子绘制时混合高亮）
+    const lw = Math.max(1, Math.round(cellSize / 24));
+    context.strokeStyle = accentColor();
     context.lineWidth = lw;
     for (let row = 0; row < rows; row += 1) {
       for (let col = 0; col < cols; col += 1) {
         const cell = cellsByPosition.get(`${row}:${col}`);
         if ((cell?.correctedCode ?? cell?.code) === highlightCode) {
-          const x = left + col * cellSize + lw / 2;
-          const y = top + row * cellSize + lw / 2;
-          context.strokeRect(x, y, cellSize - lw, cellSize - lw);
+          const x = left + col * cellSize;
+          const y = top + row * cellSize;
+          context.strokeRect(Math.round(x + lw / 2), Math.round(y + lw / 2), cellSize - lw, cellSize - lw);
         }
       }
     }
