@@ -7,3 +7,6 @@ requests>=2.32
 numpy
 opencv-python-headless
 torch
+onnx>=1.17
+onnxruntime>=1.20
+

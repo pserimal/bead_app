@@ -15,6 +15,39 @@ from ocr_core.bead_ocr_crnn import CRNN, build_code_trie, constrained_decode, lo
 from ocr_core.charset import CHAR_TO_IDX
 from ocr_core.code_library import load_codes
 
+
+def _greedy_conf(log_probs: torch.Tensor, chars: list[str]) -> tuple[list[str], list[float]]:
+    """CTC collapse decode + confidence from the free (non-trie) path.
+
+    Confidence is the mean per-step log-probability of the frames that
+    actually emit a character, mapped to 0-1 via exp.  A long label such as
+    BLANK gets the same treatment as a short code — the trie-forced low-
+    probability frames no longer drag the score down.
+    """
+    preds = log_probs.argmax(dim=2).transpose(0, 1).cpu().numpy()  # (B, T)
+    out: list[str] = []
+    confs: list[float] = []
+    for b in range(preds.shape[0]):
+        chars_emitted: list[str] = []
+        steps: list[float] = []
+        prev = -1
+        for t in range(preds.shape[1]):
+            idx = int(preds[b, t])
+            if idx == 0:  # CTC blank
+                prev = -1
+                continue
+            if idx != prev:
+                chars_emitted.append(chars[idx])
+                steps.append(float(log_probs[t, b, idx]))
+            prev = idx
+        if steps:
+            conf = float(np.exp(np.mean(steps)))
+        else:
+            conf = 0.0
+        out.append("".join(chars_emitted))
+        confs.append(conf)
+    return out, confs
+
 _MODEL: tuple[CRNN, list[str]] | None = None
 _MODEL_PATH: str | None = None
 
@@ -151,10 +184,19 @@ def ocr_cells_from_crop(
             logits = model(tensor)  # (T, B, C)
             T = logits.shape[0]
             decoded = constrained_decode(logits, trie, char_to_idx, blank=0)
+            log_probs = torch.log_softmax(logits, dim=2)
+            # Free-path confidence (see _greedy_conf): a long label like BLANK
+            # is scored by the frames that actually emit a character, so the
+            # trie-forced low-probability frames don't drag confidence down.
+            greedy_codes, greedy_confs = _greedy_conf(log_probs, chars)
             for j, (code, score) in enumerate(decoded):
                 r, c = coords[i + j]
-                # 011 F1 修复：平均每步 log-prob 归一化（T=时间步数）
-                norm_conf = float(np.exp(score / max(1, T)))
+                if j < len(greedy_codes) and greedy_codes[j] == code:
+                    # Both constrained and free paths agree — trust free conf.
+                    norm_conf = greedy_confs[j]
+                else:
+                    # Fallback: mean per-step log-prob over the trie path.
+                    norm_conf = float(np.exp(score / max(1, T)))
                 if code not in codes_set and not include_all:
                     continue
                 if norm_conf < min_conf and not include_all:

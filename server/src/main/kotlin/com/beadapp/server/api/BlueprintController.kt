@@ -11,6 +11,7 @@ import com.beadapp.server.service.StorageService
 import com.beadapp.server.service.toDto
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
+import org.springframework.core.io.ByteArrayResource
 import org.springframework.core.io.PathResource
 import org.springframework.core.io.Resource
 import org.springframework.data.domain.PageRequest
@@ -21,8 +22,14 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.bind.annotation.*
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
 import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
 import java.util.UUID
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+import javax.imageio.ImageIO
 
 @RestController
 @RequestMapping("/api/v1/blueprints")
@@ -136,5 +143,105 @@ class BlueprintController(
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_TYPE, MediaType.IMAGE_JPEG_VALUE)
             .body(PathResource(path))
+    }
+
+    /** 导出全部已校正格子：zip（manifest.csv + 每格 PNG），格式对齐标注工具 label.html */
+    @GetMapping("/{id}/cells/export-corrections")
+    fun exportCorrections(@PathVariable("id") id: UUID): ResponseEntity<ByteArrayResource> {
+        val bp = blueprintRepo.findById(id).orElseThrow {
+            ApiException(HttpStatus.NOT_FOUND, "BLUEPRINT_NOT_FOUND", "图纸不存在: $id")
+        }
+        val job = jobRepo.findById(bp.jobId).orElseThrow {
+            ApiException(HttpStatus.NOT_FOUND, "JOB_NOT_FOUND", "任务不存在: ${bp.jobId}")
+        }
+        val corrected = blueprintCellRepo.findAllByBlueprintIdOrderByRowAscColAsc(id)
+            .filter { it.correctedCode != null }
+        if (corrected.isEmpty()) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "NO_CORRECTIONS", "没有已校正的格子")
+        }
+        val source = ImageIO.read(storageService.loadImage(job.inputImagePath).toFile())
+            ?: throw ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "IMAGE_DECODE_FAILED", "原图解码失败")
+        val box = job.cropBox
+
+        val manifest = StringBuilder("\uFEFF编码,文件名,行,列,色相,亮度\n")
+        val zipBytes = ByteArrayOutputStream()
+        ZipOutputStream(zipBytes).use { zip ->
+            for (cell in corrected) {
+                val code = cell.correctedCode!!
+                val crop = cropCell(source, box, bp.rows, bp.cols, cell.row, cell.col)
+                val (r, g, b) = dominantColor(crop)
+                val hue = hueOf(r, g, b)
+                val bri = (r + g + b) / 3
+                val fname = "${code}_r${cell.row + 1}_c${cell.col + 1}_h${hue}_v${bri}.png"
+                val png = ByteArrayOutputStream()
+                ImageIO.write(crop, "png", png)
+                zip.putNextEntry(ZipEntry(fname))
+                zip.write(png.toByteArray())
+                zip.closeEntry()
+                manifest.append("$code,$fname,${cell.row + 1},${cell.col + 1},$hue,$bri\n")
+            }
+            zip.putNextEntry(ZipEntry("manifest.csv"))
+            zip.write(manifest.toString().toByteArray(Charsets.UTF_8))
+            zip.closeEntry()
+        }
+
+        val stamp = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(OffsetDateTime.now())
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_TYPE, "application/zip")
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=corrections-${id.toString().take(8)}-$stamp.zip")
+            .body(ByteArrayResource(zipBytes.toByteArray()))
+    }
+
+    /** 与 ocr_core.inference 相同的格子裁剪（cropBox + 10% 内缩跳过网格线） */
+    private fun cropCell(src: BufferedImage, box: CropBox, rows: Int, cols: Int, row: Int, col: Int): BufferedImage {
+        val cellW = box.width.toDouble() / cols
+        val cellH = box.height.toDouble() / rows
+        val ix = maxOf(1, (cellW * 0.10).toInt())
+        val iy = maxOf(1, (cellH * 0.10).toInt())
+        val x0 = (box.x + col * cellW).toInt() + ix
+        val y0 = (box.y + row * cellH).toInt() + iy
+        val x1 = (box.x + (col + 1) * cellW).toInt() - ix
+        val y1 = (box.y + (row + 1) * cellH).toInt() - iy
+        val cx0 = x0.coerceIn(0, src.width)
+        val cy0 = y0.coerceIn(0, src.height)
+        val cx1 = x1.coerceIn(cx0, src.width)
+        val cy1 = y1.coerceIn(cy0, src.height)
+        return src.getSubimage(cx0, cy0, maxOf(1, cx1 - cx0), maxOf(1, cy1 - cy0))
+    }
+
+    /** 主色：缩到 32×32 后按 32 级量化取众数桶均值（同 board_generator 思路） */
+    private fun dominantColor(img: BufferedImage): Triple<Int, Int, Int> {
+        val small = BufferedImage(32, 32, BufferedImage.TYPE_INT_RGB)
+        val g = small.createGraphics()
+        g.drawImage(img, 0, 0, 32, 32, null)
+        g.dispose()
+        val buckets = HashMap<Int, LongArray>()
+        for (y in 0 until 32) for (x in 0 until 32) {
+            val rgb = small.getRGB(x, y)
+            val r = (rgb shr 16) and 0xFF
+            val gg = (rgb shr 8) and 0xFF
+            val b = rgb and 0xFF
+            val key = ((r shr 3) shl 10) or ((gg shr 3) shl 5) or (b shr 3)
+            val acc = buckets.getOrPut(key) { LongArray(4) }
+            acc[0]++; acc[1] += r; acc[2] += gg; acc[3] += b
+        }
+        val best = buckets.maxByOrNull { it.value[0] }!!.value
+        return Triple((best[1] / best[0]).toInt(), (best[2] / best[0]).toInt(), (best[3] / best[0]).toInt())
+    }
+
+    /** 标准 HSV 色相（与标注工具 label.html 的 _hue 一致，负值归一） */
+    private fun hueOf(r: Int, g: Int, b: Int): Int {
+        val rf = r / 255f; val gf = g / 255f; val bf = b / 255f
+        val mx = maxOf(rf, gf, bf); val mn = minOf(rf, gf, bf)
+        if (mx == mn) return 0
+        val d = mx - mn
+        var h = when (mx) {
+            rf -> (gf - bf) / d % 6
+            gf -> (bf - rf) / d + 2
+            else -> (rf - gf) / d + 4
+        }
+        h *= 60
+        if (h < 0) h += 360
+        return Math.round(h)
     }
 }

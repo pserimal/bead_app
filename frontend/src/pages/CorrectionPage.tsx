@@ -478,11 +478,30 @@ export default function CorrectionPage() {
     await applyUpdates(updates, `已恢复 ${updates.length} 格的原识别码`);
   }, [editor, applyUpdates]);
 
+  const exportCorrections = useCallback(async () => {
+    if (!id) return;
+    try {
+      const res = await apiClient.get(`/blueprints/${id}/cells/export-corrections`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data as Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `corrections-${id.slice(0, 8)}-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast('已导出校正数据 zip（含 manifest.csv + 格子图片）', 'success');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  }, [id, toast]);
+
   if (isLoading) return <p style={{ color: 'var(--color-text-muted)' }}>加载中…</p>;
   if (error) return <p style={{ color: 'var(--color-error)' }}>加载失败：{(error as Error).message}</p>;
   if (!blueprint) return null;
 
   const unmappedCount = blueprint.cells.filter((c) => c.status === 'UNMAPPED').length;
+  const correctedCount = blueprint.cells.filter((c) => c.correctedCode != null).length;
   const selectedCount = selected.size;
 
   return (
@@ -496,6 +515,15 @@ export default function CorrectionPage() {
             </p>
           </div>
           <button type="button" onClick={() => navigate(`/blueprints/${id}`)} style={{ fontSize: 'var(--text-sm)', color: 'var(--color-accent)', padding: '6px 8px' }}>← 返回详情</button>
+          <button
+            type="button"
+            onClick={exportCorrections}
+            disabled={correctedCount === 0}
+            style={{ ...controlStyle(), fontWeight: 600, color: '#fff', background: correctedCount > 0 ? '#2f9e6e' : undefined, borderColor: correctedCount > 0 ? '#2f9e6e' : undefined, opacity: correctedCount === 0 ? 0.45 : 1, cursor: correctedCount === 0 ? 'not-allowed' : 'pointer' }}
+            title="导出全部已校正格子（zip：manifest.csv + 格子裁剪图），供模型训练"
+          >
+            导出校正数据{correctedCount > 0 ? `（${correctedCount}）` : ''}
+          </button>
         </motion.div>
 
         <motion.div variants={staggerItem} className="flex flex-wrap items-center gap-2">

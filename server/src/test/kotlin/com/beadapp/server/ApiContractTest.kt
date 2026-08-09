@@ -3,6 +3,7 @@ package com.beadapp.server
 import com.beadapp.server.model.*
 import com.beadapp.server.repository.*
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -17,7 +18,13 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import java.awt.Color
+import java.awt.image.BufferedImage
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.util.UUID
+import java.util.zip.ZipInputStream
+import javax.imageio.ImageIO
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -40,11 +47,17 @@ class ApiContractTest {
     @Autowired lateinit var blueprintCellRepo: BlueprintCellRepository
     @Autowired lateinit var colorRepo: ColorLibraryRepository
 
-    private val png: ByteArray = byteArrayOf(
-        0x89.toByte(), 0x50.toByte(), 0x4E.toByte(), 0x47.toByte(),
-        0x0D, 0x0A, 0x1A, 0x0A,
-        0, 0, 0, 0x0D, 0x49, 0x48, 0x44, 0x52,
-    )
+    private val png: ByteArray = run {
+        // 真实 PNG（300×300 白色）：导出校正数据时服务端需要 ImageIO 解码原图
+        val img = BufferedImage(300, 300, BufferedImage.TYPE_INT_RGB)
+        val g = img.createGraphics()
+        g.color = Color.WHITE
+        g.fillRect(0, 0, 300, 300)
+        g.dispose()
+        val bos = ByteArrayOutputStream()
+        ImageIO.write(img, "png", bos)
+        bos.toByteArray()
+    }
 
     @BeforeEach
     fun clean() {
@@ -338,6 +351,46 @@ class ApiContractTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"updates":[{"row":0,"col":0,"code":"H1"}]}""")
         ).andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `导出校正数据生成 zip 含 manifest 与格子图片`() {
+        val bpId = completeBlueprint()
+        // 修正 (0,0) → H2（唯一已校正格）
+        mockMvc.perform(
+            patch("/api/v1/blueprints/$bpId/cells")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"updates":[{"row":0,"col":0,"code":"H2"}]}""")
+        ).andExpect(status().isOk)
+
+        val zipBytes = mockMvc.perform(get("/api/v1/blueprints/$bpId/cells/export-corrections"))
+            .andExpect(status().isOk)
+            .andExpect(header().string("Content-Type", "application/zip"))
+            .andReturn().response.contentAsByteArray
+
+        val entries = mutableListOf<String>()
+        var manifest = ""
+        ZipInputStream(ByteArrayInputStream(zipBytes)).use { zip ->
+            var entry = zip.nextEntry
+            while (entry != null) {
+                entries += entry.name
+                if (entry.name == "manifest.csv") manifest = zip.readBytes().toString(Charsets.UTF_8)
+                zip.closeEntry()
+                entry = zip.nextEntry
+            }
+        }
+        assertTrue(entries.contains("manifest.csv"), "zip 应包含 manifest.csv，实际: $entries")
+        val pngEntry = entries.first { it.endsWith(".png") }
+        assertTrue(manifest.startsWith("\uFEFF编码,文件名,行,列,色相,亮度"), "manifest 应带 BOM 头")
+        assertTrue(manifest.contains("H2,$pngEntry,1,1,"), "manifest 应含修正格 H2 行，实际: $manifest")
+    }
+
+    @Test
+    fun `导出无校正数据返回 400`() {
+        val bpId = completeBlueprint()
+        mockMvc.perform(get("/api/v1/blueprints/$bpId/cells/export-corrections"))
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.code").value("NO_CORRECTIONS"))
     }
 
     @Test
