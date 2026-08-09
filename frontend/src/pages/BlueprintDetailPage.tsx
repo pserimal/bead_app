@@ -527,7 +527,7 @@ export default function BlueprintDetailPage() {
   if (!blueprint) return null;
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto px-4 lg:px-6">
       <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
         <motion.div variants={staggerItem} className="flex flex-wrap items-start justify-between gap-4">
           <div>

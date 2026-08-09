@@ -249,7 +249,7 @@ function EditorModal({
           )}
         </div>
 
-        <div className="flex gap-2 mb-3">
+        <div className="flex flex-wrap gap-2 mb-3">
           <button type="button" onClick={handleSet} disabled={!valid || busy} style={actionBtn('var(--color-accent)', !valid || busy)}>
             设为 {valid ? upper : '…'}（{editor.keys.length} 格）
           </button>
@@ -281,9 +281,9 @@ function EditorModal({
               title={`${c.code} · ${c.name}`}
               onClick={() => setCode(c.code)}
               style={{
-                width: 26,
-                height: 26,
-                borderRadius: 6,
+                width: 34,
+                height: 34,
+                borderRadius: 7,
                 background: normalizeHex(c.hex) ?? '#eee',
                 border: upper === c.code ? '2px solid var(--color-accent)' : '1px solid rgba(0,0,0,0.12)',
                 cursor: 'pointer',
@@ -564,7 +564,7 @@ export default function CorrectionPage() {
   const selectedCount = selected.size;
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto px-4 lg:px-6">
       <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-4">
         <motion.div variants={staggerItem} className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -666,49 +666,51 @@ export default function CorrectionPage() {
         )}
 
         <div className="space-y-4">
-          <motion.div variants={staggerItem} className="flex items-start gap-4">
-              {/* 左栏：编码列表（按有效码分组，自然序） */}
+          <motion.div variants={staggerItem} className="flex flex-col lg:flex-row items-start gap-4">
+              {/* 左栏：编码列表（按有效码分组，自然序）；平板/手机 = 顶部横向 chips，lg+ = 侧栏 */}
               <div
-                className="w-40 shrink-0 rounded-xl p-2 max-h-[70vh] overflow-y-auto"
+                className="w-full lg:w-40 shrink-0 rounded-xl p-2 lg:max-h-[70vh] overflow-x-auto lg:overflow-y-auto"
                 style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-xs)' }}
               >
-                {codeList.map(({ code, count }) => {
-                  const selected = activeCode === code;
-                  const label = code === 'BLANK' ? '空白' : code;
-                  return (
-                    <button
-                      key={code}
-                      type="button"
-                      onClick={() => { setSelectedCode(code); }}
-                      className="w-full flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-md mb-0.5 text-left transition-colors hover:bg-[var(--color-surface-hover)]"
-                      style={{
-                        background: selected ? 'var(--color-accent)' : 'transparent',
-                        color: selected ? 'var(--color-text-inverse)' : 'var(--color-text)',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <span className="truncate" style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: selected ? 700 : 500 }}>
-                        {label}
-                      </span>
-                      <span
-                        className="rounded-full px-1.5 text-[10px] leading-4 shrink-0"
+                <div className="flex lg:flex-col gap-1 w-max lg:w-auto">
+                  {codeList.map(({ code, count }) => {
+                    const selected = activeCode === code;
+                    const label = code === 'BLANK' ? '空白' : code;
+                    return (
+                      <button
+                        key={code}
+                        type="button"
+                        onClick={() => { setSelectedCode(code); }}
+                        className="shrink-0 lg:w-full flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-md lg:mb-0.5 text-left transition-colors hover:bg-[var(--color-surface-hover)]"
                         style={{
-                          background: selected ? 'rgba(255,255,255,0.22)' : 'var(--color-bg-secondary)',
-                          color: selected ? '#fff' : 'var(--color-text-muted)',
-                          fontFamily: 'var(--font-mono)',
+                          background: selected ? 'var(--color-accent)' : 'transparent',
+                          color: selected ? 'var(--color-text-inverse)' : 'var(--color-text)',
+                          cursor: 'pointer',
                         }}
                       >
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
+                        <span className="truncate" style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: selected ? 700 : 500 }}>
+                          {label}
+                        </span>
+                        <span
+                          className="rounded-full px-1.5 text-[10px] leading-4 shrink-0"
+                          style={{
+                            background: selected ? 'rgba(255,255,255,0.22)' : 'var(--color-bg-secondary)',
+                            color: selected ? '#fff' : 'var(--color-text-muted)',
+                            fontFamily: 'var(--font-mono)',
+                          }}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
                 {codeList.length === 0 && (
                   <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>无匹配</span>
                 )}
               </div>
               {/* 右栏：当前编码的全部格子（卡片 + 独立滚动 + 渐进渲染） */}
-              <div className="flex-1 min-w-0 rounded-xl" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-xs)' }}>
+              <div className="flex-1 min-w-0 w-full rounded-xl" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-xs)' }}>
                 <div className="flex items-center gap-2.5 px-4 py-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
                   <span
                     className="w-4 h-4 rounded-full shrink-0"
@@ -758,7 +760,7 @@ export default function CorrectionPage() {
       {/* 底部操作条（surface 卡片，与全局一致） */}
       {selectedCount > 0 && (
         <div
-          className="fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-2.5 rounded-xl z-20"
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-2.5 rounded-xl z-20 max-w-[calc(100vw-2rem)]"
           style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)' }}
         >
           <span className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>已选 <b>{selectedCount}</b> 格</span>

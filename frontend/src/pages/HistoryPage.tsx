@@ -28,7 +28,7 @@ export default function HistoryPage() {
   const { data, isLoading, error } = useJobs(status || undefined, page);
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-5xl mx-auto px-4 lg:px-6">
       <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
         <motion.div variants={staggerItem}>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 700 }}>识别任务历史</h1>

@@ -33,7 +33,7 @@ export default function JobDetailPage() {
   const terminal = job?.status === 'SUCCEEDED' || job?.status === 'SUCCEEDED_WITH_WARNINGS' || job?.status === 'FAILED';
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 lg:px-6">
       <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
         <motion.div variants={staggerItem} className="flex items-center justify-between">
           <div>
