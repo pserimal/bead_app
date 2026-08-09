@@ -130,7 +130,8 @@ def _process(
             for c in range(cols):
                 code, conf = results.get((r, c), ("", 0.0))
                 ok = send_event(callback_base, job_id, attempt, None, "CELL_PROCESSED",
-                                {"row": r, "col": c, "code": code.upper() if code else ""})
+                                {"row": r, "col": c, "code": code.upper() if code else "",
+                                 "confidence": round(float(conf), 4)})
                 if not ok:
                     log.warning("[task] %s cell(%d,%d) 回调失败，中止", job_id, r, c)
                     return

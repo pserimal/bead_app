@@ -108,6 +108,8 @@ data class BlueprintDetail(
     val cols: Int,
     val validCodes: List<String>?,
     val cells: List<BlueprintCellDto>,
+    /** 用户裁剪区域（校正页据此从原图裁取每格照片） */
+    val cropBox: CropBox? = null,
     val createdAt: OffsetDateTime,
 )
 
@@ -117,6 +119,29 @@ data class BlueprintCellDto(
     val code: String,
     val status: CellStatus,
     val color: ColorDto? = null,
+    /** 识别置信度 exp(score/T)，0-1；旧任务为 null */
+    val confidence: Double? = null,
+    /** 用户修正后的编码（null = 未修正） */
+    val correctedCode: String? = null,
+    val correctedAt: OffsetDateTime? = null,
+)
+
+/** 低置信度校正：批量设置/恢复修正编码（多格原子提交） */
+data class CellCorrectionRequest(
+    val updates: List<CellCorrectionUpdate>,
+)
+
+data class CellCorrectionUpdate(
+    val row: Int,
+    val col: Int,
+    /** null = 恢复原识别码；BLANK = 标记空白格 */
+    val code: String? = null,
+)
+
+data class CellCorrectionResponse(
+    val cells: List<BlueprintCellDto>,
+    val correctedCount: Int,
+    val revertedCount: Int,
 )
 
 /** 008 决议：内部回调入站事件 */

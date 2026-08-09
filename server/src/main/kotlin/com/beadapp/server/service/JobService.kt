@@ -95,6 +95,7 @@ class JobService(
         val row = (payload["row"] as? Number)?.toInt() ?: throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_EVENT", "CELL_PROCESSED 缺少 row")
         val col = (payload["col"] as? Number)?.toInt() ?: throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_EVENT", "CELL_PROCESSED 缺少 col")
         val code = (payload["code"] as? String)?.uppercase() ?: throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_EVENT", "CELL_PROCESSED 缺少 code")
+        val confidence = (payload["confidence"] as? Number)?.toDouble()
         val isBlank = code == "BLANK"
         val color = if (isBlank) null else colorRepo.findByCodeIgnoreCase(code)
         val status = when {
@@ -106,6 +107,7 @@ class JobService(
             RecognitionJobCell(
                 jobId = job.id, row = row, col = col, code = code, status = status,
                 colorCode = color?.code, colorName = color?.name, colorHex = color?.hex,
+                confidence = confidence,
             )
         )
         // processed_cells 统计非空格数（与已存 cell 数一致即可）
@@ -138,6 +140,7 @@ class JobService(
                 BlueprintCell(
                     blueprintId = bp.id, row = it.row, col = it.col, code = it.code, status = it.status,
                     colorCode = it.colorCode, colorName = it.colorName, colorHex = it.colorHex,
+                    confidence = it.confidence,
                 )
             }
         )

@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import java.util.UUID
 
@@ -22,7 +23,7 @@ import java.util.UUID
 @AutoConfigureMockMvc
 @TestPropertySource(
     properties = [
-        "spring.datasource.url=jdbc:postgresql://192.168.5.88:5432/bead_app_test",
+        "spring.datasource.url=\${TEST_DB_URL:jdbc:postgresql://localhost:5432/bead_app_test}",
         "spring.datasource.username=admin",
         "spring.datasource.password=123456",
         "bead.storage.dir=./build/test-uploads",
@@ -232,6 +233,111 @@ class ApiContractTest {
             .andExpect(jsonPath("$.cells[1].code").value("BLANK"))
             .andExpect(jsonPath("$.cells[1].status").value("BLANK"))
             .andExpect(jsonPath("$.cells[1].color").doesNotExist())
+    }
+
+    private fun completeBlueprint(): UUID {
+        val id = createJob()
+        fun send(seq: Long, row: Int, col: Int, code: String, conf: Double? = null) {
+            val payload = mutableMapOf<String, Any>("row" to row, "col" to col, "code" to code)
+            if (conf != null) payload["confidence"] = conf
+            mockMvc.perform(
+                post("/internal/jobs/$id/events")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(mapOf(
+                        "jobId" to id.toString(), "attempt" to 0, "sequence" to seq,
+                        "type" to "CELL_PROCESSED", "payload" to payload,
+                    )))
+            ).andExpect(status().isOk)
+        }
+        send(2, 0, 0, "H1", 0.87)
+        send(3, 0, 1, "H2", 0.99)
+        send(4, 1, 0, "Z99", 0.31) // UNMAPPED（validCodes 只有 H1,H2）
+        send(5, 1, 1, "H1", 0.95)
+        mockMvc.perform(
+            post("/internal/jobs/$id/events")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(mapOf(
+                    "jobId" to id.toString(), "attempt" to 0, "sequence" to 6L,
+                    "type" to "JOB_SUCCEEDED", "payload" to mapOf("processedCells" to 4),
+                )))
+        ).andExpect(status().isOk)
+        val body = objectMapper.readTree(
+            mockMvc.perform(get("/api/v1/jobs/$id")).andReturn().response.contentAsString
+        )
+        return UUID.fromString(body.get("blueprintId").asText())
+    }
+
+    @Test
+    fun `置信度随 CELL_PROCESSED 落库并出现在蓝图详情`() {
+        val bpId = completeBlueprint()
+        mockMvc.perform(get("/api/v1/blueprints/$bpId"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.cells[0].confidence").value(0.87))
+            .andExpect(jsonPath("$.cells[2].confidence").value(0.31))
+            .andExpect(jsonPath("$.cells[0].correctedCode").doesNotExist())
+            .andExpect(jsonPath("$.cropBox.x").value(10))
+            .andExpect(jsonPath("$.cropBox.width").value(100))
+    }
+
+    @Test
+    fun `PATCH 批量修正格子并联动状态与颜色`() {
+        val bpId = completeBlueprint()
+        // (0,0) H1→H2（库内）；(1,0) Z99(UNMAPPED)→H1（翻转 MAPPED）
+        mockMvc.perform(
+            patch("/api/v1/blueprints/$bpId/cells")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(mapOf("updates" to listOf(
+                    mapOf("row" to 0, "col" to 0, "code" to "H2"),
+                    mapOf("row" to 1, "col" to 0, "code" to "H1"),
+                ))))
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.correctedCount").value(2))
+            .andExpect(jsonPath("$.revertedCount").value(0))
+            .andExpect(jsonPath("$.cells.length()").value(2))
+            .andExpect(jsonPath("$.cells[0].code").value("H1")) // 原识别码保留
+            .andExpect(jsonPath("$.cells[0].correctedCode").value("H2"))
+            .andExpect(jsonPath("$.cells[0].color.code").value("H2"))
+            .andExpect(jsonPath("$.cells[1].status").value("MAPPED"))
+            .andExpect(jsonPath("$.cells[1].correctedCode").value("H1"))
+
+        // 恢复原码：只回退 (0,0)，颜色回到 H1
+        mockMvc.perform(
+            patch("/api/v1/blueprints/$bpId/cells")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(mapOf("updates" to listOf(
+                    mapOf("row" to 0, "col" to 0),
+                ))))
+        ).andExpect(status().isOk)
+            .andExpect(jsonPath("$.revertedCount").value(1))
+            .andExpect(jsonPath("$.cells[0].correctedCode").doesNotExist())
+            .andExpect(jsonPath("$.cells[0].color.code").value("H1"))
+    }
+
+    @Test
+    fun `PATCH 库外编码与越界拒绝 400`() {
+        val bpId = completeBlueprint()
+        mockMvc.perform(
+            patch("/api/v1/blueprints/$bpId/cells")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"updates":[{"row":0,"col":0,"code":"X99"}]}""")
+        ).andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.code").value("INVALID_CODE"))
+
+        mockMvc.perform(
+            patch("/api/v1/blueprints/$bpId/cells")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"updates":[{"row":9,"col":9,"code":"H1"}]}""")
+        ).andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.code").value("CELL_OUT_OF_BOUNDS"))
+    }
+
+    @Test
+    fun `PATCH 未知图纸 404`() {
+        mockMvc.perform(
+            patch("/api/v1/blueprints/${UUID.randomUUID()}/cells")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"updates":[{"row":0,"col":0,"code":"H1"}]}""")
+        ).andExpect(status().isNotFound)
     }
 
     @Test

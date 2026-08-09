@@ -11,6 +11,7 @@ import CropPage from './pages/CropPage';
 import HistoryPage from './pages/HistoryPage';
 import JobDetailPage from './pages/JobDetailPage';
 import BlueprintDetailPage from './pages/BlueprintDetailPage';
+import CorrectionPage from './pages/CorrectionPage';
 import ColorLibraryPage from './pages/ColorLibraryPage';
 
 const queryClient = new QueryClient({
@@ -65,6 +66,14 @@ function AnimatedRoutes() {
           element={
             <AnimatedPage variants={pageSlideUpFadeOut}>
               <BlueprintDetailPage />
+            </AnimatedPage>
+          }
+        />
+        <Route
+          path="/blueprints/:id/correct"
+          element={
+            <AnimatedPage variants={pageSlideUpFadeOut}>
+              <CorrectionPage />
             </AnimatedPage>
           }
         />

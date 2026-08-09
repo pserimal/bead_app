@@ -36,6 +36,9 @@ class RecognitionJobCell(
     @Column(name = "color_hex")
     var colorHex: String? = null,
 
+    @Column(name = "confidence")
+    var confidence: Double? = null,
+
     @Column(name = "updated_at", nullable = false)
     var updatedAt: OffsetDateTime = OffsetDateTime.now(),
 )

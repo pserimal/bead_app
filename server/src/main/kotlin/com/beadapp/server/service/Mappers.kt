@@ -45,4 +45,7 @@ fun BlueprintCell.toDto(): BlueprintCellDto = BlueprintCellDto(
     code = code,
     status = status,
     color = if (colorCode != null) ColorDto(colorCode!!, colorName ?: "", colorHex ?: "") else null,
+    confidence = confidence,
+    correctedCode = correctedCode,
+    correctedAt = correctedAt,
 )

@@ -61,4 +61,14 @@ class BlueprintCell(
 
     @Column(name = "color_hex")
     var colorHex: String? = null,
+
+    @Column(name = "confidence")
+    var confidence: Double? = null,
+
+    /** 用户修正后的编码（null = 未修正；原始识别码保留在 code） */
+    @Column(name = "corrected_code")
+    var correctedCode: String? = null,
+
+    @Column(name = "corrected_at")
+    var correctedAt: OffsetDateTime? = null,
 )

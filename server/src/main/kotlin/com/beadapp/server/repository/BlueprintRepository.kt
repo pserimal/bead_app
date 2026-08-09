@@ -2,6 +2,7 @@ package com.beadapp.server.repository
 
 import com.beadapp.server.model.Blueprint
 import com.beadapp.server.model.BlueprintCell
+import com.beadapp.server.model.BlueprintCellId
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -12,6 +13,6 @@ interface BlueprintRepository : JpaRepository<Blueprint, UUID> {
     override fun findAll(pageable: Pageable): Page<Blueprint>
 }
 
-interface BlueprintCellRepository : JpaRepository<BlueprintCell, UUID> {
+interface BlueprintCellRepository : JpaRepository<BlueprintCell, BlueprintCellId> {
     fun findAllByBlueprintIdOrderByRowAscColAsc(blueprintId: UUID): List<BlueprintCell>
 }

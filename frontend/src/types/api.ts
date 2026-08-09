@@ -89,6 +89,16 @@ export interface BlueprintCellDto {
   code: string;
   status: CellStatus;
   color: ColorDto | null;
+  confidence: number | null;
+  correctedCode: string | null;
+  correctedAt: string | null;
+}
+
+export interface CropBoxDto {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface BlueprintDetail {
@@ -98,5 +108,19 @@ export interface BlueprintDetail {
   cols: number;
   validCodes: string[] | null;
   cells: BlueprintCellDto[];
+  cropBox: CropBoxDto | null;
   createdAt: string;
+}
+
+/** 低置信度校正：单格更新（code = null 恢复原识别码；BLANK 标记空白格） */
+export interface CellCorrectionUpdate {
+  row: number;
+  col: number;
+  code: string | null;
+}
+
+export interface CellCorrectionResponse {
+  cells: BlueprintCellDto[];
+  correctedCount: number;
+  revertedCount: number;
 }

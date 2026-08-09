@@ -19,6 +19,8 @@ interface HoverCell {
   row: number;
   col: number;
   code: string;
+  conf: number | null;
+  corrected: string | null;
   x: number;
   y: number;
 }
@@ -149,7 +151,7 @@ function drawBoard(
       const x = left + col * cellSize;
       const y = top + row * cellSize;
       const hex = normalizeHex(cell?.color?.hex);
-      const isBlank = cell?.status === 'BLANK' || cell?.code === 'BLANK';
+      const isBlank = cell?.status === 'BLANK' || (cell?.correctedCode ?? cell?.code) === 'BLANK';
 
       if (isBlank) {
         // BLANK is a recognized empty cell, not an unmapped color. Keep it
@@ -185,7 +187,7 @@ function drawBoard(
         context.restore();
       }
 
-      const code = isBlank ? '' : (cell?.code ?? '');
+      const code = isBlank ? '' : (cell?.correctedCode ?? cell?.code ?? '');
       if (code) {
         context.font = `700 ${fontSize}px ${fontFamily}`;
         context.textAlign = 'center';
@@ -202,6 +204,14 @@ function drawBoard(
         }
         context.fillStyle = textColor;
         context.fillText(code, x + cellSize / 2, y + cellSize / 2);
+      }
+      // 已修正标记：右上角绿点
+      if (cell?.correctedCode != null) {
+        const r = Math.max(1.2, cellSize * 0.09);
+        context.fillStyle = '#2f9e6e';
+        context.beginPath();
+        context.arc(x + cellSize - r, y + r, r, 0, Math.PI * 2);
+        context.fill();
       }
     }
   }
@@ -293,14 +303,22 @@ export default function BlueprintDetailPage() {
     }
     return map;
   }, [blueprint]);
-  // 最长编码：只算一次（hover tooltip 和 drawBoard 共用）
+  // 最长编码：只算一次（hover tooltip 和 drawBoard 共用）；用有效码（修正 ?? 识别）
   const longestCode = useMemo(() => {
     if (!blueprint) return '';
     let best = '';
     for (const cell of blueprint.cells) {
-      if (cell.status !== 'BLANK' && cell.code !== 'BLANK' && cell.code && cell.code.length > best.length) best = cell.code;
+      const eff = cell.correctedCode ?? cell.code;
+      if (eff !== 'BLANK' && eff && eff.length > best.length) best = eff;
     }
     return best;
+  }, [blueprint]);
+  // 待复核数（详情页角标；与校正页默认档位 90% 一致）
+  const reviewCount = useMemo(() => {
+    if (!blueprint) return 0;
+    return blueprint.cells.filter(
+      (c) => c.status === 'UNMAPPED' || (c.confidence != null && c.confidence < 0.9),
+    ).length;
   }, [blueprint]);
   // 拖动时直接改 DOM transform，不走 React state（省每帧重渲染 + GC）；松手时才同步回 state
   const applyTransform = useCallback((panX: number, panY: number, scale: number) => {
@@ -338,10 +356,13 @@ export default function BlueprintDetailPage() {
     const row = Math.floor((localY - AXIS_GUTTER) / cellSize);
     if (row < 0 || row >= blueprint.rows || col < 0 || col >= blueprint.cols) return null;
     const cell = cellsByPosition.get(`${row}:${col}`);
+    const effectiveCode = cell?.correctedCode ?? cell?.code;
     return {
       row,
       col,
-      code: cell?.status === 'BLANK' || cell?.code === 'BLANK' ? '空白' : (cell?.code ?? '—'),
+      code: cell?.status === 'BLANK' || effectiveCode === 'BLANK' ? '空白' : (effectiveCode ?? '—'),
+      conf: cell?.confidence ?? null,
+      corrected: cell?.correctedCode ?? null,
       x: clientX - rect.left + 14,
       y: clientY - rect.top + 14,
     };
@@ -512,11 +533,18 @@ export default function BlueprintDetailPage() {
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 700 }}>图纸详情</h1>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', marginTop: 3 }}>
-              {blueprint.rows} × {blueprint.cols} · {blueprint.cells.length.toLocaleString()} 格 · 创建于 {new Date(blueprint.createdAt).toLocaleString()} · 只读
+              {blueprint.rows} × {blueprint.cols} · {blueprint.cells.length.toLocaleString()} 格 · 创建于 {new Date(blueprint.createdAt).toLocaleString()} · 可校正
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => navigate(-1)} style={{ fontSize: 'var(--text-sm)', color: 'var(--color-accent)', padding: '6px 8px' }}>← 返回</button>
+            <button
+              type="button"
+              onClick={() => navigate(`/blueprints/${id}/correct`)}
+              style={{ ...controlStyle(), fontWeight: 600, color: '#fff', background: '#3D72D8', borderColor: '#3D72D8' }}
+            >
+              校正{reviewCount > 0 ? `（${reviewCount}）` : ''}
+            </button>
             <button type="button" onClick={() => zoomBy(0.8)} style={controlStyle()} aria-label="缩小">−</button>
             <button type="button" onClick={() => { const next = { scale: 1, panX: 0, panY: 0 }; viewRef.current = next; setView(next); }} style={controlStyle()} aria-label="100%">100%</button>
             <span style={{ minWidth: 48, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>{Math.round(view.scale * 100)}%</span>
@@ -561,8 +589,8 @@ export default function BlueprintDetailPage() {
               <div
                 style={{
                   position: 'absolute',
-                  left: Math.min(hover.x, Math.max(8, viewportSize.width - 180)),
-                  top: Math.min(hover.y, Math.max(8, viewportSize.height - 44)),
+                  left: Math.min(hover.x, Math.max(8, viewportSize.width - 240)),
+                  top: Math.min(hover.y, Math.max(8, viewportSize.height - 64)),
                   padding: '7px 10px',
                   borderRadius: 7,
                   background: 'rgba(38, 33, 29, 0.92)',
@@ -572,9 +600,20 @@ export default function BlueprintDetailPage() {
                   pointerEvents: 'none',
                   zIndex: 5,
                   whiteSpace: 'nowrap',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 2,
                 }}
               >
-                行 {hover.row + 1} · 列 {hover.col + 1} · {hover.code}
+                <span>
+                  行 {hover.row + 1} · 列 {hover.col + 1} · {hover.code}
+                  {hover.conf != null && ` · ${Math.round(hover.conf * 100)}%`}
+                </span>
+                {hover.corrected != null && (
+                  <span style={{ opacity: 0.85 }}>
+                    已修正：原 {cellsByPosition.get(`${hover.row}:${hover.col}`)?.code} → {hover.corrected}
+                  </span>
+                )}
               </div>
             )}
 
