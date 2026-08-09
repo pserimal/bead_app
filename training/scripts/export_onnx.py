@@ -97,7 +97,7 @@ def export_onnx(checkpoint: Path, out_dir: Path, opset: int = 17, verify: bool =
         )
 
     if verify:
-        verify_onnx(model_path, example, torch_output)
+        verify_onnx(model_path, model, example)
 
     return model_path
 
@@ -106,16 +106,23 @@ def _sha256_bytes(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
-def verify_onnx(model_path: Path, example: torch.Tensor, expected: np.ndarray) -> None:
+def verify_onnx(model_path: Path, model: torch.nn.Module, example: torch.Tensor) -> None:
     try:
         import onnxruntime as ort
     except ImportError as exc:
         raise RuntimeError("verification requires onnxruntime; install image_service requirements") from exc
 
     session = ort.InferenceSession(str(model_path), providers=["CPUExecutionProvider"])
-    actual = session.run(["logits"], {"images": example.numpy()})[0]
-    np.testing.assert_allclose(actual, expected, rtol=1e-4, atol=1e-5)
-    print(f"[verify] PyTorch/ONNX output parity passed: shape={actual.shape}")
+    rng = np.random.default_rng(20260809)
+    for batch_size in (1, 2, 16):
+        inputs = example if batch_size == 1 else torch.from_numpy(
+            rng.random((batch_size, *example.shape[1:]), dtype=np.float32)
+        )
+        with torch.no_grad():
+            expected = model(inputs).cpu().numpy()
+        actual = session.run(["logits"], {"images": inputs.numpy()})[0]
+        np.testing.assert_allclose(actual, expected, rtol=1e-4, atol=1e-5)
+        print(f"[verify] batch={batch_size} parity passed: shape={actual.shape}")
 
 
 def main() -> None:

@@ -30,20 +30,6 @@ training/**/__pycache__/
 # Non-image artifacts (label tool, manifest JSON, .gitkeep) are tracked.
 # Each developer trains their own model locally — see training/README.md.
 training/samples/
-training/samples/
-training/samples/
-training/samples/
-training/samples/
-training/samples/
-training/samples/
-training/samples/
-training/samples/
-training/samples/
-training/samples/
-training/samples/
-training/samples/
-training/samples/
-training/samples/
 # Trained model checkpoints
 training/checkpoints/*.pt
 training/data/
