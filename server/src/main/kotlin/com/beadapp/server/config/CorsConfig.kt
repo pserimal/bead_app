@@ -20,7 +20,7 @@ class CorsConfig {
     ): CorsFilter {
         val config = CorsConfiguration()
         config.allowedOrigins = allowedOrigins.split(",").map { it.trim() }
-        config.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "OPTIONS")
+        config.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         config.allowedHeaders = listOf("*")
         config.maxAge = 3600L
         val source = UrlBasedCorsConfigurationSource()

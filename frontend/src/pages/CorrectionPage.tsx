@@ -339,9 +339,15 @@ export default function CorrectionPage() {
     return map;
   }, [allColors]);
 
+  // 校验/色板用的合法编码：任务 validCodes 优先；为空（老任务）回退到全颜色库
+  const validCodeList = useMemo(() => {
+    const codes = (blueprint?.validCodes?.length ? blueprint.validCodes : allColors?.map((c) => c.code)) ?? [];
+    return codes;
+  }, [blueprint, allColors]);
+
   // 色板：按色相排序（找"这个颜色的豆"更快）
   const swatches = useMemo(() => {
-    const list = (blueprint?.validCodes ?? [])
+    const list = validCodeList
       .map((code) => colorsByCode.get(code))
       .filter((c): c is ColorDto => c != null);
     const hue = (hex: string) => {
@@ -360,7 +366,7 @@ export default function CorrectionPage() {
       return h * 60;
     };
     return [...list].sort((a, b) => hue(a.hex) - hue(b.hex));
-  }, [blueprint, colorsByCode]);
+  }, [validCodeList, colorsByCode]);
 
   const reviewCells = useMemo(() => {
     if (!blueprint) return [];
@@ -638,7 +644,7 @@ export default function CorrectionPage() {
           editor={editor}
           cellsByPos={cellsByPos}
           swatches={swatches}
-          validCodes={blueprint.validCodes ?? []}
+          validCodes={validCodeList}
           onClose={() => setEditor(null)}
           onConfirmSet={confirmSet}
           onConfirmRevert={confirmRevert}

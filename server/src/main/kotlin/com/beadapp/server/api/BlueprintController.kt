@@ -77,6 +77,8 @@ class BlueprintController(
             throw ApiException(HttpStatus.BAD_REQUEST, "EMPTY_UPDATES", "updates 不能为空")
         }
         val valid = (bp.validCodes ?: emptyList()).toSet()
+        // 任务未指定 validCodes（老任务/未传 codes 参数）：回退到全颜色库，保证仍可修正
+        val validCodes = if (valid.isEmpty()) colorRepo.findAll().map { it.code }.toSet() else valid
         var correctedCount = 0
         var revertedCount = 0
         val updated = req.updates.map { u ->
@@ -91,7 +93,7 @@ class BlueprintController(
                 if (newCode.length > 8) {
                     throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_CODE", "编码过长: $newCode")
                 }
-                if (newCode != "BLANK" && newCode !in valid) {
+                if (newCode != "BLANK" && newCode !in validCodes) {
                     throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_CODE", "编码不在颜色库: $newCode")
                 }
             }
