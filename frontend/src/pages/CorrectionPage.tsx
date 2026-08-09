@@ -13,7 +13,6 @@ import type { BlueprintCellDto, CellCorrectionUpdate, ColorDto, CropBoxDto } fro
 // 置信度档位：标记 conf < 档位的 MAPPED/BLANK 格（UNMAPPED 无条件进列表）
 const THRESHOLDS = [0.9, 0.8, 0.7] as const;
 const DEFAULT_THRESHOLD: (typeof THRESHOLDS)[number] = 0.9;
-const PAGE_SIZE = 100;
 const THUMB = 56;
 
 /** 与 ocr_core.inference 相同的格子裁剪数学（含 10% 内缩跳过网格线） */
@@ -55,19 +54,41 @@ function CellThumb({
   onEdit: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawnRef = useRef(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !image || !cropBox) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    const rect = cellCropRect(cropBox, rows, cols, cell.row, cell.col);
-    ctx.clearRect(0, 0, THUMB, THUMB);
-    try {
-      ctx.drawImage(image, rect.sx, rect.sy, rect.sw, rect.sh, 0, 0, THUMB, THUMB);
-    } catch {
-      // 裁剪越界等罕见情况：留空即可
+    const draw = () => {
+      if (drawnRef.current) return;
+      drawnRef.current = true;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      const rect = cellCropRect(cropBox, rows, cols, cell.row, cell.col);
+      try {
+        ctx.drawImage(image, rect.sx, rect.sy, rect.sw, rect.sh, 0, 0, THUMB, THUMB);
+      } catch {
+        // 裁剪越界等罕见情况：留空即可
+      }
+    };
+    // 懒裁剪：进入视口才画（大组一次渲染不卡）；jsdom 无 IntersectionObserver 时直接画
+    if (typeof IntersectionObserver === 'undefined') {
+      draw();
+      return;
     }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            draw();
+            observer.unobserve(entry.target);
+          }
+        }
+      },
+      { rootMargin: '300px' },
+    );
+    observer.observe(canvas);
+    return () => observer.disconnect();
   }, [image, cropBox, rows, cols, cell]);
 
   const corrected = cell.correctedCode != null;
@@ -296,9 +317,8 @@ export default function CorrectionPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editor, setEditor] = useState<{ keys: string[] } | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
-  // 两栏布局：左栏选中编码 + 右栏该编码的格子翻页
+  // 两栏布局：左栏选中编码 + 右栏该编码的全部格子（不分页，缩略图懒裁剪）
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
-  const [codePage, setCodePage] = useState(0);
 
   // 原图加载一次（校正页所有缩略图共用）
   useEffect(() => {
@@ -406,19 +426,13 @@ export default function CorrectionPage() {
   const activeCode = selectedCode != null && codeList.some((l) => l.code === selectedCode)
     ? selectedCode
     : (codeList[0]?.code ?? null);
-  // 右栏：当前编码（有效码）的全部格子，分页
+  // 右栏：当前编码（有效码）的全部格子，按 row,col 排序
   const codeCells = useMemo(() => {
     if (activeCode == null) return [];
     return visibleCells
       .filter((c) => (c.correctedCode ?? c.code) === activeCode)
       .sort((a, b) => a.row - b.row || a.col - b.col);
   }, [visibleCells, activeCode]);
-  const codeTotalPages = Math.max(1, Math.ceil(codeCells.length / PAGE_SIZE));
-  const safeCodePage = Math.min(codePage, codeTotalPages - 1);
-  const pageCells = useMemo(() => {
-    const start = safeCodePage * PAGE_SIZE;
-    return codeCells.slice(start, start + PAGE_SIZE);
-  }, [codeCells, safeCodePage]);
 
   const selectedKeys = useMemo(() => [...selected], [selected]);
   const selectedBreakdown = useBreakdown(selectedKeys, cellsByPos);
@@ -616,7 +630,7 @@ export default function CorrectionPage() {
                     <button
                       key={code}
                       type="button"
-                      onClick={() => { setSelectedCode(code); setCodePage(0); }}
+                      onClick={() => { setSelectedCode(code); }}
                       className="w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded-md mb-0.5 text-left"
                       style={{
                         background: selected ? 'var(--color-accent)' : 'transparent',
@@ -650,16 +664,9 @@ export default function CorrectionPage() {
                   >
                     {codeCells.length > 0 && codeCells.every((c) => selected.has(`${c.row}:${c.col}`)) ? '取消全选' : '全选'}
                   </button>
-                  {codeTotalPages > 1 && (
-                    <span className="ml-auto flex items-center gap-1 text-xs" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
-                      {safeCodePage + 1}/{codeTotalPages}
-                      <button type="button" disabled={safeCodePage === 0} onClick={() => setCodePage((p) => Math.max(0, p - 1))} style={smallBtn()}>‹</button>
-                      <button type="button" disabled={safeCodePage >= codeTotalPages - 1} onClick={() => setCodePage((p) => Math.min(codeTotalPages - 1, p + 1))} style={smallBtn()}>›</button>
-                    </span>
-                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {pageCells.map((cell) => (
+                  {codeCells.map((cell) => (
                     <CellThumb
                       key={`${cell.row}:${cell.col}`}
                       cell={cell}
