@@ -1,29 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BlueprintDetail } from '../types/api';
-import { AXIS_GUTTER, clampZoom, drawBoard } from '../lib/boardCanvas';
-import type { HoverCell, ViewState } from '../lib/boardCanvas';
-
-interface PointerDrag {
-  pointerId: number;
-  startX: number;
-  startY: number;
-  startPanX: number;
-  startPanY: number;
-}
-
-interface PinchState {
-  startDist: number;
-  startScale: number;
-}
-
-const TAP_SLOP = 4;
+import { AXIS_GUTTER } from '../lib/boardCanvas';
+import type { HoverCell } from '../lib/boardCanvas';
+import { useBoardViewer } from '../hooks/useBoardViewer';
 
 /**
  * 沉浸拼豆模式：页面内全屏（fixed inset-0 覆盖整个视口，隐藏导航）。
+ * 手势/重绘全部来自 useBoardViewer（详情页共用）；本组件只负责：
+ * 点击锁定状态机 + 信息条 + 退出。
  * - 点格子 → 直接锁定该编码（有效码），信息条显示坐标/编码/置信度
- * - 锁定后同编码格高亮（accent 描边）、其余格子 45% 变淡；点其他格子自动切换
- * - "解锁"按钮 / 点空白 恢复常态；Esc 或右上角按钮退出
- * - 手势复用详情页：单指拖动 / 双指捏合 / 双击 / 滚轮缩放
+ * - 锁定后同编码格高亮（accent 细框）、其余格子 35% 透明；点其他格子自动切换
+ * - "解锁"按钮 恢复常态；Esc 或右上角按钮退出
  */
 export default function ImmersionBoard({
   blueprint,
@@ -32,23 +19,8 @@ export default function ImmersionBoard({
   blueprint: BlueprintDetail;
   onClose: () => void;
 }) {
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const viewRef = useRef<ViewState>({ scale: 1, panX: 0, panY: 0 });
-  const dragRef = useRef<PointerDrag | null>(null);
-  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
-  const pinchRef = useRef<PinchState | null>(null);
-  const drawnRef = useRef<{ scale: number; highlight: string | null }>({ scale: 0, highlight: null });
-  const redrawTimerRef = useRef<number | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
-  const [view, setView] = useState<ViewState>({ scale: 1, panX: 0, panY: 0 });
   const [lockedCode, setLockedCode] = useState<string | null>(null);
   const [info, setInfo] = useState<HoverCell | null>(null);
-  // 重绘 effect 读最新锁定值（ref 避免闭包过期）
-  const lockedCodeRef = useRef<string | null>(null);
-  lockedCodeRef.current = lockedCode;
 
   const cellsByPosition = useMemo(() => {
     const map = new Map<string, BlueprintDetail['cells'][number]>();
@@ -66,8 +38,6 @@ export default function ImmersionBoard({
   }, [blueprint]);
 
   const cellSize = Math.max(12, Math.min(48, 1440 / Math.max(blueprint.cols, blueprint.rows)));
-  const boardWidth = blueprint.cols * cellSize + AXIS_GUTTER * 2;
-  const boardHeight = blueprint.rows * cellSize + AXIS_GUTTER * 2;
 
   // 锁定编码的格子数（信息条展示）
   const lockedCount = useMemo(() => {
@@ -79,54 +49,21 @@ export default function ImmersionBoard({
     return n;
   }, [blueprint, lockedCode]);
 
-  const applyTransform = useCallback((panX: number, panY: number, scale: number) => {
-    const el = wrapperRef.current;
-    if (el) el.style.transform = `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${scale})`;
-  }, []);
-
-  const fitView = useCallback(() => {
-    const rect = viewportRef.current?.getBoundingClientRect();
-    const width = rect?.width ?? window.innerWidth;
-    const height = rect?.height ?? window.innerHeight;
-    if (!width || !height) return;
-    const scale = clampZoom(Math.min(
-      (width - 24) / boardWidth,
-      (height - 24) / boardHeight,
-      1.5,
-    ));
-    const next = { scale, panX: 0, panY: 0 };
-    viewRef.current = next;
-    setView(next);
-  }, [boardHeight, boardWidth]);
-
-  const cellAt = useCallback((clientX: number, clientY: number): HoverCell | null => {
-    if (!viewportRef.current) return null;
-    const rect = viewportRef.current.getBoundingClientRect();
-    const current = viewRef.current;
-    const localX = (clientX - rect.left - rect.width / 2 - current.panX) / current.scale + boardWidth / 2;
-    const localY = (clientY - rect.top - rect.height / 2 - current.panY) / current.scale + boardHeight / 2;
-    const col = Math.floor((localX - AXIS_GUTTER) / cellSize);
-    const row = Math.floor((localY - AXIS_GUTTER) / cellSize);
-    if (row < 0 || row >= blueprint.rows || col < 0 || col >= blueprint.cols) return null;
-    const cell = cellsByPosition.get(`${row}:${col}`);
-    const effective = cell?.correctedCode ?? cell?.code ?? '—';
-    return {
-      row,
-      col,
-      code: cell?.status === 'BLANK' || effective === 'BLANK' ? '空白' : effective,
-      conf: cell?.confidence ?? null,
-      corrected: cell?.correctedCode ?? null,
-      effective,
-      x: clientX - rect.left,
-      y: clientY - rect.top,
-    };
-  }, [blueprint.rows, blueprint.cols, boardHeight, boardWidth, cellSize, cellsByPosition]);
-
   // 点击格子：显示信息 + 直接锁定其编码（同码重复点击不变化）
   const handleTap = useCallback((cell: HoverCell | null) => {
     setInfo(cell);
     if (cell) setLockedCode(cell.effective);
   }, []);
+
+  const viewer = useBoardViewer({
+    rows: blueprint.rows,
+    cols: blueprint.cols,
+    cellsByPosition,
+    longestCode,
+    cellSize,
+    highlightCode: lockedCode,
+    onCellTap: handleTap,
+  });
 
   // Esc 退出
   useEffect(() => {
@@ -137,206 +74,7 @@ export default function ImmersionBoard({
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // 进入即适应窗口
-  useEffect(() => {
-    fitView();
-  }, [fitView]);
-
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    const updateSize = () => setViewportSize({ width: viewport.clientWidth, height: viewport.clientHeight });
-    updateSize();
-    const observer = new ResizeObserver(updateSize);
-    observer.observe(viewport);
-    return () => observer.disconnect();
-  }, []);
-
-  // 重绘：缩放或锁定变化时（锁定切换/首次强制立即；其余一律防抖——连续缩放期间只做 transform 拉伸，停止后清晰化，移动端不卡顿）
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    if (redrawTimerRef.current !== null) {
-      window.clearTimeout(redrawTimerRef.current);
-      redrawTimerRef.current = null;
-    }
-    const highlight = lockedCode;
-    const force = drawnRef.current.highlight !== highlight || drawnRef.current.scale === 0;
-    const scale = view.scale;
-    if (!force && scale <= drawnRef.current.scale) return;
-    const draw = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const target = viewRef.current.scale;
-      const targetHighlight = lockedCodeRef.current;
-      if (drawnRef.current.highlight === targetHighlight && target <= drawnRef.current.scale) return;
-      drawBoard(canvas, blueprint.rows, blueprint.cols, cellSize, target, cellsByPosition, longestCode, targetHighlight);
-      drawnRef.current = { scale: target, highlight: targetHighlight };
-    };
-    if (force) {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        draw();
-      });
-    } else {
-      redrawTimerRef.current = window.setTimeout(() => {
-        redrawTimerRef.current = null;
-        draw();
-      }, 150);
-    }
-  }, [blueprint, cellSize, view.scale, lockedCode, cellsByPosition, longestCode]);
-
-  // 手势 + 点击（与详情页同构：单指拖动 / 双指捏合 / 双击 / 滚轮）
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (event.pointerType === 'mouse' && event.button !== 0) return;
-      const current = viewRef.current;
-      pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-      if (pointersRef.current.size === 1) {
-        dragRef.current = {
-          pointerId: event.pointerId,
-          startX: event.clientX,
-          startY: event.clientY,
-          startPanX: current.panX,
-          startPanY: current.panY,
-        };
-      } else if (pointersRef.current.size === 2) {
-        dragRef.current = null;
-        const [a, b] = [...pointersRef.current.values()];
-        pinchRef.current = {
-          startDist: Math.hypot(b.x - a.x, b.y - a.y),
-          startScale: current.scale,
-        };
-      }
-      viewport.style.cursor = 'grabbing';
-      try {
-        viewport.setPointerCapture(event.pointerId);
-      } catch {
-        // 合成事件/快速松开，忽略
-      }
-      event.preventDefault();
-    };
-
-    const onPointerMove = (event: PointerEvent) => {
-      if (pinchRef.current && pointersRef.current.has(event.pointerId)) {
-        pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-        const [a, b] = [...pointersRef.current.values()];
-        const dist = Math.hypot(b.x - a.x, b.y - a.y);
-        if (dist > 0) {
-          const rect = viewport.getBoundingClientRect();
-          const current = viewRef.current;
-          const scale = clampZoom((pinchRef.current.startScale * dist) / pinchRef.current.startDist);
-          const ratio = scale / current.scale;
-          const midX = (a.x + b.x) / 2 - rect.left - rect.width / 2;
-          const midY = (a.y + b.y) / 2 - rect.top - rect.height / 2;
-          const next = {
-            scale,
-            panX: midX - (midX - current.panX) * ratio,
-            panY: midY - (midY - current.panY) * ratio,
-          };
-          viewRef.current = next;
-          applyTransform(next.panX, next.panY, next.scale);
-        }
-        event.preventDefault();
-        return;
-      }
-      const drag = dragRef.current;
-      if (drag && drag.pointerId === event.pointerId) {
-        const moved = Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY);
-        if (moved < TAP_SLOP) return;
-        const next = {
-          scale: viewRef.current.scale,
-          panX: drag.startPanX + event.clientX - drag.startX,
-          panY: drag.startPanY + event.clientY - drag.startY,
-        };
-        viewRef.current = next;
-        applyTransform(next.panX, next.panY, next.scale);
-        setInfo(null);
-        event.preventDefault();
-      }
-    };
-
-    const finishPointer = (event: PointerEvent) => {
-      pointersRef.current.delete(event.pointerId);
-      if (pinchRef.current && pointersRef.current.size < 2) pinchRef.current = null;
-      if (pointersRef.current.size === 1) {
-        const current = viewRef.current;
-        const [remaining] = [...pointersRef.current.entries()];
-        dragRef.current = {
-          pointerId: remaining[0],
-          startX: remaining[1].x,
-          startY: remaining[1].y,
-          startPanX: current.panX,
-          startPanY: current.panY,
-        };
-        return;
-      }
-      if (pointersRef.current.size > 1) return;
-      // 全部抬起：判断是否为"点击"（无拖动）→ 锁定
-      const drag = dragRef.current;
-      dragRef.current = null;
-      viewport.style.cursor = 'grab';
-      if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
-      const moved = drag ? Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) : 99;
-      if (moved < TAP_SLOP) {
-        handleTap(cellAt(event.clientX, event.clientY));
-      }
-      setView(viewRef.current);
-    };
-
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      const rect = viewport.getBoundingClientRect();
-      const current = viewRef.current;
-      const scale = clampZoom(current.scale * (event.deltaY > 0 ? 0.88 : 1.12));
-      if (scale === current.scale) return;
-      const anchorX = event.clientX - rect.left - rect.width / 2;
-      const anchorY = event.clientY - rect.top - rect.height / 2;
-      const ratio = scale / current.scale;
-      const next = {
-        scale,
-        panX: anchorX - (anchorX - current.panX) * ratio,
-        panY: anchorY - (anchorY - current.panY) * ratio,
-      };
-      viewRef.current = next;
-      setView(next);
-    };
-
-    const onDoubleClick = (event: MouseEvent) => {
-      const current = viewRef.current;
-      const rect = viewport.getBoundingClientRect();
-      const anchorX = event.clientX - rect.left - rect.width / 2;
-      const anchorY = event.clientY - rect.top - rect.height / 2;
-      const scale = clampZoom(current.scale * (current.scale > 1 ? 1 / 1.6 : 1.6));
-      if (scale === current.scale) return;
-      const ratio = scale / current.scale;
-      const next = {
-        scale,
-        panX: anchorX - (anchorX - current.panX) * ratio,
-        panY: anchorY - (anchorY - current.panY) * ratio,
-      };
-      viewRef.current = next;
-      setView(next);
-    };
-
-    viewport.addEventListener('pointerdown', onPointerDown);
-    viewport.addEventListener('pointermove', onPointerMove);
-    viewport.addEventListener('pointerup', finishPointer);
-    viewport.addEventListener('pointercancel', finishPointer);
-    viewport.addEventListener('wheel', onWheel, { passive: false });
-    viewport.addEventListener('dblclick', onDoubleClick);
-    return () => {
-      viewport.removeEventListener('pointerdown', onPointerDown);
-      viewport.removeEventListener('pointermove', onPointerMove);
-      viewport.removeEventListener('pointerup', finishPointer);
-      viewport.removeEventListener('pointercancel', finishPointer);
-      viewport.removeEventListener('wheel', onWheel);
-      viewport.removeEventListener('dblclick', onDoubleClick);
-    };
-  }, [applyTransform, cellAt, handleTap]);
+  const { viewportRef, wrapperRef, canvasRef, view } = viewer;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: '#17130f' }}>
@@ -353,8 +91,8 @@ export default function ImmersionBoard({
             position: 'absolute',
             left: '50%',
             top: '50%',
-            width: boardWidth,
-            height: boardHeight,
+            width: viewer.boardWidth,
+            height: viewer.boardHeight,
             transform: `translate(calc(-50% + ${view.panX}px), calc(-50% + ${view.panY}px)) scale(${view.scale})`,
             transformOrigin: 'center center',
           }}

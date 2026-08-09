@@ -32,40 +32,21 @@ export function normalizeHex(hex: string | null | undefined): string | null {
   return /^[0-9a-f]{6}$/i.test(value) ? `#${value}` : null;
 }
 
-let cachedMonoFamily: string | null = null;
-
-/**
- * ctx.font 不支持 CSS 变量：赋含 var(--font-mono) 的字体串会被静默忽略，
- * 画布回退到默认 10px sans-serif，导致大图纸文字/刻度大于单元格。
- * 这里把 var() 解析成真实字体族（带纯 monospace 兜底）再交给画布。
- */
 export function monoFontFamily(): string {
-  if (cachedMonoFamily) return cachedMonoFamily;
   if (typeof document !== 'undefined') {
     const resolved = getComputedStyle(document.body).getPropertyValue('--font-mono').trim();
-    if (resolved) {
-      cachedMonoFamily = resolved;
-      return resolved;
-    }
+    if (resolved) return resolved;
   }
-  cachedMonoFamily = "ui-monospace, 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace";
-  return cachedMonoFamily;
+  return "ui-monospace, 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace";
 }
-
-let cachedAccent: string | null = null;
 
 /** canvas 不支持 CSS 变量：把 --color-accent 解析成字面量（兜底陶土色） */
 export function accentColor(): string {
-  if (cachedAccent) return cachedAccent;
   if (typeof document !== 'undefined') {
     const resolved = getComputedStyle(document.body).getPropertyValue('--color-accent').trim();
-    if (resolved) {
-      cachedAccent = resolved;
-      return resolved;
-    }
+    if (resolved) return resolved;
   }
-  cachedAccent = '#c75b39';
-  return cachedAccent;
+  return '#c75b39';
 }
 
 export function readableTextColor(hex: string | null): string {

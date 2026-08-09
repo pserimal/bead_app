@@ -1,32 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useBlueprint } from '../hooks/useBlueprints';
 import type { BlueprintCellDto } from '../types/api';
 import { staggerContainer, staggerItem } from '../lib/animations';
+import type { HoverCell } from '../lib/boardCanvas';
+import { useBoardViewer } from '../hooks/useBoardViewer';
 import ImmersionBoard from '../components/ImmersionBoard';
-import { AXIS_GUTTER, clampZoom, drawBoard } from '../lib/boardCanvas';
-import type { HoverCell, ViewState } from '../lib/boardCanvas';
-
-interface PointerDrag {
-  pointerId: number;
-  startX: number;
-  startY: number;
-  startPanX: number;
-  startPanY: number;
-}
-
-interface PinchState {
-  startDist: number;
-  startScale: number;
-}
-
-const TAP_SLOP = 4;
-
-interface PinchState {
-  startDist: number;
-  startScale: number;
-}
 
 function controlStyle(): React.CSSProperties {
   return {
@@ -47,20 +27,6 @@ export default function BlueprintDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: blueprint, isLoading, error } = useBlueprint(id ?? null);
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const viewRef = useRef<ViewState>({ scale: 1, panX: 0, panY: 0 });
-  const dragRef = useRef<PointerDrag | null>(null);
-  // 多指触摸：所有活跃指针位置 + 捏合基准（触屏双指缩放）
-  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
-  const pinchRef = useRef<PinchState | null>(null);
-  // 已渲染位图的蓝图 id + 分辨率倍数（用于判断何时需要重绘）
-  const drawnRef = useRef<{ blueprintId: string | null; scale: number }>({ blueprintId: null, scale: 0 });
-  const redrawTimerRef = useRef<number | null>(null);
-  const rafRef = useRef<number | null>(null);
-  const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
-  const [view, setView] = useState<ViewState>({ scale: 1, panX: 0, panY: 0 });
   const [hover, setHover] = useState<HoverCell | null>(null);
   const [immersive, setImmersive] = useState(false);
   // 触屏设备（平板/手机）：提示文案与交互方式不同（双指捏合、无滚轮）
@@ -99,278 +65,25 @@ export default function BlueprintDetailPage() {
       (c) => c.status === 'UNMAPPED' || (c.confidence != null && c.confidence < 0.9),
     ).length;
   }, [blueprint]);
-  // 拖动时直接改 DOM transform，不走 React state（省每帧重渲染 + GC）；松手时才同步回 state
-  const applyTransform = useCallback((panX: number, panY: number, scale: number) => {
-    const el = wrapperRef.current;
-    if (el) el.style.transform = `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${scale})`;
-  }, []);
+
   const cellSize = blueprint ? Math.max(12, Math.min(48, 1440 / Math.max(blueprint.cols, blueprint.rows))) : 48;
-  const boardWidth = (blueprint?.cols ?? 0) * cellSize + AXIS_GUTTER * 2;
-  const boardHeight = (blueprint?.rows ?? 0) * cellSize + AXIS_GUTTER * 2;
 
-  const fitView = useCallback(() => {
-    if (!blueprint) return;
-    // 直接读 DOM，绕过 state 可能为 0 的时机问题
-    const rect = viewportRef.current?.getBoundingClientRect();
-    const width = rect?.width ?? viewportSize.width;
-    const height = rect?.height ?? viewportSize.height;
-    if (!width || !height) return;
-    const scale = clampZoom(Math.min(
-      (width - 24) / boardWidth,
-      (height - 24) / boardHeight,
-      1.5,
-    ));
-    const next = { scale, panX: 0, panY: 0 };
-    viewRef.current = next;
-    setView(next);
-  }, [boardHeight, boardWidth, blueprint, viewportSize.height, viewportSize.width]);
-
-  const cellAt = useCallback((clientX: number, clientY: number): HoverCell | null => {
-    if (!blueprint || !viewportRef.current) return null;
-    const rect = viewportRef.current.getBoundingClientRect();
-    const current = viewRef.current;
-    const localX = (clientX - rect.left - rect.width / 2 - current.panX) / current.scale + boardWidth / 2;
-    const localY = (clientY - rect.top - rect.height / 2 - current.panY) / current.scale + boardHeight / 2;
-    const col = Math.floor((localX - AXIS_GUTTER) / cellSize);
-    const row = Math.floor((localY - AXIS_GUTTER) / cellSize);
-    if (row < 0 || row >= blueprint.rows || col < 0 || col >= blueprint.cols) return null;
-    const cell = cellsByPosition.get(`${row}:${col}`);
-    const effectiveCode = cell?.correctedCode ?? cell?.code;
-    return {
-      row,
-      col,
-      code: cell?.status === 'BLANK' || effectiveCode === 'BLANK' ? '空白' : (effectiveCode ?? '—'),
-      conf: cell?.confidence ?? null,
-      corrected: cell?.correctedCode ?? null,
-      x: clientX - rect.left + 14,
-      y: clientY - rect.top + 14,
-    };
-  }, [blueprint, boardHeight, boardWidth, cellSize, cellsByPosition]);
-
-  const zoomBy = useCallback((factor: number) => {
-    setView((previous) => {
-      const scale = clampZoom(previous.scale * factor);
-      const ratio = scale / previous.scale;
-      const next = { scale, panX: previous.panX * ratio, panY: previous.panY * ratio };
-      viewRef.current = next;
-      return next;
-    });
-  }, []);
-
-  /** 围绕屏幕坐标锚点缩放（双击点 / 捏合中点 / 滚轮光标） */
-  const zoomAt = useCallback((anchorX: number, anchorY: number, factor: number) => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    const rect = viewport.getBoundingClientRect();
-    const current = viewRef.current;
-    const scale = clampZoom(current.scale * factor);
-    if (scale === current.scale) return;
-    const anchorLocalX = anchorX - rect.left - rect.width / 2;
-    const anchorLocalY = anchorY - rect.top - rect.height / 2;
-    const ratio = scale / current.scale;
-    const next = {
-      scale,
-      panX: anchorLocalX - (anchorLocalX - current.panX) * ratio,
-      panY: anchorLocalY - (anchorLocalY - current.panY) * ratio,
-    };
-    viewRef.current = next;
-    setView(next);
-  }, []);
-
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-    const updateSize = () => setViewportSize({ width: viewport.clientWidth, height: viewport.clientHeight });
-    updateSize();
-    const observer = new ResizeObserver(updateSize);
-    observer.observe(viewport);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    fitView();
-  }, [fitView]);
-
-  useEffect(() => {
-    if (!blueprint || !canvasRef.current) return;
-    // 位图分辨率随缩放提升，保证任意缩放级别都清晰：
-    // - 新蓝图/小幅放大（位图 ≤ 16M px，≈2×）：rAF 立即重绘，逐级清晰；
-    // - 大幅放大：180ms 防抖合并成一次重绘（滚轮/连点不卡顿，停下即清晰）；
-    // - 缩小到已渲染分辨率以下：不重绘（CSS 降采样依然清晰）。
-    if (redrawTimerRef.current !== null) {
-      window.clearTimeout(redrawTimerRef.current);
-      redrawTimerRef.current = null;
-    }
-    const force = drawnRef.current.blueprintId !== blueprint.id;
-    const scale = view.scale;
-    if (!force && scale <= drawnRef.current.scale) return;
-    const draw = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const target = viewRef.current.scale;
-      if (drawnRef.current.blueprintId === blueprint.id && target <= drawnRef.current.scale) return;
-      drawBoard(canvas, blueprint.rows, blueprint.cols, cellSize, target, cellsByPosition, longestCode);
-      drawnRef.current = { blueprintId: blueprint.id, scale: target };
-    };
-    // 首次/换蓝图：rAF 立即；缩放：一律防抖（连续缩放期间只做 transform 拉伸，停止后清晰化）
-    if (force) {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = null;
-        draw();
-      });
-    } else {
-      redrawTimerRef.current = window.setTimeout(() => {
-        redrawTimerRef.current = null;
-        draw();
-      }, 150);
-    }
-  }, [blueprint, cellSize, view.scale, cellsByPosition, longestCode]);
-
-  useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (event.pointerType === 'mouse' && event.button !== 0) return;
-      const current = viewRef.current;
-      pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-      if (pointersRef.current.size === 1) {
-        // 单指：开始拖动
-        dragRef.current = {
-          pointerId: event.pointerId,
-          startX: event.clientX,
-          startY: event.clientY,
-          startPanX: current.panX,
-          startPanY: current.panY,
-        };
-      } else if (pointersRef.current.size === 2) {
-        // 第二指落下：进入双指捏合（取消拖动）
-        dragRef.current = null;
-        const [a, b] = [...pointersRef.current.values()];
-        pinchRef.current = {
-          startDist: Math.hypot(b.x - a.x, b.y - a.y),
-          startScale: current.scale,
-        };
-      }
-      viewport.style.cursor = 'grabbing';
-      try {
-        viewport.setPointerCapture(event.pointerId);
-      } catch {
-        // 指针可能已释放（合成事件/快速松开），忽略
-      }
-      event.preventDefault();
-    };
-
-    const onPointerMove = (event: PointerEvent) => {
-      // 双指捏合缩放（围绕两指中点，触屏核心手势）
-      if (pinchRef.current && pointersRef.current.has(event.pointerId)) {
-        pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-        const [a, b] = [...pointersRef.current.values()];
-        const dist = Math.hypot(b.x - a.x, b.y - a.y);
-        if (dist > 0) {
-          const rect = viewport.getBoundingClientRect();
-          const current = viewRef.current;
-          const scale = clampZoom((pinchRef.current.startScale * dist) / pinchRef.current.startDist);
-          const ratio = scale / current.scale;
-          const midX = (a.x + b.x) / 2 - rect.left - rect.width / 2;
-          const midY = (a.y + b.y) / 2 - rect.top - rect.height / 2;
-          const next = {
-            scale,
-            panX: midX - (midX - current.panX) * ratio,
-            panY: midY - (midY - current.panY) * ratio,
-          };
-          viewRef.current = next;
-          applyTransform(next.panX, next.panY, next.scale);
-          setHover(null);
-        }
-        event.preventDefault();
-        return;
-      }
-      const drag = dragRef.current;
-      // 4px 移动阈值：双击/轻点不产生微小漂移
-      if (drag && drag.pointerId === event.pointerId) {
-        const moved = Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY);
-        if (moved < 4) return;
-        const next = {
-          scale: viewRef.current.scale,
-          panX: drag.startPanX + event.clientX - drag.startX,
-          panY: drag.startPanY + event.clientY - drag.startY,
-        };
-        viewRef.current = next;
-        // 拖动直接改 DOM transform，不走 React state（省每帧重渲染 + GC）
-        applyTransform(next.panX, next.panY, next.scale);
-        setHover(null);
-        event.preventDefault();
-        return;
-      }
-      // 同格内移动不更新 tooltip（React 同引用 bail-out，省重渲染）
-      const next = cellAt(event.clientX, event.clientY);
-      setHover((prev) => (prev && next && prev.row === next.row && prev.col === next.col ? prev : next));
-    };
-
-    const finishPointer = (event: PointerEvent) => {
-      pointersRef.current.delete(event.pointerId);
-      if (pinchRef.current && pointersRef.current.size < 2) {
-        pinchRef.current = null;
-      }
-      if (pointersRef.current.size === 1) {
-        // 捏合中抬起一指：剩余手指继续拖动
-        const current = viewRef.current;
-        const [remaining] = [...pointersRef.current.entries()];
-        dragRef.current = {
-          pointerId: remaining[0],
-          startX: remaining[1].x,
-          startY: remaining[1].y,
-          startPanX: current.panX,
-          startPanY: current.panY,
-        };
-        return;
-      }
-      if (pointersRef.current.size > 1) return;
-      dragRef.current = null;
-      viewport.style.cursor = 'grab';
-      if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
-      // 拖动/捏合结束，把最新 pan/scale 同步回 React state（100%/缩放显示依赖它）
-      setView(viewRef.current);
-    };
-
-    const onWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      zoomAt(event.clientX, event.clientY, event.deltaY > 0 ? 0.88 : 1.12);
-    };
-
-    const onDoubleClick = (event: MouseEvent) => {
-      // 双击：放大 1.6×；已放大时还原。触屏浏览器同样触发 dblclick
-      const current = viewRef.current;
-      zoomAt(event.clientX, event.clientY, current.scale > 1 ? 1 / 1.6 : 1.6);
-    };
-
-    const onPointerLeave = () => {
-      if (!dragRef.current && !pinchRef.current) setHover(null);
-    };
-
-    viewport.addEventListener('pointerdown', onPointerDown);
-    viewport.addEventListener('pointermove', onPointerMove);
-    viewport.addEventListener('pointerup', finishPointer);
-    viewport.addEventListener('pointercancel', finishPointer);
-    viewport.addEventListener('wheel', onWheel, { passive: false });
-    viewport.addEventListener('dblclick', onDoubleClick);
-    viewport.addEventListener('pointerleave', onPointerLeave);
-    return () => {
-      viewport.removeEventListener('pointerdown', onPointerDown);
-      viewport.removeEventListener('pointermove', onPointerMove);
-      viewport.removeEventListener('pointerup', finishPointer);
-      viewport.removeEventListener('pointercancel', finishPointer);
-      viewport.removeEventListener('wheel', onWheel);
-      viewport.removeEventListener('dblclick', onDoubleClick);
-      viewport.removeEventListener('pointerleave', onPointerLeave);
-    };
-  }, [cellAt, applyTransform, zoomAt]);
+  // 画布查看器：手势/重绘/坐标数学全部来自共享 hook
+  const viewer = useBoardViewer({
+    rows: blueprint?.rows ?? 0,
+    cols: blueprint?.cols ?? 0,
+    cellsByPosition,
+    longestCode,
+    cellSize,
+    // 悬停 tooltip：同格内移动不更新（React 同引用 bail-out）
+    onHover: (cell) => setHover((prev) => (prev && cell && prev.row === cell.row && prev.col === cell.col ? prev : cell)),
+  });
 
   if (isLoading) return <p style={{ color: 'var(--color-text-muted)' }}>加载中…</p>;
   if (error) return <p style={{ color: 'var(--color-error)' }}>加载失败：{(error as Error).message}</p>;
   if (!blueprint) return null;
+
+  const { viewportRef, wrapperRef, canvasRef, view } = viewer;
 
   return (
     <div className="max-w-6xl mx-auto px-4 lg:px-6">
@@ -399,11 +112,11 @@ export default function BlueprintDetailPage() {
             >
               沉浸模式
             </button>
-            <button type="button" onClick={() => zoomBy(0.8)} style={controlStyle()} aria-label="缩小">−</button>
-            <button type="button" onClick={() => { const next = { scale: 1, panX: 0, panY: 0 }; viewRef.current = next; setView(next); }} style={controlStyle()} aria-label="100%">100%</button>
+            <button type="button" onClick={() => viewer.zoomBy(0.8)} style={controlStyle()} aria-label="缩小">−</button>
+            <button type="button" onClick={viewer.resetView} style={controlStyle()} aria-label="100%">100%</button>
             <span style={{ minWidth: 48, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>{Math.round(view.scale * 100)}%</span>
-            <button type="button" onClick={() => zoomBy(1.25)} style={controlStyle()} aria-label="放大">+</button>
-            <button type="button" onClick={fitView} style={{ ...controlStyle(), fontFamily: 'var(--font-body)' }}>适应窗口</button>
+            <button type="button" onClick={() => viewer.zoomBy(1.25)} style={controlStyle()} aria-label="放大">+</button>
+            <button type="button" onClick={viewer.fitView} style={{ ...controlStyle(), fontFamily: 'var(--font-body)' }}>适应窗口</button>
           </div>
         </motion.div>
 
@@ -414,7 +127,6 @@ export default function BlueprintDetailPage() {
             {unmapped.length > 20 && ` 等 ${unmapped.length} 处`}
           </motion.div>
         )}
-
 
         <motion.div variants={staggerItem}>
           <div
@@ -430,8 +142,8 @@ export default function BlueprintDetailPage() {
                 position: 'absolute',
                 left: '50%',
                 top: '50%',
-                width: boardWidth,
-                height: boardHeight,
+                width: viewer.boardWidth,
+                height: viewer.boardHeight,
                 transform: `translate(calc(-50% + ${view.panX}px), calc(-50% + ${view.panY}px)) scale(${view.scale})`,
                 transformOrigin: 'center center',
               }}
@@ -443,8 +155,8 @@ export default function BlueprintDetailPage() {
               <div
                 style={{
                   position: 'absolute',
-                  left: Math.min(hover.x, Math.max(8, viewportSize.width - 240)),
-                  top: Math.min(hover.y, Math.max(8, viewportSize.height - 64)),
+                  left: Math.min(hover.x, Math.max(8, viewer.viewportSize.width - 240)),
+                  top: Math.min(hover.y, Math.max(8, viewer.viewportSize.height - 64)),
                   padding: '7px 10px',
                   borderRadius: 7,
                   background: 'rgba(61, 43, 31, 0.92)',
