@@ -114,6 +114,13 @@ function CellThumb({
       <span className="text-[10px] leading-none" style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-text-muted)' }}>
         {cell.row + 1}:{cell.col + 1}
       </span>
+      <span
+        className="text-[10px] leading-tight font-semibold"
+        style={{ fontFamily: 'var(--font-mono)', color: corrected ? '#2f9e6e' : (cell.status === 'BLANK' || cell.code === 'BLANK' ? 'var(--color-text-faint)' : 'var(--color-text)') }}
+      >
+        {cell.code === 'BLANK' ? '空白' : cell.code}
+        {corrected && ` → ${cell.correctedCode}`}
+      </span>
     </div>
   );
 }
