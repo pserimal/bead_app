@@ -55,8 +55,10 @@ from ocr_core.bead_ocr_crnn import CRNN, CRNNRGB, ctc_greedy_decode, save_checkp
 from training.models.synth_generator import (  # noqa: E402
     CODES,
     Sample,
+    _get_wm_font,
     generate_dataset,
 )
+from training.models.board_generator import _WM_CHARS  # noqa: E402
 
 
 # ── Dataset ──────────────────────────────────────────────────────────
@@ -112,6 +114,50 @@ class SampleLike:
         self.token_indices = [char_to_idx[ch] for ch in code]
 
 
+def _overlay_watermark_residue(Image, arr: np.ndarray, rng) -> np.ndarray:
+    """Overlay a dark CJK stroke fragment on a cell to mimic real watermarks.
+
+    Real production watermarks are dark CJK glyphs that randomly cover bead
+    cells (medium glyph size, position-random, ~50% alpha).  Drawing the
+    glyph at 2x resolution and downscaling preserves the look; placing the
+    glyph center at a random offset within the cell simulates the random
+    placement users see in shared diagrams.
+    """
+    from PIL import ImageDraw, ImageFont
+    font = _get_wm_font()
+    if font is None:
+        return arr
+    SZ = 96  # 2x cell size
+    base = Image.fromarray(arr.astype(np.uint8)).convert("RGBA")
+    # 1–3 random CJK chars; 30–50 px glyphs (large enough to cover most of
+    # the 48-px cell at typical placements).
+    n_chars = rng.randint(1, 3)
+    text = "".join(rng.choice(_WM_CHARS) for _ in range(n_chars))
+    fs = rng.randint(30, 50)
+    try:
+        glyph = ImageFont.truetype(font.path, fs)
+    except Exception:
+        return arr
+    # Use the cell's native size so alpha_composite doesn't size-mismatch.
+    W, H = base.size
+    overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    # Glyph bounding box large enough to overflow the cell at any offset.
+    bbox = glyph.getbbox(text)
+    tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+    cx = rng.randint(-tw // 2, W)
+    cy = rng.randint(-th // 2, H)
+    # Real watermarks are semi-transparent dark strokes — the code below
+    # stays visible through them. Keep alpha moderate so the augment adds
+    # noise without destroying the label (v9b: 0.3 prob, alpha 80-160).
+    alpha = rng.randint(80, 160)
+    gray = rng.randint(0, 40)
+    ImageDraw.Draw(overlay).text((cx - bbox[0], cy - bbox[1]), text,
+                                  font=glyph,
+                                  fill=(gray, gray, gray, alpha))
+    base = Image.alpha_composite(base, overlay).convert("RGB")
+    return np.array(base)
+
+
 class CellDataset(Dataset):
     """Wraps a list of Sample or SampleLike into a torch Dataset.
 
@@ -126,7 +172,12 @@ class CellDataset(Dataset):
         self.augment = augment
         self.color = color
         from PIL import Image
+        import random as _rng
         self._Image = Image
+        # HDF5-free per-pytorch random state for the augment branch.
+        self._rng = _rng
+        # Cache the watermark font once (lazy load via _get_wm_font).
+        self._wm_font = _get_wm_font() if augment else None
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -157,6 +208,16 @@ class CellDataset(Dataset):
                     img = Image.fromarray(arr.astype(np.uint8))
                     img = ImageEnhance.Color(img).enhance(color_factor)
                     arr = np.array(img)
+            # Cell-level watermark residue (real production watermarks are
+            # dark CJK strokes that randomly cover bead cells; we simulate the
+            # same look at the cell level so the model learns to read through
+            # heavy watermark contamination). Applied only at training time
+            # (augment=True) — never in validation or production.
+            from PIL import ImageDraw, ImageFont
+            self._ImageDraw = ImageDraw
+            self._ImageFont = ImageFont
+            if self._rng.random() < 0.3:
+                arr = _overlay_watermark_residue(self._Image, arr, self._rng)
 
         img = _to_model_tensor(arr, color=self.color)
         target = torch.tensor(s.token_indices, dtype=torch.long)
