@@ -77,6 +77,7 @@ ai_dou/
 | Shared OCR core | `ocr_core/` | CRNN + checkpoint I/O + inference + charset + code library |
 | Checkpoint publish | `training/scripts/publish_checkpoint.py` | legacy migrate + immutable artifact dir |
 | Baseline / acceptance | `training/scripts/eval_cell_baseline.py`, `training/docs/baseline-2026-07-31.md` | zip exact_match 0.9405 (crnn_real_m, post-CTC-fix); historical 0.7008 pre-fix |
+| Model acceptance gate | `training/scripts/eval_acceptance.py` + `docs/acceptance.md` | **必须**：候选模型 vs 当前生产模型跑固定基准，任一指标超 0.005 容差即 FAIL |
 | CRNN training | `training/scripts/train_crnn.py` | writes format_version=1 checkpoints |
 | Synthetic cells | `training/models/synth_generator.py` | 48×48 cell-level synth (colored/marked styles) |
 | Synthetic boards | `training/models/board_generator.py` + `training/scripts/generate_board.py` | photo → bead board + board.json metadata (brand/code/coords); ADR 0005 |
@@ -201,6 +202,7 @@ cd server && gradle bootJar --no-daemon     # Flyway runs on startup (validate m
 - Dev DB: `admin:123456@192.168.5.88:5432/bead_app`; test DB `bead_app_test`
 - Upload size limit: 20MB, allowed types: JPEG/PNG only
 - Baseline model: `crnn_real_m.pt` — zip exact_match **0.9405** post-CTC-fix (2026-08-07, blank_penalty=0); historical 0.7008 pre-fix (011 acceptance rule was written against the old number; new service must beat 0.9405 on zip + ≥0.79 on board heldout, see `crnn_mixed_v12`)
+- **Model acceptance gate (2026-08-09)**: 任何新 checkpoint 部署前必须跑 `python -m training.scripts.eval_acceptance --candidate <new> --production <current>`。固定基准 = 4 个真实标注集 + 1 个独立 seed(13579) 合成 heldout；候选在每集的 blank_acc/code_acc/overall 必须 ≥ 生产 - 0.005，否则 exit 1。基准集和容差固定，不允许为让候选通过而悄悄增删。详见 `docs/acceptance.md`。
 - Legacy checkpoints (no format_version) must go through `publish_checkpoint.py` before use
 - Color library: 1950 codes from [maxcleme/beadcolors](https://github.com/maxcleme/beadcolors); regenerate via `training/scripts/build_color_library.py`; `ColorSeedRunner` seeds DB on boot (`bead.db.recreate-on-start`)
 - Complexity hotspot: `frontend/src/pages/UploadPage.tsx` (crop interaction, ~400 LOC)

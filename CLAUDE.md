@@ -144,6 +144,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build  # 
 | Board-model eval | `training/scripts/eval_board_model.py` (zip/heldout/val + per-board) |
 | CTC decode fix | `ocr_core/bead_ocr_crnn.py` `constrained_decode` (F5, exp 002) |
 | Baseline + acceptance (011) | `training/scripts/eval_cell_baseline.py`, `training/docs/baseline-2026-07-31.md` |
+| Model acceptance gate | `training/scripts/eval_acceptance.py` + `docs/acceptance.md` (2026-08-09: 部署前强制 gate) |
 | CRNN training | `training/scripts/train_crnn.py` |
 | Real bead images (input data) | `examples/` (stand crops + annotation zips) |
 | Trained checkpoints | `training/checkpoints/*.pt` (gitignored); artifacts in `artifacts/models/` |
