@@ -14,7 +14,6 @@ import type { BlueprintCellDto, CellCorrectionUpdate, ColorDto, CropBoxDto } fro
 const THRESHOLDS = [0.9, 0.8, 0.7] as const;
 const DEFAULT_THRESHOLD: (typeof THRESHOLDS)[number] = 0.9;
 const PAGE_SIZE = 100;
-const ALL_PAGE_SIZE = 200;
 const THUMB = 56;
 
 /** 与 ocr_core.inference 相同的格子裁剪数学（含 10% 内缩跳过网格线） */
@@ -298,7 +297,9 @@ export default function CorrectionPage() {
   const [editor, setEditor] = useState<{ keys: string[] } | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [pageOf, setPageOf] = useState<Record<string, number>>({});
-  const [globalPage, setGlobalPage] = useState(0);
+  // 全部格子模式：左栏选中编码 + 右栏该编码的格子翻页
+  const [selectedCode, setSelectedCode] = useState<string | null>(null);
+  const [codePage, setCodePage] = useState(0);
 
   // 原图加载一次（校正页所有缩略图共用）
   useEffect(() => {
@@ -405,13 +406,30 @@ export default function CorrectionPage() {
       .sort((a, b) => b.cells.length - a.cells.length);
   }, [visibleCells]);
 
-  // 全部格子模式：平铺分页（切平分组，避免 82 组 × 100 格同时渲染）
-  const allTotalPages = Math.max(1, Math.ceil(visibleCells.length / ALL_PAGE_SIZE));
-  const safeGlobalPage = Math.min(globalPage, allTotalPages - 1);
+  // 全部格子模式：左栏编码列表（格数降序）
+  const codeList = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const cell of visibleCells) map.set(cell.code, (map.get(cell.code) ?? 0) + 1);
+    return [...map.entries()]
+      .map(([code, count]) => ({ code, count }))
+      .sort((a, b) => b.count - a.count || a.code.localeCompare(b.code));
+  }, [visibleCells]);
+  const activeCode = selectedCode != null && codeList.some((l) => l.code === selectedCode)
+    ? selectedCode
+    : (codeList[0]?.code ?? null);
+  // 右栏：当前编码的全部格子，分页
+  const codeCells = useMemo(() => {
+    if (activeCode == null) return [];
+    return visibleCells
+      .filter((c) => c.code === activeCode)
+      .sort((a, b) => a.row - b.row || a.col - b.col);
+  }, [visibleCells, activeCode]);
+  const codeTotalPages = Math.max(1, Math.ceil(codeCells.length / PAGE_SIZE));
+  const safeCodePage = Math.min(codePage, codeTotalPages - 1);
   const pageCells = useMemo(() => {
-    const start = safeGlobalPage * ALL_PAGE_SIZE;
-    return visibleCells.slice(start, start + ALL_PAGE_SIZE);
-  }, [visibleCells, safeGlobalPage]);
+    const start = safeCodePage * PAGE_SIZE;
+    return codeCells.slice(start, start + PAGE_SIZE);
+  }, [codeCells, safeCodePage]);
 
   const selectedKeys = useMemo(() => [...selected], [selected]);
   const selectedBreakdown = useBreakdown(selectedKeys, cellsByPos);
@@ -599,41 +617,68 @@ export default function CorrectionPage() {
 
         <div className="space-y-4">
           {mode === 'all' ? (
-            <motion.div variants={staggerItem}>
-              <div className="flex flex-wrap gap-2">
-                {pageCells.map((cell) => (
-                  <CellThumb
-                    key={`${cell.row}:${cell.col}`}
-                    cell={cell}
-                    rows={blueprint.rows}
-                    cols={blueprint.cols}
-                    cropBox={blueprint.cropBox}
-                    image={image}
-                    checked={selected.has(`${cell.row}:${cell.col}`)}
-                    onToggle={() => toggleCell(`${cell.row}:${cell.col}`)}
-                    onEdit={() => openEditor([`${cell.row}:${cell.col}`])}
-                  />
-                ))}
+            <motion.div variants={staggerItem} className="flex items-start gap-4">
+              {/* 左栏：编码列表 */}
+              <div
+                className="w-36 shrink-0 rounded-xl p-1.5 max-h-[70vh] overflow-y-auto"
+                style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)' }}
+              >
+                {codeList.map(({ code, count }) => {
+                  const selected = activeCode === code;
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => { setSelectedCode(code); setCodePage(0); }}
+                      className="w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded-md mb-0.5 text-left"
+                      style={{
+                        background: selected ? 'var(--color-accent)' : 'transparent',
+                        color: selected ? '#fff' : 'var(--color-text)',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <span className="truncate" style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: selected ? 700 : 500 }}>
+                        {code === 'BLANK' ? '空白' : code}
+                      </span>
+                      <span style={{ fontSize: '10px', opacity: 0.75, fontFamily: 'var(--font-mono)' }}>{count}</span>
+                    </button>
+                  );
+                })}
+                {codeList.length === 0 && (
+                  <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>无匹配</span>
+                )}
               </div>
-              {allTotalPages > 1 && (
-                <div className="flex items-center justify-center gap-3 py-4">
-                  <button
-                    type="button"
-                    disabled={safeGlobalPage === 0}
-                    onClick={() => { setGlobalPage((p) => Math.max(0, p - 1)); window.scrollTo({ top: 0 }); }}
-                    style={smallBtn()}
-                  >上一页</button>
-                  <span className="text-xs" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
-                    {safeGlobalPage + 1} / {allTotalPages} · 共 {visibleCells.length} 格
+              {/* 右栏：当前编码的全部格子 */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="text-sm" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+                    {activeCode == null ? '—' : (activeCode === 'BLANK' ? '空白' : activeCode)}
                   </span>
-                  <button
-                    type="button"
-                    disabled={safeGlobalPage >= allTotalPages - 1}
-                    onClick={() => { setGlobalPage((p) => Math.min(allTotalPages - 1, p + 1)); window.scrollTo({ top: 0 }); }}
-                    style={smallBtn()}
-                  >下一页</button>
+                  <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{codeCells.length} 格</span>
+                  {codeTotalPages > 1 && (
+                    <span className="ml-auto flex items-center gap-1 text-xs" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
+                      {safeCodePage + 1}/{codeTotalPages}
+                      <button type="button" disabled={safeCodePage === 0} onClick={() => setCodePage((p) => Math.max(0, p - 1))} style={smallBtn()}>‹</button>
+                      <button type="button" disabled={safeCodePage >= codeTotalPages - 1} onClick={() => setCodePage((p) => Math.min(codeTotalPages - 1, p + 1))} style={smallBtn()}>›</button>
+                    </span>
+                  )}
                 </div>
-              )}
+                <div className="flex flex-wrap gap-2">
+                  {pageCells.map((cell) => (
+                    <CellThumb
+                      key={`${cell.row}:${cell.col}`}
+                      cell={cell}
+                      rows={blueprint.rows}
+                      cols={blueprint.cols}
+                      cropBox={blueprint.cropBox}
+                      image={image}
+                      checked={selected.has(`${cell.row}:${cell.col}`)}
+                      onToggle={() => toggleCell(`${cell.row}:${cell.col}`)}
+                      onEdit={() => openEditor([`${cell.row}:${cell.col}`])}
+                    />
+                  ))}
+                </div>
+              </div>
             </motion.div>
           ) : (
             groups.map((group) => {
