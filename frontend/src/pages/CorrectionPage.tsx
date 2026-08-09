@@ -318,6 +318,7 @@ export default function CorrectionPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editor, setEditor] = useState<{ keys: string[] } | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
+  const [imageError, setImageError] = useState(false);
   // 两栏布局：左栏选中编码 + 右栏该编码的全部格子（不分页，缩略图懒裁剪）
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
 
@@ -328,7 +329,13 @@ export default function CorrectionPage() {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
-      if (!cancelled) setImage(img);
+      if (!cancelled) {
+        setImage(img);
+        setImageError(false);
+      }
+    };
+    img.onerror = () => {
+      if (!cancelled) setImageError(true);
     };
     img.src = apiClient.getUri({ url: `/blueprints/${id}/image` });
     return () => {
@@ -603,6 +610,12 @@ export default function CorrectionPage() {
               style={{ ...controlStyle(), minWidth: 180 }}
               aria-label="搜索格子"
             />
+          )}
+
+          {imageError && (
+            <motion.p variants={staggerItem} className="px-3 py-2 rounded-lg text-sm" style={{ background: '#FDF0F0', border: '1px solid #F0C9C9', color: '#C0392B' }}>
+              ⚠ 原图加载失败（文件可能已被清理），缩略图无法显示，但修正功能不受影响
+            </motion.p>
           )}
 
           {unmappedCount > 0 && (
