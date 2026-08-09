@@ -19,7 +19,8 @@ class CorsConfig {
         @Value("\${bead.cors.allowed-origins:http://localhost:5173}") allowedOrigins: String,
     ): CorsFilter {
         val config = CorsConfiguration()
-        config.allowedOrigins = allowedOrigins.split(",").map { it.trim() }
+        // allowedOriginPatterns：支持 http://*:5173 通配（局域网内其他设备经 Vite proxy 访问时 Origin 是设备 IP）
+        config.allowedOriginPatterns = allowedOrigins.split(",").map { it.trim() }
         config.allowedMethods = listOf("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
         config.allowedHeaders = listOf("*")
         config.maxAge = 3600L
