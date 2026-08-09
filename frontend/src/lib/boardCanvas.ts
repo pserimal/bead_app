@@ -224,32 +224,18 @@ export function drawBoard(
   // ── 锁定高亮（编码文字之上、网格线之下）──
   if (highlightCode !== null) {
     // 非目标格已在格子绘制时以 35% 全局透明淡出（露出背景，画面保持明亮）
-    // 目标格：外圈白色 halo（1px 不透明环）+ accent 细边框（2px，品牌标记）
-    const accent = accentColor();
-    context.fillStyle = '#fffaf0';
+    // 目标格：accent 1px 细边框（不透明 fillRect 四边，整数坐标绝对锐利；柔和标注）
+    context.fillStyle = accentColor();
     for (let row = 0; row < rows; row += 1) {
       for (let col = 0; col < cols; col += 1) {
         const cell = cellsByPosition.get(`${row}:${col}`);
         if ((cell?.correctedCode ?? cell?.code) === highlightCode) {
-          const x0 = Math.round(left + col * cellSize) - 1;
-          const y0 = Math.round(top + row * cellSize) - 1;
-          const s2 = cellSize + 2;
-          context.fillRect(x0, y0, s2, 1);
-          context.fillRect(x0, y0 + s2 - 1, s2, 1);
-          context.fillRect(x0, y0, 1, s2);
-          context.fillRect(x0 + s2 - 1, y0, 1, s2);
-        }
-      }
-    }
-    context.lineWidth = 2;
-    context.strokeStyle = accent;
-    for (let row = 0; row < rows; row += 1) {
-      for (let col = 0; col < cols; col += 1) {
-        const cell = cellsByPosition.get(`${row}:${col}`);
-        if ((cell?.correctedCode ?? cell?.code) === highlightCode) {
-          const x = left + col * cellSize;
-          const y = top + row * cellSize;
-          context.strokeRect(Math.round(x) + 1, Math.round(y) + 1, cellSize - 2, cellSize - 2);
+          const x0 = Math.round(left + col * cellSize);
+          const y0 = Math.round(top + row * cellSize);
+          context.fillRect(x0, y0, cellSize, 1);
+          context.fillRect(x0, y0 + cellSize - 1, cellSize, 1);
+          context.fillRect(x0, y0, 1, cellSize);
+          context.fillRect(x0 + cellSize - 1, y0, 1, cellSize);
         }
       }
     }
