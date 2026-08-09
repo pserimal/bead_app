@@ -407,7 +407,7 @@ export default function CropPage() {
             tabIndex={0}
             role="application"
             aria-label="图纸裁剪工作区"
-            style={{ background: '#111', touchAction: 'none', height: '72vh', cursor: 'grab', outline: 'none' }}
+            style={{ background: '#17130f', touchAction: 'none', height: '72vh', cursor: 'grab', outline: 'none' }}
           >
             <img
               src={state.imageUrl}
@@ -449,8 +449,8 @@ export default function CropPage() {
                     inset: 0,
                     pointerEvents: 'none',
                     backgroundImage: [
-                      'linear-gradient(to right, rgba(61,114,216,0.72) 1px, transparent 1px)',
-                      'linear-gradient(to bottom, rgba(61,114,216,0.72) 1px, transparent 1px)',
+                      'linear-gradient(to right, rgba(199,91,57,0.55) 1px, transparent 1px)',
+                      'linear-gradient(to bottom, rgba(199,91,57,0.55) 1px, transparent 1px)',
                     ].join(','),
                     backgroundSize: `${screenCellWidth}px 100%, 100% ${screenCellHeight}px`,
                     zIndex: 1,

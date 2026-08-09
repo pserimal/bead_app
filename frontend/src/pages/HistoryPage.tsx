@@ -14,11 +14,11 @@ const STATUS_FILTERS: Array<{ value: JobStatus | ''; label: string }> = [  { val
 ];
 
 const statusStyle: Record<JobStatus, { bg: string; color: string; label: string }> = {
-  PENDING: { bg: '#F3F1EB', color: '#6B6860', label: '排队中' },
-  PROCESSING: { bg: '#FDF4EA', color: '#D4802B', label: '处理中' },
-  SUCCEEDED: { bg: '#EDF7F1', color: '#389E5C', label: '成功' },
-  SUCCEEDED_WITH_WARNINGS: { bg: '#FDF4EA', color: '#D4802B', label: '有警告' },
-  FAILED: { bg: '#FEF0EE', color: '#C43529', label: '失败' },
+  PENDING: { bg: 'var(--color-bg-secondary)', color: 'var(--color-text-muted)', label: '排队中' },
+  PROCESSING: { bg: 'var(--color-warning-light)', color: 'var(--color-warning)', label: '处理中' },
+  SUCCEEDED: { bg: 'var(--color-success-light)', color: 'var(--color-success)', label: '成功' },
+  SUCCEEDED_WITH_WARNINGS: { bg: 'var(--color-warning-light)', color: 'var(--color-warning)', label: '有警告' },
+  FAILED: { bg: 'var(--color-error-light)', color: 'var(--color-error)', label: '失败' },
 };
 
 export default function HistoryPage() {

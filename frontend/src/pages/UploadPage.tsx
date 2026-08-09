@@ -217,7 +217,7 @@ export default function UploadPage() {
           ) : (
             <div className="flex flex-col items-center gap-4 py-6">
               {/* 图纸预览（非裁剪交互，仅展示） */}
-              <div className="relative w-full overflow-hidden rounded-lg" style={{ background: '#111', height: '40vh' }}>
+              <div className="relative w-full overflow-hidden rounded-lg" style={{ background: '#17130f', height: '40vh' }}>
                 <img
                   src={imageUrl}
                   alt="upload preview"

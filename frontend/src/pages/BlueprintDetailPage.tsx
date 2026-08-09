@@ -387,7 +387,7 @@ export default function BlueprintDetailPage() {
             <button
               type="button"
               onClick={() => navigate(`/blueprints/${id}/correct`)}
-              style={{ ...controlStyle(), fontWeight: 600, color: '#fff', background: '#3D72D8', borderColor: '#3D72D8' }}
+              style={{ ...controlStyle(), fontWeight: 600, color: '#fff', background: 'var(--color-accent)', borderColor: 'var(--color-accent)' }}
             >
               校正{reviewCount > 0 ? `（${reviewCount}）` : ''}
             </button>
@@ -408,8 +408,8 @@ export default function BlueprintDetailPage() {
         </motion.div>
 
         {unmapped.length > 0 && (
-          <motion.div variants={staggerItem} className="px-4 py-3 rounded-lg text-sm" style={{ background: '#FDF4EA', border: '1px solid #F0D9B8' }}>
-            <span style={{ color: '#D4802B', fontWeight: 600 }}>⚠ {unmapped.length} 个格子编码不在颜色库：</span>
+          <motion.div variants={staggerItem} className="px-4 py-3 rounded-lg text-sm" style={{ background: 'var(--color-warning-light)', border: '1px solid var(--color-warning)' }}>
+            <span style={{ color: 'var(--color-warning)', fontWeight: 600 }}>⚠ {unmapped.length} 个格子编码不在颜色库：</span>
             {unmapped.slice(0, 20).map((cell) => `(${cell.row + 1},${cell.col + 1}) ${cell.code}`).join('、')}
             {unmapped.length > 20 && ` 等 ${unmapped.length} 处`}
           </motion.div>
@@ -422,7 +422,7 @@ export default function BlueprintDetailPage() {
             className="relative overflow-hidden rounded-xl"
             role="application"
             aria-label={`${blueprint.rows}×${blueprint.cols} 拼豆图纸预览`}
-            style={{ height: 'min(72vh, 760px)', minHeight: 360, background: '#e9e2d8', border: '1px solid var(--color-border)', cursor: 'grab', touchAction: 'none', userSelect: 'none' }}
+            style={{ height: 'min(72vh, 760px)', minHeight: 360, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)', cursor: 'grab', touchAction: 'none', userSelect: 'none' }}
           >
             <div
               ref={wrapperRef}
@@ -447,8 +447,8 @@ export default function BlueprintDetailPage() {
                   top: Math.min(hover.y, Math.max(8, viewportSize.height - 64)),
                   padding: '7px 10px',
                   borderRadius: 7,
-                  background: 'rgba(38, 33, 29, 0.92)',
-                  color: '#fffaf0',
+                  background: 'rgba(61, 43, 31, 0.92)',
+                  color: 'var(--color-surface)',
                   fontFamily: 'var(--font-mono)',
                   fontSize: 'var(--text-xs)',
                   pointerEvents: 'none',
@@ -471,7 +471,7 @@ export default function BlueprintDetailPage() {
               </div>
             )}
 
-            <div style={{ position: 'absolute', left: 12, bottom: 10, padding: '5px 9px', borderRadius: 6, background: 'rgba(38,33,29,0.68)', color: '#fffaf0', fontSize: 'var(--text-xs)', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
+            <div style={{ position: 'absolute', left: 12, bottom: 10, padding: '5px 9px', borderRadius: 6, background: 'rgba(61,43,31,0.72)', color: 'var(--color-surface)', fontSize: 'var(--text-xs)', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
               {isTouch ? '单指拖动 · 双指缩放 · 双击放大' : '拖动平移 · 滚轮缩放 · 双击放大'}
             </div>
           </div>

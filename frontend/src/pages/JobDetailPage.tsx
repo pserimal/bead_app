@@ -5,11 +5,11 @@ import { staggerContainer, staggerItem } from '../lib/animations';
 import type { JobStatus, EventType } from '../types/api';
 
 const statusMeta: Record<JobStatus, { label: string; color: string; bg: string }> = {
-  PENDING: { label: '排队中', color: '#6B6860', bg: '#F3F1EB' },
-  PROCESSING: { label: '处理中', color: '#D4802B', bg: '#FDF4EA' },
-  SUCCEEDED: { label: '成功', color: '#389E5C', bg: '#EDF7F1' },
-  SUCCEEDED_WITH_WARNINGS: { label: '成功（有警告）', color: '#D4802B', bg: '#FDF4EA' },
-  FAILED: { label: '失败', color: '#C43529', bg: '#FEF0EE' },
+  PENDING: { label: '排队中', color: 'var(--color-text-muted)', bg: 'var(--color-bg-secondary)' },
+  PROCESSING: { label: '处理中', color: 'var(--color-warning)', bg: 'var(--color-warning-light)' },
+  SUCCEEDED: { label: '成功', color: 'var(--color-success)', bg: 'var(--color-success-light)' },
+  SUCCEEDED_WITH_WARNINGS: { label: '成功（有警告）', color: 'var(--color-warning)', bg: 'var(--color-warning-light)' },
+  FAILED: { label: '失败', color: 'var(--color-error)', bg: 'var(--color-error-light)' },
 };
 
 const eventLabel: Record<EventType, string> = {
@@ -103,8 +103,8 @@ export default function JobDetailPage() {
 
               {/* 警告横幅 */}
               {job.status === 'SUCCEEDED_WITH_WARNINGS' && (
-                <div className="px-4 py-3 rounded-lg text-sm" style={{ background: '#FDF4EA', border: '1px solid #F0D9B8' }}>
-                  <span style={{ color: '#D4802B', fontWeight: 600 }}>⚠ 存在未映射编码：</span>
+                <div className="px-4 py-3 rounded-lg text-sm" style={{ background: 'var(--color-warning-light)', border: '1px solid var(--color-warning)' }}>
+                  <span style={{ color: 'var(--color-warning)', fontWeight: 600 }}>⚠ 存在未映射编码：</span>
                   {job.warnings.length > 0
                     ? job.warnings.map((w) => `(${w.row}, ${w.col}) ${w.code}`).join('、')
                     : '部分格子编码不在颜色库中'}
@@ -113,8 +113,8 @@ export default function JobDetailPage() {
 
               {/* 失败横幅 */}
               {job.status === 'FAILED' && job.error && (
-                <div className="px-4 py-3 rounded-lg text-sm" style={{ background: '#FEF0EE', border: '1px solid #F5C6C0' }}>
-                  <span style={{ color: '#C43529', fontWeight: 600 }}>✕ 识别失败：</span>
+                <div className="px-4 py-3 rounded-lg text-sm" style={{ background: 'var(--color-error-light)', border: '1px solid var(--color-error)' }}>
+                  <span style={{ color: 'var(--color-error)', fontWeight: 600 }}>✕ 识别失败：</span>
                   {job.error.message}（{job.error.code}）
                 </div>
               )}
