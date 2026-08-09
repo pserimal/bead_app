@@ -95,8 +95,11 @@ const HANDLE_SIZE = 10;
 const TOUCH_TARGET = 44;
 const MIN_REGION = 20;
 const OVERLAY_COLOR = 'rgba(0,0,0,0.5)';
-const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 3;
+// 下限动态：fit 视图可能 < 0.5（大图），放大后必须能缩回初始 fit
+function zoomFloor(initialZoom: number): number {
+  return Math.min(0.5, initialZoom || 1);
+}
 
 interface HandleConfig {
   type: HandleType;
@@ -227,6 +230,8 @@ const CropBox = forwardRef<CropBoxHandle, CropBoxProps>(
     panRef.current = pan;
     const imgSizeRef = useRef(imgSize);
     imgSizeRef.current = imgSize;
+    // 最小缩放：允许缩回 fit 初始值（大图 fit < 0.5）
+    const minZoom = zoomFloor(initialZoom);
 
     /* ── Image load → set display size + default regions ── */
     const handleImageLoad = useCallback(() => {
@@ -271,7 +276,7 @@ const CropBox = forwardRef<CropBoxHandle, CropBoxProps>(
         const cy = e.clientY - rect.top;
         const prev = zoomRef.current;
         const factor = e.deltaY > 0 ? 0.88 : 1.12;
-        const next = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, prev * factor));
+        const next = Math.max(minZoom, Math.min(ZOOM_MAX, prev * factor));
         if (next === prev) return;
         setPan((pp) => ({
           x: cx - (cx - pp.x) * (next / prev),
@@ -403,7 +408,7 @@ const CropBox = forwardRef<CropBoxHandle, CropBoxProps>(
           const dist = fingerDist(e.touches[0], e.touches[1]);
           const ps = pinchRef.current;
           const next = Math.max(
-            ZOOM_MIN,
+            minZoom,
             Math.min(ZOOM_MAX, ps.initialZoom * (dist / ps.initialDist)),
           );
           const rect = containerRef.current?.getBoundingClientRect();
@@ -823,8 +828,8 @@ const CropBox = forwardRef<CropBoxHandle, CropBoxProps>(
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <button
-              onClick={() => setZoom((z) => Math.max(ZOOM_MIN, z - 0.25))}
-              disabled={zoom <= ZOOM_MIN}
+              onClick={() => setZoom((z) => Math.max(minZoom, z - 0.25))}
+              disabled={zoom <= minZoom}
               style={{
                 width: 36,
                 height: 36,
@@ -832,10 +837,10 @@ const CropBox = forwardRef<CropBoxHandle, CropBoxProps>(
                 border: '1px solid var(--color-border-strong)',
                 background: 'var(--color-surface)',
                 color:
-                  zoom <= ZOOM_MIN
+                  zoom <= minZoom
                     ? 'var(--color-text-muted)'
                     : 'var(--color-text)',
-                cursor: zoom <= ZOOM_MIN ? 'not-allowed' : 'pointer',
+                cursor: zoom <= minZoom ? 'not-allowed' : 'pointer',
                 fontSize: 18,
                 display: 'flex',
                 alignItems: 'center',

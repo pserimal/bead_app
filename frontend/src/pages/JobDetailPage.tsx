@@ -8,7 +8,7 @@ const statusMeta: Record<JobStatus, { label: string; color: string; bg: string }
   PENDING: { label: '排队中', color: 'var(--color-text-muted)', bg: 'var(--color-bg-secondary)' },
   PROCESSING: { label: '处理中', color: 'var(--color-warning)', bg: 'var(--color-warning-light)' },
   SUCCEEDED: { label: '成功', color: 'var(--color-success)', bg: 'var(--color-success-light)' },
-  SUCCEEDED_WITH_WARNINGS: { label: '成功（有警告）', color: 'var(--color-warning)', bg: 'var(--color-warning-light)' },
+  SUCCEEDED_WITH_WARNINGS: { label: '成功', color: 'var(--color-success)', bg: 'var(--color-success-light)' },
   FAILED: { label: '失败', color: 'var(--color-error)', bg: 'var(--color-error-light)' },
 };
 
@@ -101,8 +101,8 @@ export default function JobDetailPage() {
                 </div>
               </div>
 
-              {/* 警告横幅 */}
-              {job.status === 'SUCCEEDED_WITH_WARNINGS' && (
+              {/* 警告横幅（018：不依赖状态——按 warnings 明细展示未映射编码） */}
+              {job.warnings.length > 0 && (
                 <div className="px-4 py-3 rounded-lg text-sm" style={{ background: 'var(--color-warning-light)', border: '1px solid var(--color-warning)' }}>
                   <span style={{ color: 'var(--color-warning)', fontWeight: 600 }}>⚠ 存在未映射编码：</span>
                   {job.warnings.length > 0

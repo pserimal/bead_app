@@ -192,7 +192,8 @@ class ApiContractTest {
 
         mockMvc.perform(get("/api/v1/jobs/$id"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.status").value("SUCCEEDED_WITH_WARNINGS"))
+            // 018：SUCCEEDED_WITH_WARNINGS 已合并到 SUCCEEDED（warnings 明细仍在）
+            .andExpect(jsonPath("$.status").value("SUCCEEDED"))
             .andExpect(jsonPath("$.blueprintId").isNotEmpty)
 
         val bpId = objectMapper.readTree(

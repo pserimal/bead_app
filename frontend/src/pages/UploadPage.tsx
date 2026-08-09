@@ -216,28 +216,31 @@ export default function UploadPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center gap-4 py-6">
-              {/* 图纸预览（非裁剪交互，仅展示） */}
-              <div className="relative w-full overflow-hidden rounded-lg" style={{ background: '#17130f', height: '40vh' }}>
-                <img
-                  src={imageUrl}
-                  alt="upload preview"
-                  className="w-full h-full object-contain"
-                  draggable={false}
-                />
-                {crop && (
-                  <div
-                    className="absolute"
-                    style={{
-                      left: `${(crop.x / imageSize!.w) * 100}%`,
-                      top: `${(crop.y / imageSize!.h) * 100}%`,
-                      width: `${(crop.w / imageSize!.w) * 100}%`,
-                      height: `${(crop.h / imageSize!.h) * 100}%`,
-                      border: '2px solid var(--color-accent)',
-                      boxShadow: '0 0 0 9999px rgba(0,0,0,0.45)',
-                      pointerEvents: 'none',
-                    }}
+              {/* 图纸预览（非裁剪交互，仅展示）：容器按图片比例撑开，百分比定位与图片显示区精确对齐 */}
+              <div className="relative w-full overflow-hidden rounded-lg" style={{ background: '#17130f' }}>
+                <div style={{ position: 'relative', width: '100%', paddingTop: `${((imageSize!.h / imageSize!.w) * 100).toFixed(4)}%` }}>
+                  <img
+                    src={imageUrl}
+                    alt="upload preview"
+                    className="absolute inset-0 w-full h-full"
+                    style={{ objectFit: 'fill' }}
+                    draggable={false}
                   />
-                )}
+                  {crop && (
+                    <div
+                      className="absolute"
+                      style={{
+                        left: `${(crop.x / imageSize!.w) * 100}%`,
+                        top: `${(crop.y / imageSize!.h) * 100}%`,
+                        width: `${(crop.w / imageSize!.w) * 100}%`,
+                        height: `${(crop.h / imageSize!.h) * 100}%`,
+                        border: '2px solid var(--color-accent)',
+                        boxShadow: '0 0 0 9999px rgba(0,0,0,0.45)',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center gap-3">

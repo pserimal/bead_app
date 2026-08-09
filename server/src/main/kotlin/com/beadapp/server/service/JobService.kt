@@ -145,7 +145,8 @@ class JobService(
             }
         )
         job.blueprintId = bp.id
-        job.status = if (hasUnmapped) JobStatus.SUCCEEDED_WITH_WARNINGS else JobStatus.SUCCEEDED
+        // 018：不再区分 SUCCEEDED_WITH_WARNINGS（历史状态保留兼容，新任务一律成功；未映射信息仍入 warnings）
+        job.status = JobStatus.SUCCEEDED
         job.heartbeatAt = now()
         log.info("job {} completed with blueprint {}", job.id, bp.id)
     }

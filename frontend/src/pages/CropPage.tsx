@@ -90,10 +90,10 @@ function clampCellCount(value: number): number {
 function defaultCrop(size: ImageSize): CropRect {
   return clampCrop(
     {
-      x: Math.round(size.w * 0.2),
-      y: Math.round(size.h * 0.2),
-      w: Math.round(size.w * 0.6),
-      h: Math.round(size.h * 0.6),
+      x: 0,
+      y: 0,
+      w: Math.round(size.w),
+      h: Math.round(size.h),
     },
     size,
   );
