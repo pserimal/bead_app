@@ -193,7 +193,13 @@ def _parse_code_from_filename(name: str) -> str | None:
         return "BLANK"
     # r<row>_c<col>_<CODE>.png — coords first, code last.
     parts = stem.split("_")
-    if len(parts) >= 3 and parts[0].startswith("r") and parts[1].startswith("c"):
+    # Corrections export: `CODE_r<row>_c<col>_h.._v..png` — code is the first
+    # token and may be the special BLANK label.
+    if len(parts) >= 5 and parts[1].startswith("r") and parts[2].startswith("c"):
+        candidate = parts[0]
+        if candidate.upper() == "BLANK":
+            return "BLANK"
+    elif len(parts) >= 3 and parts[0].startswith("r") and parts[1].startswith("c"):
         candidate = parts[2]
     elif parts and parts[0].startswith("sample"):
         candidate = parts[-1] if len(parts) >= 2 else ""
