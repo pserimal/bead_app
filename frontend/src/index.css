@@ -15,6 +15,8 @@
   --color-bg-elevated: #fffcf8;
   --color-surface: #fffefa;
   --color-surface-hover: #f9f3eb;
+  /* 兼容别名：历史页面广泛使用 var(--color-card) */
+  --color-card: var(--color-surface);
 
   --color-accent: #c75b39;
   --color-accent-hover: #b54e2f;

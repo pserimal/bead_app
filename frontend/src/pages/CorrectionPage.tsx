@@ -96,21 +96,21 @@ function CellThumb({
   return (
     <div className="flex flex-col items-center gap-0.5 select-none" title={`行 ${cell.row + 1} · 列 ${cell.col + 1} · 识别 ${cell.code}${corrected ? ` → 修正 ${cell.correctedCode}` : ''}`}>
       <div className="relative block cursor-pointer" onClick={onEdit} role="button" aria-label={`修改格子 ${cell.row + 1},${cell.col + 1}`}>
-        <span
-          className="block rounded border overflow-hidden"
-          style={{
-            width: THUMB,
-            height: THUMB,
-            borderColor: checked ? 'var(--color-accent)' : 'var(--color-border)',
-            boxShadow: checked ? '0 0 0 2px var(--color-accent)' : undefined,
-          }}
-        >
-          <canvas ref={canvasRef} width={THUMB} height={THUMB} className="block" style={{ width: THUMB, height: THUMB }} />
-        </span>
+          <span
+            className="block rounded border overflow-hidden transition-shadow hover:shadow-[var(--shadow-sm)]"
+            style={{
+              width: THUMB,
+              height: THUMB,
+              borderColor: checked ? 'var(--color-accent)' : 'var(--color-border)',
+              boxShadow: checked ? '0 0 0 2px var(--color-accent)' : undefined,
+            }}
+          >
+            <canvas ref={canvasRef} width={THUMB} height={THUMB} className="block" style={{ width: THUMB, height: THUMB }} />
+          </span>
         {corrected && (
           <span
             className="absolute rounded-full text-white text-[9px] leading-none flex items-center justify-center"
-            style={{ top: -3, right: -3, width: 15, height: 15, background: '#2f9e6e' }}
+            style={{ top: -3, right: -3, width: 15, height: 15, background: 'var(--color-success)' }}
           >
             ✓
           </span>
@@ -130,7 +130,7 @@ function CellThumb({
       </span>
       <span
         className="text-[10px] leading-tight font-semibold"
-        style={{ fontFamily: 'var(--font-mono)', color: corrected ? '#2f9e6e' : (cell.status === 'BLANK' || cell.code === 'BLANK' ? 'var(--color-text-faint)' : 'var(--color-text)') }}
+        style={{ fontFamily: 'var(--font-mono)', color: corrected ? 'var(--color-success)' : (cell.status === 'BLANK' || cell.code === 'BLANK' ? 'var(--color-text-muted)' : 'var(--color-text)') }}
       >
         {cell.code === 'BLANK' ? '空白' : cell.code}
         {corrected && ` → ${cell.correctedCode}`}
@@ -202,20 +202,19 @@ function EditorModal({
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center z-30"
-      style={{ background: 'rgba(38,33,29,0.45)' }}
+      className="fixed inset-0 z-30 flex items-center justify-center p-4"
+      style={{ background: 'rgba(61, 43, 31, 0.45)' }}
       onClick={onClose}
     >
       <div
-        className="rounded-2xl p-5 w-[min(560px,92vw)] max-h-[80vh] overflow-y-auto"
-        style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)' }}
+        className="w-[min(560px,92vw)] max-h-[85vh] overflow-y-auto rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-xl)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-3">
-          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-lg)' }}>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-xl)' }}>
             修正 {editor.keys.length} 格
           </h2>
-          <button type="button" onClick={onClose} style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-lg)' }}>×</button>
+          <button type="button" onClick={onClose} style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-lg)', lineHeight: 1 }} aria-label="关闭">×</button>
         </div>
 
         {breakdown.length > 0 && (
@@ -251,13 +250,17 @@ function EditorModal({
         </div>
 
         <div className="flex gap-2 mb-3">
-          <button type="button" onClick={handleSet} disabled={!valid || busy} style={actionBtn('#3D72D8', !valid || busy)}>
+          <button type="button" onClick={handleSet} disabled={!valid || busy} style={actionBtn('var(--color-accent)', !valid || busy)}>
             设为 {valid ? upper : '…'}（{editor.keys.length} 格）
           </button>
-          <button type="button" onClick={handleRevert} disabled={busy} style={actionBtn('#2f9e6e', busy)}>
+          <button type="button" onClick={handleRevert} disabled={busy} style={actionBtn('var(--color-success)', busy)}>
             恢复原码
           </button>
-          <button type="button" onClick={() => setCode('BLANK')} style={actionBtn('#8a8177')}>空白格 BLANK</button>
+          <button
+            type="button"
+            onClick={() => setCode('BLANK')}
+            style={{ padding: '8px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)', background: 'transparent', color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', fontWeight: 500, cursor: 'pointer' }}
+          >空白格 BLANK</button>
         </div>
 
         <div className="flex gap-2 items-center mb-2">
@@ -440,6 +443,11 @@ export default function CorrectionPage() {
       .filter((c) => (c.correctedCode ?? c.code) === activeCode)
       .sort((a, b) => a.row - b.row || a.col - b.col);
   }, [visibleCells, activeCode]);
+  // 当前编码的实际豆色（右栏标题色点）
+  const activeHex = useMemo(() => {
+    if (activeCode == null || activeCode === 'BLANK') return null;
+    return swatches.find((s) => s.code === activeCode)?.hex ?? codeCells[0]?.color?.hex ?? null;
+  }, [activeCode, swatches, codeCells]);
   // 渐进渲染：初始只挂载前 N 个，右栏滚动近底部自动追加（避免大组一次渲染 5 千 DOM 卡顿）
   const RENDER_STEP = 300;
   const [renderLimit, setRenderLimit] = useState(RENDER_STEP);
@@ -570,7 +578,7 @@ export default function CorrectionPage() {
             type="button"
             onClick={exportCorrections}
             disabled={correctedCount === 0}
-            style={{ ...controlStyle(), fontWeight: 600, color: '#fff', background: correctedCount > 0 ? '#2f9e6e' : undefined, borderColor: correctedCount > 0 ? '#2f9e6e' : undefined, opacity: correctedCount === 0 ? 0.45 : 1, cursor: correctedCount === 0 ? 'not-allowed' : 'pointer' }}
+            style={{ ...controlStyle(), fontWeight: 600, color: '#fff', background: correctedCount > 0 ? 'var(--color-success)' : undefined, borderColor: correctedCount > 0 ? 'var(--color-success)' : undefined, opacity: correctedCount === 0 ? 0.45 : 1, cursor: correctedCount === 0 ? 'not-allowed' : 'pointer' }}
             title="导出全部已校正格子（zip：manifest.csv + 格子裁剪图），供模型训练"
           >
             导出校正数据{correctedCount > 0 ? `（${correctedCount}）` : ''}
@@ -639,49 +647,59 @@ export default function CorrectionPage() {
           )}
 
           {imageError && (
-            <motion.p variants={staggerItem} className="px-3 py-2 rounded-lg text-sm" style={{ background: '#FDF0F0', border: '1px solid #F0C9C9', color: '#C0392B' }}>
+            <motion.p variants={staggerItem} className="px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--color-error-light)', border: '1px solid var(--color-error)', color: 'var(--color-error)' }}>
               ⚠ 原图加载失败（文件可能已被清理），缩略图无法显示，但修正功能不受影响
             </motion.p>
           )}
 
           {unmappedCount > 0 && (
-            <span className="text-xs px-2 py-1 rounded" style={{ background: '#FDF4EA', color: '#D4802B' }}>
+            <span className="text-xs px-2 py-1 rounded" style={{ background: 'var(--color-warning-light)', color: 'var(--color-warning)' }}>
               ⚠ {unmappedCount} 格颜色库外（已全部列入待复核）
             </span>
           )}
         </motion.div>
 
         {codeList.length === 0 && (
-          <motion.p variants={staggerItem} style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
+          <motion.div variants={staggerItem} className="py-12 text-center" style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
             {mode === 'review' ? '没有需要复核的格子 🎉' : '没有匹配的格子'}
-          </motion.p>
+          </motion.div>
         )}
 
         <div className="space-y-4">
           <motion.div variants={staggerItem} className="flex items-start gap-4">
-              {/* 左栏：编码列表（按有效码分组） */}
+              {/* 左栏：编码列表（按有效码分组，自然序） */}
               <div
-                className="w-36 shrink-0 rounded-xl p-1.5 max-h-[70vh] overflow-y-auto"
-                style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)' }}
+                className="w-40 shrink-0 rounded-xl p-2 max-h-[70vh] overflow-y-auto"
+                style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-xs)' }}
               >
                 {codeList.map(({ code, count }) => {
                   const selected = activeCode === code;
+                  const label = code === 'BLANK' ? '空白' : code;
                   return (
                     <button
                       key={code}
                       type="button"
                       onClick={() => { setSelectedCode(code); }}
-                      className="w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded-md mb-0.5 text-left"
+                      className="w-full flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-md mb-0.5 text-left transition-colors hover:bg-[var(--color-surface-hover)]"
                       style={{
                         background: selected ? 'var(--color-accent)' : 'transparent',
-                        color: selected ? '#fff' : 'var(--color-text)',
+                        color: selected ? 'var(--color-text-inverse)' : 'var(--color-text)',
                         cursor: 'pointer',
                       }}
                     >
                       <span className="truncate" style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: selected ? 700 : 500 }}>
-                        {code === 'BLANK' ? '空白' : code}
+                        {label}
                       </span>
-                      <span style={{ fontSize: '10px', opacity: 0.75, fontFamily: 'var(--font-mono)' }}>{count}</span>
+                      <span
+                        className="rounded-full px-1.5 text-[10px] leading-4 shrink-0"
+                        style={{
+                          background: selected ? 'rgba(255,255,255,0.22)' : 'var(--color-bg-secondary)',
+                          color: selected ? '#fff' : 'var(--color-text-muted)',
+                          fontFamily: 'var(--font-mono)',
+                        }}
+                      >
+                        {count}
+                      </span>
                     </button>
                   );
                 })}
@@ -689,10 +707,15 @@ export default function CorrectionPage() {
                   <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>无匹配</span>
                 )}
               </div>
-              {/* 右栏：当前编码的全部格子（独立滚动，不影响左栏/工具栏） */}
-              <div className="flex-1 min-w-0 max-h-[70vh] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }} onScroll={onRightScroll}>
-                <div className="flex items-center gap-3 mb-2">
-                  <span className="text-sm" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
+              {/* 右栏：当前编码的全部格子（卡片 + 独立滚动 + 渐进渲染） */}
+              <div className="flex-1 min-w-0 rounded-xl" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-xs)' }}>
+                <div className="flex items-center gap-2.5 px-4 py-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
+                  <span
+                    className="w-4 h-4 rounded-full shrink-0"
+                    style={{ background: normalizeHex(activeHex) ?? 'var(--color-bg-secondary)', border: '1px solid var(--color-border-strong)' }}
+                    title={activeCode == null ? undefined : `色号 ${activeCode}`}
+                  />
+                  <span className="text-base" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
                     {activeCode == null ? '—' : (activeCode === 'BLANK' ? '空白' : activeCode)}
                   </span>
                   <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{codeCells.length} 格</span>
@@ -704,41 +727,48 @@ export default function CorrectionPage() {
                   >
                     {codeCells.length > 0 && codeCells.every((c) => selected.has(`${c.row}:${c.col}`)) ? '取消全选' : '全选'}
                   </button>
+                  {renderLimit < codeCells.length && (
+                    <span className="ml-auto text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                      已加载 {renderLimit}/{codeCells.length} · 滚动继续加载
+                    </span>
+                  )}
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {renderedCells.map((cell) => (
-                    <CellThumb
-                      key={`${cell.row}:${cell.col}`}
-                      cell={cell}
-                      rows={blueprint.rows}
-                      cols={blueprint.cols}
-                      cropBox={blueprint.cropBox}
-                      image={image}
-                      checked={selected.has(`${cell.row}:${cell.col}`)}
-                      onToggle={() => toggleCell(`${cell.row}:${cell.col}`)}
-                      onEdit={() => openEditor([`${cell.row}:${cell.col}`])}
-                    />
-                  ))}
+                <div className="max-h-[calc(70vh-53px)] overflow-y-auto p-3" style={{ scrollbarWidth: 'thin' }} onScroll={onRightScroll}>
+                  <div className="flex flex-wrap gap-2">
+                    {renderedCells.map((cell) => (
+                      <CellThumb
+                        key={`${cell.row}:${cell.col}`}
+                        cell={cell}
+                        rows={blueprint.rows}
+                        cols={blueprint.cols}
+                        cropBox={blueprint.cropBox}
+                        image={image}
+                        checked={selected.has(`${cell.row}:${cell.col}`)}
+                        onToggle={() => toggleCell(`${cell.row}:${cell.col}`)}
+                        onEdit={() => openEditor([`${cell.row}:${cell.col}`])}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             </motion.div>
         </div>
       </motion.div>
 
-      {/* 底部操作条 */}
+      {/* 底部操作条（surface 卡片，与全局一致） */}
       {selectedCount > 0 && (
         <div
-          className="fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-2.5 rounded-xl shadow-lg"
-          style={{ background: 'rgba(38,33,29,0.94)', color: '#fffaf0', zIndex: 20 }}
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-2.5 rounded-xl z-20"
+          style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)' }}
         >
-          <span className="text-sm">已选 <b>{selectedCount}</b> 格</span>
+          <span className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>已选 <b>{selectedCount}</b> 格</span>
           {selectedBreakdown.length > 0 && (
-            <span className="text-xs opacity-80 hidden sm:inline" style={{ fontFamily: 'var(--font-mono)' }}>
+            <span className="text-xs hidden sm:inline" style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
               {selectedBreakdown.slice(0, 3).map((b) => `${b.code}×${b.count}`).join(' ')}
             </span>
           )}
-          <button type="button" onClick={() => openEditor(selectedKeys)} style={actionBtn('#3D72D8')}>设为编码…</button>
-          <button type="button" onClick={() => openEditor(selectedKeys)} style={actionBtn('#2f9e6e')}>恢复原码</button>
+          <button type="button" onClick={() => openEditor(selectedKeys)} style={actionBtn('var(--color-accent)')}>设为编码…</button>
+          <button type="button" onClick={() => openEditor(selectedKeys)} style={actionBtn('var(--color-success)')}>恢复原码</button>
         </div>
       )}
 
@@ -763,8 +793,8 @@ function controlStyle(): React.CSSProperties {
     height: 34,
     padding: '0 10px',
     border: '1px solid var(--color-border)',
-    borderRadius: 8,
-    background: 'var(--color-card)',
+    borderRadius: 'var(--radius-md)',
+    background: 'var(--color-surface)',
     color: 'var(--color-text)',
     fontFamily: 'var(--font-body)',
     fontSize: 'var(--text-sm)',
@@ -773,20 +803,21 @@ function controlStyle(): React.CSSProperties {
 
 function smallBtn(): React.CSSProperties {
   return {
-    padding: '2px 8px',
+    padding: '3px 10px',
     border: '1px solid var(--color-border)',
-    borderRadius: 6,
+    borderRadius: 'var(--radius-md)',
     background: 'transparent',
-    color: 'var(--color-text-muted)',
+    color: 'var(--color-text-secondary)',
     fontSize: 'var(--text-xs)',
     cursor: 'pointer',
+    transition: 'background 0.15s',
   };
 }
 
 function actionBtn(color: string, disabled = false): React.CSSProperties {
   return {
     padding: '8px 16px',
-    borderRadius: 8,
+    borderRadius: 'var(--radius-md)',
     border: 'none',
     background: color,
     color: '#fff',
