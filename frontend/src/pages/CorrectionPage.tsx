@@ -306,7 +306,7 @@ export default function CorrectionPage() {
 
   const [threshold, setThreshold] = useState<(typeof THRESHOLDS)[number]>(DEFAULT_THRESHOLD);
   const [mode, setMode] = useState<'review' | 'all'>('review');
-  const [onlyUnfixed, setOnlyUnfixed] = useState(false);
+  const [fixFilter, setFixFilter] = useState<'all' | 'unfixed' | 'fixed'>('all');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editor, setEditor] = useState<{ keys: string[] } | null>(null);
@@ -409,9 +409,10 @@ export default function CorrectionPage() {
         return coord.includes(q) || c.code.includes(q) || (c.correctedCode ?? '').includes(q);
       });
     }
-    if (onlyUnfixed) list = list.filter((c) => c.correctedCode == null);
+    if (fixFilter === 'unfixed') list = list.filter((c) => c.correctedCode == null);
+    if (fixFilter === 'fixed') list = list.filter((c) => c.correctedCode != null);
     return list;
-  }, [blueprint, mode, reviewCells, search, onlyUnfixed]);
+  }, [blueprint, mode, reviewCells, search, fixFilter]);
 
   // 左栏编码列表（按有效码 = corrected ?? code 分组，自然序：A2 < A10，空白排最后）
   const codeList = useMemo(() => {
@@ -608,10 +609,24 @@ export default function CorrectionPage() {
             </select>
           )}
 
-          <label className="flex items-center gap-1.5 text-sm cursor-pointer" style={{ color: 'var(--color-text)' }}>
-            <input type="checkbox" checked={onlyUnfixed} onChange={(e) => setOnlyUnfixed(e.target.checked)} />
-            仅看未修正
-          </label>
+          <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--color-border)' }}>
+            {([['all', '全部'], ['unfixed', '仅未修正'], ['fixed', '仅已修正']] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setFixFilter(value)}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: 'var(--text-xs)',
+                  background: fixFilter === value ? 'var(--color-accent)' : 'transparent',
+                  color: fixFilter === value ? '#fff' : 'var(--color-text)',
+                  cursor: 'pointer',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
 
           {mode === 'all' && (
             <input
