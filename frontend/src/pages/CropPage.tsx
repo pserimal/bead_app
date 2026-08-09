@@ -23,6 +23,10 @@ const MIN_CELL_COUNT = 1;
 const MAX_CELL_COUNT = 500;
 const ZOOM_MIN = 0.2;
 const ZOOM_MAX = 8;
+// 下限动态：fit 视图可能更小（平板视口 + 手机照片），放大后必须能缩回 fit
+function zoomFloor(fitScale: number): number {
+  return Math.min(ZOOM_MIN, fitScale || ZOOM_MIN);
+}
 
 const HANDLE_STYLE: Record<ResizeHandle, { left: string; top: string; cursor: string }> = {
   nw: { left: '0%', top: '0%', cursor: 'nwse-resize' },
@@ -138,6 +142,8 @@ export default function CropPage() {
   const cropRef = useRef(crop);
   const viewRef = useRef(view);
   const dragRef = useRef<DragState | null>(null);
+  // fit 时的 scale（缩放下限基准；初始与 ZOOM_MIN 一致）
+  const fitScaleRef = useRef(ZOOM_MIN);
   imageSizeRef.current = imageSize;
   cropRef.current = crop;
   viewRef.current = view;
@@ -160,6 +166,7 @@ export default function CropPage() {
     };
     viewRef.current = next;
     setView(next);
+    fitScaleRef.current = scale;
   }, []);
 
   const toImageCoord = useCallback((clientX: number, clientY: number) => {
@@ -182,7 +189,9 @@ export default function CropPage() {
     const cx = clientX - rect.left;
     const cy = clientY - rect.top;
     const previous = viewRef.current;
-    const nextScale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, previous.scale * (deltaY > 0 ? 0.88 : 1.12)));
+    // 动态下限：允许缩回 fit 初始 scale（大图/平板下 fit 可能 < 0.2）
+    const floor = zoomFloor(fitScaleRef.current);
+    const nextScale = Math.max(floor, Math.min(ZOOM_MAX, previous.scale * (deltaY > 0 ? 0.88 : 1.12)));
     if (nextScale === previous.scale) return;
     const next = {
       scale: nextScale,
