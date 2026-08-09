@@ -649,8 +649,8 @@ export default function CorrectionPage() {
                   <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>无匹配</span>
                 )}
               </div>
-              {/* 右栏：当前编码的全部格子 */}
-              <div className="flex-1 min-w-0">
+              {/* 右栏：当前编码的全部格子（独立滚动，不影响左栏/工具栏） */}
+              <div className="flex-1 min-w-0 max-h-[70vh] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-sm" style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>
                     {activeCode == null ? '—' : (activeCode === 'BLANK' ? '空白' : activeCode)}
