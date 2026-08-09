@@ -383,7 +383,7 @@ export default function BlueprintDetailPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => navigate(-1)} style={{ fontSize: 'var(--text-sm)', color: 'var(--color-accent)', padding: '6px 8px' }}>← 返回</button>
+            <button type="button" onClick={() => navigate('/blueprints')} style={{ fontSize: 'var(--text-sm)', color: 'var(--color-accent)', padding: '6px 8px' }}>← 任务历史</button>
             <button
               type="button"
               onClick={() => navigate(`/blueprints/${id}/correct`)}
