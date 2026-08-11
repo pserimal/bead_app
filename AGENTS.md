@@ -196,6 +196,17 @@ $PS -NoProfile -Command '$env:NODE_ENV="development"; Start-Process -FilePath "D
 # 停止：netstat 拿 PID → taskkill.exe /PID <pid> /F
 ```
 
+### 性能测试（必跑，修改图纸查看相关文件后）
+
+修改 `frontend/src/lib/boardCanvas.ts`、`useBoardViewer.ts`、`BlueprintDetailPage.tsx`、`ImmersionBoard.tsx` 任一文件后，**提交前必须**跑图纸查看器性能门禁：
+
+1. 打开 ≥90×158 蓝图详情页（移动端模拟 390x844x3 + cpuThrottlingRate 4，**reload 后节流会重置回 1x，需重新 emulate**）
+2. 把 `frontend/scripts/board-viewer-perf.js` 整个函数体粘贴到 chrome_devtools_evaluate_script 运行
+3. `pass: true` 才可提交（阈值：低缩放 ≤5k calls/80ms、高缩放 ≤32k calls/300ms、位图 ≤15MP；基线 28.4k/95ms）
+4. 另需 `cd frontend && node.exe node_modules/cross-env/dist/bin/cross-env.js NODE_ENV=test node_modules/vitest/vitest.mjs run`（156 tests）
+
+完整方法学与历史基线：`docs/board-viewer-perf.md`；单测结构锁：`frontend/src/lib/boardCanvas.test.ts`
+
 ```bash
 # Server (PART 3) — JDK 21 + Gradle (conda env bead-java or ./gradlew)
 cd server && gradle test --no-daemon        # 9 contract tests
