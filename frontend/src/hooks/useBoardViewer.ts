@@ -48,8 +48,10 @@ interface BoardViewer {
 
 const TAP_SLOP = 4;
 const REDRAW_DEBOUNCE_MS = 150;
-/** 整图模式位图面积上限（MP）。超过则切视口裁剪模式：位图固定视口大小，只画可见格子。
- * 24MP ≈ 90×158 板 158% 缩放（renderScale 1.58×dpr2）；再大 GPU 纹理合成卡顿（4096² 上限）。 */
+/** 整图模式位图上限：边长 4096（移动端 GPU/浏览器纹理上限——超限 canvas 显示异常/大面积消失，
+ * iOS Safari 尤甚）或面积 24MP。超过即切视口裁剪模式：位图固定视口大小，只画可见格子。
+ * 90×158 板 dpr2：scale > ~102% 即触发。 */
+const FULL_BOARD_MAX_DIM = 4096;
 const FULL_BOARD_MAX_MP = 24;
 
 interface PointerDrag {
@@ -96,13 +98,16 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
   const [view, setView] = useState<ViewState>({ scale: 1, panX: 0, panY: 0 });
   const [ready, setReady] = useState(false);
 
-  // 视口裁剪模式：整图位图面积超阈值（scale 大）时启用——位图固定视口大小，拖拽每帧重绘可见格
+  // 视口裁剪模式：整图位图边长超 4096（移动端纹理上限，超限显示异常/消失）或面积超 24MP
+  // 时启用——位图固定视口大小，拖拽每帧重绘可见格
   const viewportMode = useMemo(() => {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const boardW = cols * cellSize + AXIS_GUTTER * 2;
     const boardH = rows * cellSize + AXIS_GUTTER * 2;
     const renderScale = Math.max(1, Math.min(view.scale, 3));
-    return (boardW * boardH * renderScale * renderScale * dpr * dpr) / 1e6 > FULL_BOARD_MAX_MP;
+    const w = boardW * renderScale * dpr;
+    const h = boardH * renderScale * dpr;
+    return w > FULL_BOARD_MAX_DIM || h > FULL_BOARD_MAX_DIM || (w * h) / 1e6 > FULL_BOARD_MAX_MP;
   }, [cols, cellSize, rows, view.scale]);
   const viewportModeRef = useRef(viewportMode);
   viewportModeRef.current = viewportMode;

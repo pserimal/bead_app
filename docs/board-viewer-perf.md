@@ -55,8 +55,8 @@ Measured at **4× CPU throttle**, 390×844 dpr3, 90×158 = 14,220 cells:
 |--------|-----------|--------------------|---------|
 | Low-zoom redraw (scale < 0.35, no code text) | ≤ 5,000 calls · ≤ 80ms | ~2,700 calls / ~20ms | — |
 | High-zoom redraw (scale ≥ 0.35, code text) | ≤ 32,000 calls · ≤ 600ms | 28,451 calls (95–452ms) | 51,889 / 446ms |
-| Viewport-mode redraw (scale > 158%, culled) | ≤ 8,000 calls · ≤ 120ms | 172–1,588 calls / 1–9ms | 86MP texture (300%) |
-| Canvas bitmap | ≤ 15 MP | 9.6 MP full / 0.9–1.4 MP viewport | 86.2 MP (300%) |
+| Viewport-mode redraw (scale > 102%, culled) | ≤ 8,000 calls · ≤ 120ms | 172–1,588 calls / 1–9ms | 86MP texture (300%) |
+| Canvas bitmap | ≤ 15 MP · **max dim ≤ 4096** | 9.6 MP full / 0.9–1.4 MP viewport | 86.2 MP (300%) |
 | INP (optional trace verification) | ≤ 300ms | 154ms | 884ms |
 
 The thresholds are deliberately loose (≈3× headroom over baseline) so
@@ -75,11 +75,15 @@ the same 28k-call redraw); the **calls** count is the primary signal.
 - **High-zoom redraw** — the expensive-but-necessary path (text must be
   readable). Dominated by per-cell `fillText`/`strokeText`; static-layer
   `drawImage` must stay ≤ 1 call per redraw.
-- **Viewport-mode redraw** — scale > 158% switches to viewport culling
-  (bitmap = viewport size ≤ ~2MP, only visible cells drawn, ~2k calls per
-  drag frame). This is what makes drag at 300%+ smooth; before it, the
-  bitmap reached 86MP (12048×7152) — far past the 4096² GPU texture limit,
-  forcing software compositing and janky drags.
+- **Viewport-mode redraw** — scale > 102% (board width × renderScale × dpr
+  exceeds the 4096px texture limit, or area > 24MP) switches to viewport
+  culling (bitmap = viewport size ≤ ~2MP, only visible cells drawn, ~2k
+  calls per drag frame). This is what makes drag at 300%+ smooth; before
+  it, the bitmap reached 86MP (12048×7152) — far past the 4096² GPU
+  texture limit, forcing software compositing and janky drags. The 4096
+  edge limit also fixes **image disappearing on mobile**: iOS Safari et al.
+  render canvases wider than 4096px incorrectly (large blank areas), which
+  happened in full-board mode between 102%–158%.
 - **Bitmap** — canvas memory; dpr=2 cap × renderScale=3 cap (full mode);
   viewport mode is bounded by viewport size.
 - **INP** — end-to-end user-perceived latency; optional because it needs a
