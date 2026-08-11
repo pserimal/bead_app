@@ -22,7 +22,8 @@ async () => {
   const THRESHOLDS = {
     lowZoom: { maxCalls: 5000, maxMs: 80 },   // fit 视图（无编码文字）：基线 ~2.7k/~20ms
     highZoom: { maxCalls: 32000, maxMs: 600 }, // 放大（有文字）：基线 28.4k calls；ms 在 4x 节流下噪声大（实测 95-452ms），calls 为主信号
-    bitmapMP: 15,                              // 位图面积上限：基线 9.6MP
+    viewportMode: { maxCalls: 8000, maxMs: 120 }, // 视口裁剪模式（scale>158%）：只画可见格，基线 ~295 calls / ~1ms
+    bitmapMP: 15,                              // 位图面积上限：整图模式基线 9.6MP；视口模式 ≤ 2MP
   };
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -44,9 +45,11 @@ async () => {
       const m = t.match(/scale\(([\d.]+)\)/);
       return m ? parseFloat(m[1]) : 0;
     };
-    // 预热：点放大直到 ≥55%（避免预热过头 >100% 后缩放语义翻转；55% 时测 1 次 → ~69% 有文字）
+    // 预热：放大直到 ≥ targetScale（默认 0.55；视口模式档位传 2）。
+    // 注意视口模式下 wrapper transform = none（读不到 scale）→ scaleOf 返回 0 → 退化为固定次数。
+    const targetScale = label.includes('视口') ? 2 : 0.55;
     for (let i = 0; i < warmupClicks; i += 1) {
-      if (warmupClicks > 0 && scaleOf() >= 0.55) break;
+      if (warmupClicks > 0 && scaleOf() >= targetScale) break;
       trigger();
       await sleep(1300); // 预热：静默带到位（不计数）
     }
@@ -112,6 +115,9 @@ async () => {
   results.push(await measure(detailCanvas, '详情-低缩放', 0, detailTrigger));
   // 高缩放重绘（预热到 ≥55%，再测 1 次 → 有编码文字）
   results.push(await measure(detailCanvas, '详情-高缩放', 4, detailTrigger));
+  // 视口模式重绘（预热到 >158% → 位图 = 视口大小，只画可见格；拖拽每帧成本）
+  // 注意：预热次数需避开 MAX_ZOOM=8 封顶（封顶后缩放无变化不重绘）；4 次 × 1.25 从 ~65% → 159%
+  results.push(await measure(detailCanvas, '详情-视口模式', 4, detailTrigger));
 
   // ── 沉浸模式（无缩放按钮，触发 = dblclick；fit 19% 出发双击永远放大，语义安全）──
   const immersionBtn = findButton('沉浸模式');
@@ -123,6 +129,12 @@ async () => {
       const immTrigger = () => immCanvas.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, clientX: 195, clientY: 300 }));
       results.push(await measure(immCanvas, '沉浸-低缩放', 0, immTrigger));
       results.push(await measure(immCanvas, '沉浸-高缩放', 3, immTrigger));
+      // 沉浸模式视口档位：dblclick 在 >100% 时是缩小，wheel 1.12× 太慢 → 复合预热
+      // （dblclick×4 到 124% + wheel×3 到 174% 跨过 158% 阈值），然后测 1 次 wheel
+      const immViewportTrigger = () => immCanvas.dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: -100, clientX: 195, clientY: 300 }));
+      for (let i = 0; i < 4; i += 1) { immTrigger(); await sleep(1300); }
+      for (let i = 0; i < 3; i += 1) { immViewportTrigger(); await sleep(1300); }
+      results.push(await measure(immCanvas, '沉浸-视口模式', 0, immViewportTrigger));
     } else {
       results.push({ label: '沉浸-未进入', error: '沉浸模式 canvas 未出现' });
       pass = false;
@@ -136,7 +148,8 @@ async () => {
   for (const r of results) {
     if (r.error) continue;
     const isLow = r.label.includes('低缩放');
-    const t = isLow ? THRESHOLDS.lowZoom : THRESHOLDS.highZoom;
+    const isVp = r.label.includes('视口');
+    const t = isLow ? THRESHOLDS.lowZoom : isVp ? THRESHOLDS.viewportMode : THRESHOLDS.highZoom;
     const okCalls = r.calls <= t.maxCalls;
     const okMs = r.ms <= t.maxMs;
     const okBitmap = r.bitmapMP <= THRESHOLDS.bitmapMP;

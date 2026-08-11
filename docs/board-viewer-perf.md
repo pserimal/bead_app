@@ -51,11 +51,12 @@ then exits. No manual interaction needed.
 
 Measured at **4× CPU throttle**, 390×844 dpr3, 90×158 = 14,220 cells:
 
-| Metric | Threshold | Baseline (6f21c81) | Pre-fix |
+| Metric | Threshold | Baseline (6f21c81 / 6f21c81+) | Pre-fix |
 |--------|-----------|--------------------|---------|
 | Low-zoom redraw (scale < 0.35, no code text) | ≤ 5,000 calls · ≤ 80ms | ~2,700 calls / ~20ms | — |
 | High-zoom redraw (scale ≥ 0.35, code text) | ≤ 32,000 calls · ≤ 600ms | 28,451 calls (95–452ms) | 51,889 / 446ms |
-| Canvas bitmap | ≤ 15 MP | 9.6 MP (4016×2384) | 9.6 MP |
+| Viewport-mode redraw (scale > 158%, culled) | ≤ 8,000 calls · ≤ 120ms | 172–1,588 calls / 1–9ms | 86MP texture (300%) |
+| Canvas bitmap | ≤ 15 MP | 9.6 MP full / 0.9–1.4 MP viewport | 86.2 MP (300%) |
 | INP (optional trace verification) | ≤ 300ms | 154ms | 884ms |
 
 The thresholds are deliberately loose (≈3× headroom over baseline) so
@@ -66,7 +67,7 @@ the change reintroduced the known bottleneck — fix or justify before commit.
 Note: `ms` is measured under 4× CPU throttle and fluctuates (95–452ms for
 the same 28k-call redraw); the **calls** count is the primary signal.
 
-## Why these four measurements
+## Why these six measurements
 
 - **Low-zoom redraw** — the view users land on (fit). Previously the
   biggest trap: 14k fillText/strokeText at 1–3px font sizes, invisible but
@@ -74,17 +75,24 @@ the same 28k-call redraw); the **calls** count is the primary signal.
 - **High-zoom redraw** — the expensive-but-necessary path (text must be
   readable). Dominated by per-cell `fillText`/`strokeText`; static-layer
   `drawImage` must stay ≤ 1 call per redraw.
-- **Bitmap** — canvas memory; dpr=2 cap × renderScale=3 cap.
+- **Viewport-mode redraw** — scale > 158% switches to viewport culling
+  (bitmap = viewport size ≤ ~2MP, only visible cells drawn, ~2k calls per
+  drag frame). This is what makes drag at 300%+ smooth; before it, the
+  bitmap reached 86MP (12048×7152) — far past the 4096² GPU texture limit,
+  forcing software compositing and janky drags.
+- **Bitmap** — canvas memory; dpr=2 cap × renderScale=3 cap (full mode);
+  viewport mode is bounded by viewport size.
 - **INP** — end-to-end user-perceived latency; optional because it needs a
   full performance trace, but run it when a change touches gesture/redraw
   scheduling (`useBoardViewer.ts`).
 
 ## History
 
-| Date | Commit | Change | Low-zoom | High-zoom | INP |
-|------|--------|--------|----------|-----------|-----|
-| 2026-08-11 | `6f21c81` | static-layer cache + CODE_MIN_SCALE + stroke threshold 28→12 | ~2.7k calls / ~20ms | 28.4k / 95ms | 154ms |
-| 2026-08-11 | (before) | full redraw every frame | — | 51.9k / 446ms | 884ms |
+| Date | Commit | Change | Low-zoom | High-zoom | Viewport | INP |
+|------|--------|--------|----------|-----------|----------|-----|
+| 2026-08-11 | `6f21c81` | static-layer cache + CODE_MIN_SCALE + stroke threshold 28→12 | ~2.7k calls / ~20ms | 28.4k / 95ms | — | 154ms |
+| 2026-08-11 | (viewport mode) | culled viewport rendering at scale > 158%; first-paint ready state (loading) | 995 / 3ms | 28.4k / 261ms | 172–1.6k calls / 1–9ms, ≤1.4MP | — |
+| 2026-08-11 | (before) | full redraw every frame | — | 51.9k / 446ms | 86MP texture at 300% | 884ms |
 
 ## Related
 

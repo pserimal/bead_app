@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AXIS_GUTTER, drawBoard } from './boardCanvas';
+import { AXIS_GUTTER, drawBoard, drawBoardViewport } from './boardCanvas';
 import type { BlueprintCellDto } from '../types/api';
 
 /**
@@ -153,6 +153,52 @@ describe('drawBoard 分层缓存（性能回归锁）', () => {
     const bigStrokes = opsOf(big, ctxFor).filter((o) => o.op === 'strokeText').length;
     // 6× 缩放：字号足够大 → 无描边（0 或仅轴无关）
     expect(bigStrokes).toBe(0);
+  });
+
+  it('drawBoardViewport：位图固定视口尺寸（不随 scale 增长），只绘制可见格子', () => {
+    // board 10×8 格 × 12px = 224×208（含 gutter）；视口 200×200；scale 3 → 可见 ~5×5 格
+    const canvas = makeCanvas();
+    drawBoardViewport(canvas, 8, 10, 12, 3, 0, 0, 200, 200, cells, 'A1', null);
+    // 位图 = 视口 × dpr(1)，而不是 board×renderScale（86MP 问题的根源）
+    expect(canvas.width).toBe(200);
+    expect(canvas.height).toBe(200);
+    const ops = opsOf(canvas, ctxFor);
+    const codeTexts = ops.filter(
+      (o) => o.op === 'fillText' && typeof o.args[0] === 'string' && /^[A-Z][0-9]+$/.test(o.args[0] as string),
+    );
+    // 可见 [col1,8) × [row1,7)：非 BLANK 是偶数列 {2,4,6} → 3 列 × 6 行 = 18
+    expect(codeTexts).toHaveLength(18);
+  });
+
+  it('drawBoardViewport：平移后可见范围变化（裁剪跟随 pan）', () => {
+    const canvas = makeCanvas();
+    drawBoardViewport(canvas, 8, 10, 12, 3, 100, 100, 200, 200, cells, 'A1', null);
+    const ops = opsOf(canvas, ctxFor);
+    const codeTexts = ops.filter(
+      (o) => o.op === 'fillText' && typeof o.args[0] === 'string' && /^[A-Z][0-9]+$/.test(o.args[0] as string),
+    );
+    // pan(100,100) 后可见 [0,5)×[0,4)：非 BLANK 偶数列 {0,2,4} → 3 列 × 4 行 = 12
+    expect(codeTexts).toHaveLength(12);
+  });
+
+  it('drawBoardViewport：板子完全移出视口时不绘制格子（返回，无 fillText/fillRect 格子层）', () => {
+    const canvas = makeCanvas();
+    drawBoardViewport(canvas, 8, 10, 12, 3, 5000, 5000, 200, 200, cells, 'A1', null);
+    const ops = opsOf(canvas, ctxFor);
+    const codeTexts = ops.filter((o) => o.op === 'fillText');
+    expect(codeTexts).toHaveLength(0);
+  });
+
+  it('drawBoardViewport：高缩放文字仍绘制（视口模式按屏幕像素渲染，保持清晰）', () => {
+    const canvas = makeCanvas();
+    // scale 3 ≥ CODE_MIN_SCALE → 有文字；scale 6 也应有（每格 fillText）
+    drawBoardViewport(canvas, 8, 10, 12, 6, 0, 0, 390, 844, cells, 'A1', null);
+    const ops = opsOf(canvas, ctxFor);
+    const codeTexts = ops.filter(
+      (o) => o.op === 'fillText' && typeof o.args[0] === 'string' && /^[A-Z][0-9]+$/.test(o.args[0] as string),
+    );
+    // 390×844 / 6 → 可见 [1,8)×[0,8)：非 BLANK 偶数列 {2,4,6} → 3 列 × 8 行 = 24
+    expect(codeTexts).toHaveLength(24);
   });
 
   it('渲染结构完整：BLANK 虚线框、UNMAPPED 斜线、网格线、坐标轴刻度都在', () => {

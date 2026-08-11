@@ -91,14 +91,25 @@ export default function ImmersionBoard({
             position: 'absolute',
             left: '50%',
             top: '50%',
-            width: viewer.boardWidth,
-            height: viewer.boardHeight,
-            transform: `translate(calc(-50% + ${view.panX}px), calc(-50% + ${view.panY}px)) scale(${view.scale})`,
+            width: viewer.viewportMode ? '100%' : viewer.boardWidth,
+            height: viewer.viewportMode ? '100%' : viewer.boardHeight,
+            transform: viewer.viewportMode
+              ? 'none'
+              : `translate(calc(-50% + ${view.panX}px), calc(-50% + ${view.panY}px)) scale(${view.scale})`,
             transformOrigin: 'center center',
           }}
         >
           <canvas ref={canvasRef} aria-label="拼豆图纸全屏预览" />
         </div>
+
+        {!viewer.ready && (
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ background: '#17130f', color: 'rgba(255,250,240,0.6)', fontSize: 'var(--text-sm)' }}
+          >
+            绘制中…
+          </div>
+        )}
 
         {/* 缩放百分比（右下角，极小） */}
         <div

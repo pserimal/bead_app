@@ -142,14 +142,34 @@ export default function BlueprintDetailPage() {
                 position: 'absolute',
                 left: '50%',
                 top: '50%',
-                width: viewer.boardWidth,
-                height: viewer.boardHeight,
-                transform: `translate(calc(-50% + ${view.panX}px), calc(-50% + ${view.panY}px)) scale(${view.scale})`,
+                width: viewer.viewportMode ? '100%' : viewer.boardWidth,
+                height: viewer.viewportMode ? '100%' : viewer.boardHeight,
+                transform: viewer.viewportMode
+                  ? 'none'
+                  : `translate(calc(-50% + ${view.panX}px), calc(-50% + ${view.panY}px)) scale(${view.scale})`,
                 transformOrigin: 'center center',
               }}
             >
               <canvas ref={canvasRef} aria-label="彩色拼豆图纸" />
             </div>
+
+            {!viewer.ready && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'var(--color-bg-secondary)',
+                  zIndex: 4,
+                  fontSize: 'var(--text-sm)',
+                  color: 'var(--color-text-muted)',
+                }}
+              >
+                绘制中…
+              </div>
+            )}
 
             {hover && (
               <div

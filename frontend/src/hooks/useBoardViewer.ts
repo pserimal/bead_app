@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AXIS_GUTTER, clampZoom, drawBoard } from '../lib/boardCanvas';
+import { AXIS_GUTTER, clampZoom, drawBoard, drawBoardViewport } from '../lib/boardCanvas';
 import type { HoverCell, ViewState } from '../lib/boardCanvas';
 import type { BlueprintCellDto } from '../types/api';
 
@@ -35,6 +35,10 @@ interface BoardViewer {
   viewportSize: { width: number; height: number };
   boardWidth: number;
   boardHeight: number;
+  /** 首次绘制完成前为 false（超大板子 fit 首次重绘可达 1-2s，页面应显示 loading） */
+  ready: boolean;
+  /** 视口裁剪模式（位图 = 视口大小，只画可见格）：wrapper 变换应为 none */
+  viewportMode: boolean;
   cellAt: (clientX: number, clientY: number) => HoverCell | null;
   fitView: () => void;
   resetView: () => void;
@@ -44,6 +48,9 @@ interface BoardViewer {
 
 const TAP_SLOP = 4;
 const REDRAW_DEBOUNCE_MS = 150;
+/** 整图模式位图面积上限（MP）。超过则切视口裁剪模式：位图固定视口大小，只画可见格子。
+ * 24MP ≈ 90×158 板 158% 缩放（renderScale 1.58×dpr2）；再大 GPU 纹理合成卡顿（4096² 上限）。 */
+const FULL_BOARD_MAX_MP = 24;
 
 interface PointerDrag {
   pointerId: number;
@@ -68,9 +75,15 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
   const dragRef = useRef<PointerDrag | null>(null);
   const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const pinchRef = useRef<PinchState | null>(null);
-  const drawnRef = useRef<{ scale: number; highlight: string | null }>({ scale: 0, highlight: null });
+  const drawnRef = useRef<{ scale: number; highlight: string | null; mode: 'full' | 'viewport' }>({
+    scale: 0,
+    highlight: null,
+    mode: 'full',
+  });
   const redrawTimerRef = useRef<number | null>(null);
   const rafRef = useRef<number | null>(null);
+  const redrawRafRef = useRef<number | null>(null); // 视口模式拖动/捏合期间的 rAF 合并
+  const readyRef = useRef(false);
   // 回调走 ref：手势 effect 不随回调身份重绑
   const onCellTapRef = useRef(options.onCellTap);
   const onHoverRef = useRef(options.onHover);
@@ -81,14 +94,32 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
 
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [view, setView] = useState<ViewState>({ scale: 1, panX: 0, panY: 0 });
+  const [ready, setReady] = useState(false);
+
+  // 视口裁剪模式：整图位图面积超阈值（scale 大）时启用——位图固定视口大小，拖拽每帧重绘可见格
+  const viewportMode = useMemo(() => {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const boardW = cols * cellSize + AXIS_GUTTER * 2;
+    const boardH = rows * cellSize + AXIS_GUTTER * 2;
+    const renderScale = Math.max(1, Math.min(view.scale, 3));
+    return (boardW * boardH * renderScale * renderScale * dpr * dpr) / 1e6 > FULL_BOARD_MAX_MP;
+  }, [cols, cellSize, rows, view.scale]);
+  const viewportModeRef = useRef(viewportMode);
+  viewportModeRef.current = viewportMode;
 
   const boardWidth = cols * cellSize + AXIS_GUTTER * 2;
   const boardHeight = rows * cellSize + AXIS_GUTTER * 2;
 
-  /** 拖动/缩放时直接改 DOM transform（不走 React state），松手才同步回 view */
+  /** 拖动/缩放时直接改 DOM transform（不走 React state），松手才同步回 view。
+   *  视口模式下位图按屏幕像素绘制（已含偏移），wrapper 变换必须为 none。 */
   const applyTransform = useCallback((panX: number, panY: number, scale: number) => {
     const el = wrapperRef.current;
-    if (el) el.style.transform = `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${scale})`;
+    if (!el) return;
+    if (viewportModeRef.current) {
+      el.style.transform = 'none';
+      return;
+    }
+    el.style.transform = `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${scale})`;
   }, []);
 
   const fitView = useCallback(() => {
@@ -162,7 +193,8 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
     setView(next);
   }, []);
 
-  // 视口尺寸（ResizeObserver）
+  // 视口尺寸（ResizeObserver）：挂载时 blueprint 未加载、refs 未填充，必须在 rows/cols
+  // 变化（数据到达）时重跑；观察期内的 resize 由 observer 覆盖。
   useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
@@ -171,46 +203,95 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
     const observer = new ResizeObserver(updateSize);
     observer.observe(viewport);
     return () => observer.disconnect();
-  }, []);
+  }, [rows, cols]);
 
   // 挂载即适应窗口
   useEffect(() => {
     fitView();
   }, [fitView]);
 
-  // 重绘：锁定切换/首次强制立即；缩放一律 150ms 防抖（连续缩放只做 transform，停止后清晰化）
+  /** 视口模式拖动/捏合期间的连续重绘（rAF 合并，每帧只画可见格子，~10ms） */
+  const scheduleViewportRedraw = useCallback(() => {
+    if (redrawRafRef.current !== null) return;
+    redrawRafRef.current = requestAnimationFrame(() => {
+      redrawRafRef.current = null;
+      const canvas = canvasRef.current;
+      if (!canvas || !viewportModeRef.current) return;
+      const v = viewRef.current;
+      drawBoardViewport(
+        canvas, rows, cols, cellSize,
+        v.scale, v.panX, v.panY,
+        viewportSize.width, viewportSize.height,
+        cellsByPosition, longestCode, highlightRef.current,
+      );
+      drawnRef.current = { scale: v.scale, highlight: highlightRef.current, mode: 'viewport' };
+      if (!readyRef.current) {
+        readyRef.current = true;
+        setReady(true);
+      }
+    });
+  }, [cellsByPosition, cellSize, cols, longestCode, rows, viewportSize.height, viewportSize.width]);
+
+  /** 统一绘制入口：视口模式 drawBoardViewport（立即，快）；整图模式 drawBoard（防抖/跳过缩小） */
+  const drawFrame = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const v = viewRef.current;
+    const targetHighlight = highlightRef.current;
+    if (viewportModeRef.current) {
+      drawBoardViewport(
+        canvas, rows, cols, cellSize,
+        v.scale, v.panX, v.panY,
+        viewportSize.width, viewportSize.height,
+        cellsByPosition, longestCode, targetHighlight,
+      );
+      drawnRef.current = { scale: v.scale, highlight: targetHighlight, mode: 'viewport' };
+    } else {
+      // 缩小跳过仅限同模式内；视口→整图模式切换必须强制重绘（canvas 样式/位图需复位）
+      if (drawnRef.current.mode !== 'viewport' && drawnRef.current.highlight === targetHighlight && v.scale <= drawnRef.current.scale) return;
+      drawBoard(canvas, rows, cols, cellSize, v.scale, cellsByPosition, longestCode, targetHighlight);
+      drawnRef.current = { scale: v.scale, highlight: targetHighlight, mode: 'full' };
+    }
+    if (!readyRef.current) {
+      readyRef.current = true;
+      setReady(true);
+    }
+  }, [cellsByPosition, cellSize, cols, longestCode, rows, viewportSize.height, viewportSize.width]);
+
+  // 重绘：视口模式立即 rAF（快，无需防抖，保证捏合/缩放连续帧）；
+  // 整图模式保持锁定切换/首次强制立即、缩放 150ms 防抖、缩小跳过。
   useEffect(() => {
     if (!canvasRef.current) return;
     if (redrawTimerRef.current !== null) {
       window.clearTimeout(redrawTimerRef.current);
       redrawTimerRef.current = null;
     }
+    if (viewportModeRef.current) {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        drawFrame();
+      });
+      return;
+    }
     const highlight = highlightRef.current;
-    const force = drawnRef.current.highlight !== highlight || drawnRef.current.scale === 0;
+    // 视口→整图模式切换（drawn.mode==='viewport'）必须强制重绘：canvas 位图/样式需复位
+    const force = drawnRef.current.highlight !== highlight || drawnRef.current.scale === 0 || drawnRef.current.mode === 'viewport';
     const scale = view.scale;
     if (!force && scale <= drawnRef.current.scale) return;
-    const draw = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      const target = viewRef.current.scale;
-      const targetHighlight = highlightRef.current;
-      if (drawnRef.current.highlight === targetHighlight && target <= drawnRef.current.scale) return;
-      drawBoard(canvas, rows, cols, cellSize, target, cellsByPosition, longestCode, targetHighlight);
-      drawnRef.current = { scale: target, highlight: targetHighlight };
-    };
     if (force) {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       rafRef.current = requestAnimationFrame(() => {
         rafRef.current = null;
-        draw();
+        drawFrame();
       });
     } else {
       redrawTimerRef.current = window.setTimeout(() => {
         redrawTimerRef.current = null;
-        draw();
+        drawFrame();
       }, REDRAW_DEBOUNCE_MS);
     }
-  }, [rows, cols, cellSize, view.scale, highlightCode, cellsByPosition, longestCode]);
+  }, [rows, cols, cellSize, view.scale, highlightCode, cellsByPosition, longestCode, viewportMode, viewportSize, drawFrame]);
 
   // 手势：单指拖动 / 双指捏合 / 双击 / 滚轮 / 点击（4px 阈值）
   useEffect(() => {
@@ -266,6 +347,8 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
           };
           viewRef.current = next;
           applyTransform(next.panX, next.panY, next.scale);
+          // 视口模式：位图只覆盖视口，捏合期间每帧重绘可见格（快）；整图模式仅 transform 即可
+          if (viewportModeRef.current) scheduleViewportRedraw();
         }
         event.preventDefault();
         return;
@@ -282,6 +365,7 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
         };
         viewRef.current = next;
         applyTransform(next.panX, next.panY, next.scale);
+        if (viewportModeRef.current) scheduleViewportRedraw();
         onHoverRef.current?.(null);
         event.preventDefault();
         return;
@@ -343,7 +427,7 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
       viewport.removeEventListener('wheel', onWheel);
       viewport.removeEventListener('dblclick', onDoubleClick);
     };
-  }, [applyTransform, cellAt, zoomAt]);
+  }, [applyTransform, cellAt, scheduleViewportRedraw, zoomAt]);
 
   return useMemo(
     () => ({
@@ -354,12 +438,14 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
       viewportSize,
       boardWidth,
       boardHeight,
+      ready,
+      viewportMode,
       cellAt,
       fitView,
       resetView,
       zoomBy,
       zoomAt,
     }),
-    [view, viewportSize, boardWidth, boardHeight, cellAt, fitView, resetView, zoomBy, zoomAt],
+    [view, viewportSize, boardWidth, boardHeight, cellAt, fitView, resetView, zoomBy, zoomAt, ready, viewportMode],
   );
 }
