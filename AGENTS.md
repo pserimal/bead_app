@@ -165,6 +165,37 @@ The old **FastAPI backend** (`backend/`) was fully removed in commit `77d564d` (
 
 ## COMMANDS
 
+### 本地启动（WSL2 + Windows interop，2026-08-11 实测）
+
+环境事实：bash 是 WSL2；三个服务都是 **Windows 进程**（JDK/conda/node 在 Windows 侧）；远程 DB `192.168.5.88:5432` **可达**（server 默认配置直连，无需本地 PG）。
+
+**坑（违反必踩）**：
+1. `cmd.exe /c "... > file"` 嵌套重定向在 interop 下解析失效（文件不创建）——禁用
+2. bash `&` 后台启动 Windows exe，bash 命令退出时 interop 子进程被 WSL 杀掉——禁用
+3. 必须用 **PowerShell `Start-Process`** 创建脱离 WSL 进程树的独立进程；PowerShell 从 WSL 调用会静默挂起（GUI 子系统），**所有命令加 timeout**，通过日志 + netstat 验证而非等命令返回
+4. Windows 进程读不了 WSL symlink `artifacts/models/current` → `MODEL_ARTIFACT_DIR` 用真实目录（当前 `crnn_color_mard_v8-2026-08-09T04-30-00Z`）
+5. Windows 全局 `NODE_ENV=production` → vite dev 必须 `$env:NODE_ENV="development"`
+
+```bash
+# 三件套启动模板（每条命令加 timeout 15-60s）
+PS=/mnt/c/WINDOWS/system32/WindowsPowerShell/v1.0/powershell.exe
+
+# 1) server :8080（默认配置连远程 192.168.5.88）
+$PS -NoProfile -Command 'Start-Process -FilePath "D:\devtools\jdk\jdk-21.0.2\bin\java.exe" -ArgumentList "-jar","D:\projects\python\ai_dou\server\build\libs\bead-server-0.1.0.jar" -WorkingDirectory "D:\projects\python\ai_dou" -RedirectStandardOutput "D:\projects\python\ai_dou\.scratch\server.log" -RedirectStandardError "D:\projects\python\ai_dou\.scratch\server.err.log" -WindowStyle Hidden'
+
+# 2) image_service :8001（模型目录用真实路径，不用 symlink）
+$PS -NoProfile -Command '$env:MODEL_ARTIFACT_DIR="D:\projects\python\ai_dou\artifacts\models\crnn_color_mard_v8-2026-08-09T04-30-00Z"; Start-Process -FilePath "E:\devtools\conda\envs\bead-train\python.exe" -ArgumentList "-m","uvicorn","image_service.app.main:app","--port","8001" -WorkingDirectory "D:\projects\python\ai_dou" -RedirectStandardOutput "D:\projects\python\ai_dou\.scratch\image_service.log" -RedirectStandardError "D:\projects\python\ai_dou\.scratch\image_service.err.log" -WindowStyle Hidden'
+
+# 3) frontend :5173（--host 0.0.0.0 局域网可访问；NODE_ENV 必须 development）
+$PS -NoProfile -Command '$env:NODE_ENV="development"; Start-Process -FilePath "D:\devtools\node-v24.11.1-win-x64\node.exe" -ArgumentList "node_modules\vite\bin\vite.js --host 0.0.0.0" -WorkingDirectory "D:\projects\python\ai_dou\frontend" -RedirectStandardOutput "D:\projects\python\ai_dou\.scratch\frontend.log" -RedirectStandardError "D:\projects\python\ai_dou\.scratch\frontend.err.log" -WindowStyle Hidden'
+
+# 验证（Windows 侧 netstat + curl.exe；WSL curl 不通 Windows 进程）
+/mnt/c/WINDOWS/system32/netstat.exe -ano | grep -E ':(5173|8080|8001)' | grep LISTEN
+/mnt/c/WINDOWS/system32/curl.exe -s http://localhost:8001/health     # {"status":"UP","model_ready":true,...}
+/mnt/c/WINDOWS/system32/curl.exe -s "http://localhost:8080/api/v1/colors?page=1&pageSize=3"  # 291 条 mard
+# 停止：netstat 拿 PID → taskkill.exe /PID <pid> /F
+```
+
 ```bash
 # Server (PART 3) — JDK 21 + Gradle (conda env bead-java or ./gradlew)
 cd server && gradle test --no-daemon        # 9 contract tests
