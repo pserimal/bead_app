@@ -156,7 +156,7 @@ export default function CorrectionEditorModal({
       onClick={onClose}
     >
       <div
-        className="w-[min(480px,92vw)] max-h-[85vh] overflow-y-auto rounded-[var(--radius-2xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-xl)]"
+        className="w-[min(560px,94vw)] max-h-[92vh] overflow-y-auto rounded-[var(--radius-2xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-xl)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 标题：单格"换一颗豆" + 坐标/当前码；多格保持"修正 N 格" + 识别汇总 */}
@@ -180,92 +180,95 @@ export default function CorrectionEditorModal({
           <button type="button" onClick={onClose} style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xl)', lineHeight: 1, padding: 4 }} aria-label="关闭">×</button>
         </div>
 
-        {/* 编码选择：输入框 + 主操作"设为"同行（输入完直接点，不跨行找按钮） */}
-        <div className="mb-3 flex items-start gap-2">
-          <div className="relative flex-1">
-            <input
-              ref={inputRef}
-              value={code}
-              onChange={(e) => handleInputChange(e.target.value)}
-              onKeyDown={handleInputKeyDown}
-              onFocus={() => setOpen(true)}
-              onBlur={() => setOpen(false)}
-              placeholder="输入或选择编码（如 A10）"
-              autoFocus
+        {/* 编码选择：输入框 + 主操作"设为"同行（输入完直接点，不跨行找按钮）
+            下拉为文档流（static）：展开时弹窗高度自然包含它，不再溢出弹框 */}
+        <div className="mb-3">
+          <div className="flex items-start gap-2">
+            <div className="relative flex-1">
+              <input
+                ref={inputRef}
+                value={code}
+                onChange={(e) => handleInputChange(e.target.value)}
+                onKeyDown={handleInputKeyDown}
+                onFocus={() => setOpen(true)}
+                onBlur={() => setOpen(false)}
+                placeholder="输入或选择编码（如 A10）"
+                autoFocus
+                style={{
+                  ...controlStyle(),
+                  width: '100%',
+                  height: 42,
+                  fontFamily: 'var(--font-mono)',
+                  fontWeight: 600,
+                  fontSize: 'var(--text-base)',
+                  borderColor: code && !valid ? 'var(--color-error)' : 'var(--color-border)',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+                aria-label="修正编码"
+              />
+              {code && !valid && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: 'var(--color-error)' }}>
+                  不在颜色库
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => void commit(upper)}
+              disabled={!valid || busy}
               style={{
-                ...controlStyle(),
-                width: '100%',
+                ...actionBtn('var(--color-accent)', !valid || busy),
                 height: 42,
-                fontFamily: 'var(--font-mono)',
-                fontWeight: 600,
-                fontSize: 'var(--text-base)',
-                borderColor: code && !valid ? 'var(--color-error)' : 'var(--color-border)',
-                outline: 'none',
-                boxSizing: 'border-box',
+                padding: '0 20px',
+                whiteSpace: 'nowrap',
               }}
-              aria-label="修正编码"
-            />
-            {code && !valid && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: 'var(--color-error)' }}>
-                不在颜色库
-              </span>
-            )}
-            {open && (
-              <div
-                data-testid="code-dropdown"
-                className="absolute left-0 right-0 top-[calc(100%+8px)] z-10 overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-md)]"
-                style={{ maxHeight: 256, padding: 4 }}
-                onMouseDown={(e) => e.preventDefault() /* 阻止 blur 先于 click */}
-              >
-                {candidates.length === 0 ? (
-                  <div className="px-3 py-2.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                    没有匹配的编码
-                  </div>
-                ) : (
-                  candidates.map((c, i) => (
-                    <button
-                      key={c.code}
-                      type="button"
-                      onMouseEnter={() => setActiveIndex(i)}
-                      onClick={() => pickCandidate(c)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'baseline',
-                        gap: 10,
-                        width: '100%',
-                        padding: '8px 10px',
-                        borderRadius: 'var(--radius-md)',
-                        border: 'none',
-                        background: i === activeIndex ? 'var(--color-surface-hover)' : 'transparent',
-                        color: 'var(--color-text)',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        fontSize: 'var(--text-sm)',
-                      }}
-                    >
-                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{c.code}</span>
-                      {c.name !== c.code && (
-                        <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)' }}>{c.name}</span>
-                      )}
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
+            >
+              {valid && upper ? `设为 ${upper}` : '设为…'}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => void commit(upper)}
-            disabled={!valid || busy}
-            style={{
-              ...actionBtn('var(--color-accent)', !valid || busy),
-              height: 42,
-              padding: '0 20px',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {valid && upper ? `设为 ${upper}` : '设为…'}
-          </button>
+          {open && (
+            <div
+              data-testid="code-dropdown"
+              className="mt-2 overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-md)]"
+              style={{ maxHeight: 320, padding: 4 }}
+              onMouseDown={(e) => e.preventDefault() /* 阻止 blur 先于 click */}
+            >
+              {candidates.length === 0 ? (
+                <div className="px-3 py-2.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                  没有匹配的编码
+                </div>
+              ) : (
+                candidates.map((c, i) => (
+                  <button
+                    key={c.code}
+                    type="button"
+                    onMouseEnter={() => setActiveIndex(i)}
+                    onClick={() => pickCandidate(c)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      gap: 10,
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: 'var(--radius-md)',
+                      border: 'none',
+                      background: i === activeIndex ? 'var(--color-surface-hover)' : 'transparent',
+                      color: 'var(--color-text)',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: 'var(--text-sm)',
+                    }}
+                  >
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{c.code}</span>
+                    {c.name !== c.code && (
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)' }}>{c.name}</span>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
         {/* 次级操作：恢复原码（弱化，muted 文字按钮）+ 空白格（描边） */}
