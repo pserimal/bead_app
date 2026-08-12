@@ -10,7 +10,6 @@ const STATUS_FILTERS: Array<{ value: JobStatus | ''; label: string }> = [
   { value: 'PENDING', label: '排队中' },
   { value: 'PROCESSING', label: '处理中' },
   { value: 'SUCCEEDED', label: '成功' },
-  { value: 'SUCCEEDED_WITH_WARNINGS', label: '有警告' },
   { value: 'FAILED', label: '失败' },
 ];
 
@@ -262,13 +261,13 @@ export default function HistoryPage() {
                     >
                       重命名
                     </button>
-                    <div className="text-right">
-                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
-                        {new Date(job.createdAt).toLocaleDateString()}
-                      </p>
-                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
-                        {new Date(job.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
+                    <div className="text-right shrink-0" style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
+                      {new Date(job.createdAt).toLocaleString([], {
+                        month: 'numeric',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </div>
                   </div>
                 </div>
