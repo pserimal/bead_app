@@ -1,7 +1,7 @@
 import apiClient from './client';
 import type { JobDetail, JobEventDto, JobSummary, PageResponse } from '../types/api';
 
-/** 007：创建任务（multipart：image + cropBox + rows/cols + codes） */
+/** 007：创建任务（multipart：image + cropBox + rows/cols + codes + name） */
 export async function createJob(params: {
   image: File;
   cropBoxX: number;
@@ -11,6 +11,7 @@ export async function createJob(params: {
   rows: number;
   cols: number;
   codes?: string;
+  name?: string;
 }): Promise<JobDetail> {
   const formData = new FormData();
   formData.append('image', params.image);
@@ -21,9 +22,22 @@ export async function createJob(params: {
   formData.append('rows', String(params.rows));
   formData.append('cols', String(params.cols));
   if (params.codes) formData.append('codes', params.codes);
+  if (params.name?.trim()) formData.append('name', params.name.trim());
   const { data } = await apiClient.post<JobDetail>('/jobs', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+  return data;
+}
+
+/** 019：任务改名 */
+export async function renameJob(id: string, name: string): Promise<JobDetail> {
+  const { data } = await apiClient.patch<JobDetail>(`/jobs/${id}`, { name });
+  return data;
+}
+
+/** 019：批量真删任务 */
+export async function deleteJobs(ids: string[]): Promise<{ deleted: number }> {
+  const { data } = await apiClient.delete('/jobs', { params: { ids: ids.join(',') } });
   return data;
 }
 

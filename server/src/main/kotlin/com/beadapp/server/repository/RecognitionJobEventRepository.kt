@@ -16,4 +16,6 @@ interface RecognitionJobEventRepository : JpaRepository<RecognitionJobEvent, Lon
     fun countByJobId(jobId: UUID): Long
 
     fun findByJobIdAndType(jobId: UUID, type: EventType): List<RecognitionJobEvent>
+
+    fun deleteAllByJobId(jobId: UUID)
 }

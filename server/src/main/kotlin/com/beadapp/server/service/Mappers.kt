@@ -8,6 +8,7 @@ fun RecognitionJob.toDetail(): JobDetail {
     val error = if (status == JobStatus.FAILED && errorCode != null) JobError(errorCode!!, errorMessage ?: "") else null
     return JobDetail(
         id = id,
+        name = name,
         status = status,
         stage = stage,
         processedCells = processedCells,
@@ -26,6 +27,7 @@ fun RecognitionJob.toDetail(): JobDetail {
 
 fun RecognitionJob.toSummary(): JobSummary = JobSummary(
     id = id,
+    name = name,
     status = status,
     stage = stage,
     processedCells = processedCells,

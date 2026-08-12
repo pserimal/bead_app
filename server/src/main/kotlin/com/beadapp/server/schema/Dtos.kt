@@ -2,6 +2,7 @@ package com.beadapp.server.schema
 
 import com.beadapp.server.model.*
 import com.fasterxml.jackson.annotation.JsonProperty
+import jakarta.validation.constraints.Size
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -33,6 +34,7 @@ data class ColorDto(
 /** 007 决议：JobDetail */
 data class JobDetail(
     val id: UUID,
+    val name: String? = null,
     val status: JobStatus,
     val stage: JobStage,
     val processedCells: Int,
@@ -69,6 +71,7 @@ data class SnapshotInfo(
 /** 007 决议：任务列表摘要（无 error/warnings/snapshot 细节） */
 data class JobSummary(
     val id: UUID,
+    val name: String? = null,
     val status: JobStatus,
     val stage: JobStage,
     val processedCells: Int,
@@ -80,6 +83,12 @@ data class JobSummary(
     val blueprintId: UUID?,
     val createdAt: OffsetDateTime,
     val updatedAt: OffsetDateTime,
+)
+
+/** 019：任务改名请求 */
+data class RenameJobRequest(
+    @field:Size(min = 1, max = 128)
+    val name: String,
 )
 
 /** 007 决议：事件流条目 */

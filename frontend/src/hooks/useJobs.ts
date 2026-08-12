@@ -39,3 +39,24 @@ export function useCreateJob() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['jobs'] }),
   });
 }
+
+/** 019：任务改名（成功后刷新列表与详情） */
+export function useRenameJob() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { id: string; name: string }) => jobsApi.renameJob(args.id, args.name),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['jobs'] });
+      void queryClient.invalidateQueries({ queryKey: ['job'] });
+    },
+  });
+}
+
+/** 019：批量真删任务 */
+export function useDeleteJobs() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => jobsApi.deleteJobs(ids),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['jobs'] }),
+  });
+}

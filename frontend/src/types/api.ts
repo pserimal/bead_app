@@ -36,6 +36,7 @@ export interface ColorDto {
 
 export interface JobDetail {
   id: string;
+  name: string | null;
   status: JobStatus;
   stage: JobStage;
   processedCells: number;
@@ -54,6 +55,7 @@ export interface JobDetail {
 
 export interface JobSummary {
   id: string;
+  name: string | null;
   status: JobStatus;
   stage: JobStage;
   processedCells: number;

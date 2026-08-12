@@ -38,6 +38,8 @@ export default function UploadPage() {
   const [rows, setRows] = useState(29);
   const [cols, setCols] = useState(29);
   const [codes, setCodes] = useState('');
+  // 019：任务自定义名称（可选，默认留空 = 不命名）
+  const [jobName, setJobName] = useState('');
 
   const codeError = useMemoCodeError(codes);
 
@@ -168,6 +170,7 @@ export default function UploadPage() {
         rows,
         cols,
         codes: codes.trim() ? codes : undefined,
+        name: jobName,
       },
       {
         onSuccess: (job) => {
@@ -301,12 +304,32 @@ export default function UploadPage() {
         </motion.div>
 
         <motion.div variants={staggerItem} className="flex flex-wrap items-center justify-between gap-3">
-          <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-            网格：{rows} × {cols} = {rows * cols} 格
-            {crop && imageSize && (
-              <span style={{ marginLeft: 12 }}>裁剪框：{Math.round(crop.w)}×{Math.round(crop.h)}px @ ({Math.round(crop.x)},{Math.round(crop.y)})</span>
-            )}
-          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              value={jobName}
+              onChange={(e) => setJobName(e.target.value)}
+              placeholder="任务名称（可选，如 樱花图纸）"
+              maxLength={128}
+              style={{
+                height: 34,
+                padding: '0 10px',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--color-surface)',
+                color: 'var(--color-text)',
+                fontFamily: 'var(--font-body)',
+                fontSize: 'var(--text-sm)',
+                outline: 'none',
+              }}
+              aria-label="任务名称"
+            />
+            <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
+              网格：{rows} × {cols} = {rows * cols} 格
+              {crop && imageSize && (
+                <span style={{ marginLeft: 12 }}>裁剪框：{Math.round(crop.w)}×{Math.round(crop.h)}px @ ({Math.round(crop.x)},{Math.round(crop.y)})</span>
+              )}
+            </span>
+          </div>
           <Button onClick={handleSubmit} disabled={!canSubmit || createJob.isPending}>
             {createJob.isPending ? <Spinner size="sm" /> : '开始识别'}
           </Button>

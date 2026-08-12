@@ -10,6 +10,7 @@ import com.beadapp.server.service.JobService
 import com.beadapp.server.service.StorageService
 import com.beadapp.server.service.toDetail
 import com.beadapp.server.service.toSummary
+import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import org.springframework.beans.factory.annotation.Value
@@ -47,6 +48,7 @@ class JobController(
         @RequestParam("rows") @Min(1) @Max(500) rows: Int,
         @RequestParam("cols") @Min(1) @Max(500) cols: Int,
         @RequestParam(value = "codes", required = false) codes: String?,
+        @RequestParam(value = "name", required = false) name: String?,
     ): ResponseEntity<JobDetail> {
         validateImage(image)
         val parsedCodes = parseCodes(codes)
@@ -59,8 +61,32 @@ class JobController(
             inputImagePath = path,
             colorLibraryVersion = currentColorLibraryVersion(),
             modelSnapshot = modelSnapshot,
+            name = name,
         )
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(job.toDetail())
+    }
+
+    /** 019：任务改名 */
+    @PatchMapping("/{id}")
+    fun rename(@PathVariable("id") id: UUID, @RequestBody @Valid request: RenameJobRequest): JobDetail {
+        return jobService.renameJob(id, request.name).toDetail()
+    }
+
+    /** 019：批量真删任务（ids 逗号分隔；级联删除图纸与事件） */
+    @DeleteMapping
+    fun deleteBatch(@RequestParam("ids") ids: String): ResponseEntity<Map<String, Any>> {
+        val parsed = ids.split(',').map { it.trim() }.filter { it.isNotEmpty() }.map { str ->
+            try {
+                UUID.fromString(str)
+            } catch (e: IllegalArgumentException) {
+                throw ApiException(HttpStatus.BAD_REQUEST, "INVALID_ID", "无效的任务 ID：$str")
+            }
+        }
+        if (parsed.isEmpty()) {
+            throw ApiException(HttpStatus.BAD_REQUEST, "EMPTY_IDS", "未指定要删除的任务")
+        }
+        jobService.deleteJobs(parsed)
+        return ResponseEntity.ok(mapOf("deleted" to parsed.size))
     }
 
     /** 007：任务历史列表（status 过滤 + 分页） */

@@ -15,4 +15,5 @@ interface BlueprintRepository : JpaRepository<Blueprint, UUID> {
 
 interface BlueprintCellRepository : JpaRepository<BlueprintCell, BlueprintCellId> {
     fun findAllByBlueprintIdOrderByRowAscColAsc(blueprintId: UUID): List<BlueprintCell>
+    fun deleteAllByBlueprintId(blueprintId: UUID)
 }

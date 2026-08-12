@@ -27,6 +27,10 @@ class RecognitionJob(
     @Column(name = "cols", nullable = false)
     var cols: Int,
 
+    /** 自定义任务名称（019：上传可选、历史可改）；null = 未命名，前端显示回退 */
+    @Column(name = "name")
+    var name: String? = null,
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "crop_box", nullable = false, columnDefinition = "jsonb")
     var cropBox: CropBox,

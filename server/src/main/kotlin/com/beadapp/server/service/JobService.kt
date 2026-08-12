@@ -37,6 +37,7 @@ class JobService(
         inputImagePath: String,
         colorLibraryVersion: String,
         modelSnapshot: String,
+        name: String? = null,
     ): RecognitionJob {
         val job = RecognitionJob(
             rows = rows,
@@ -48,6 +49,7 @@ class JobService(
             modelSnapshot = modelSnapshot,
             totalCells = rows * cols,
             status = JobStatus.PENDING,
+            name = name?.trim()?.takeIf { it.isNotEmpty() },
         )
         jobRepo.save(job)
         // 009：Python 事件序列从 1 开始，JOB_STARTED 用 sequence=0 避免撞幂等键
@@ -55,6 +57,31 @@ class JobService(
         // 009 反向：创建后立即派发给 Python
         dispatcher.dispatch(job)
         return job
+    }
+
+    /** 019：任务改名（trim 后非空才保存；null/空 = 清空名称） */
+    @Transactional
+    fun renameJob(id: UUID, name: String?): RecognitionJob {
+        val job = jobRepo.findById(id).orElseThrow {
+            ApiException(HttpStatus.NOT_FOUND, "JOB_NOT_FOUND", "任务不存在")
+        }
+        job.name = name?.trim()?.takeIf { it.isNotEmpty() }
+        return jobRepo.save(job)
+    }
+
+    /** 019：批量真删任务（级联删除 job_cell/job_event/blueprint_cell/blueprint） */
+    @Transactional
+    fun deleteJobs(ids: List<UUID>) {
+        for (id in ids.distinct()) {
+            val blueprint = blueprintRepo.findByJobId(id)
+            if (blueprint != null) {
+                blueprintCellRepo.deleteAllByBlueprintId(blueprint.id)
+                blueprintRepo.delete(blueprint)
+            }
+            cellRepo.deleteAllByJobId(id)
+            eventRepo.deleteAllByJobId(id)
+            jobRepo.deleteById(id)
+        }
     }
 
     /** 008：幂等应用入站事件。返回是否为新事件。 */
