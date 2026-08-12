@@ -226,10 +226,16 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
     return () => observer.disconnect();
   }, [rows, cols]);
 
-  // 挂载即适应窗口
+  // 首次挂载适应窗口：只在 viewportSize 就绪后 fit **一次**——fitView 依赖 viewportSize，
+  // 若以 [fitView] 为依赖会在每次尺寸变化（如移动端输入法弹出导致容器 resize）时重新 fit，
+  // 把用户缩放重置回 fit（实测 bug）。用户手动点"适应窗口"不受影响（直接调用 fitView）。
+  const didFitRef = useRef(false);
   useEffect(() => {
+    if (didFitRef.current) return;
+    if (!viewportSize.width || !viewportSize.height) return; // 尺寸未就绪（blueprint 未加载），等下次
     fitView();
-  }, [fitView]);
+    didFitRef.current = true;
+  }, [fitView, viewportSize]);
 
   /** 视口模式拖动/捏合期间的连续重绘（rAF 合并，每帧只画可见格子，~10ms） */
   const scheduleViewportRedraw = useCallback(() => {
