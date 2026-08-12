@@ -111,22 +111,40 @@ export default function ImmersionBoard({
           </div>
         )}
 
-        {/* 缩放百分比（右下角，极小） */}
+        {/* 缩放百分比 + 适应窗口（右下角） */}
         <div
-          className="absolute"
-          style={{
-            right: 14,
-            bottom: 14,
-            padding: '4px 8px',
-            borderRadius: 6,
-            background: 'rgba(0,0,0,0.45)',
-            color: 'rgba(255,250,240,0.75)',
-            fontFamily: 'var(--font-mono)',
-            fontSize: 'var(--text-xs)',
-            pointerEvents: 'none',
-          }}
+          className="absolute flex items-center gap-2"
+          style={{ right: 14, bottom: 14 }}
         >
-          {Math.round(view.scale * 100)}%
+          <button
+            type="button"
+            onClick={viewer.fitView}
+            style={{
+              padding: '5px 12px',
+              borderRadius: 7,
+              border: '1px solid rgba(255,250,240,0.25)',
+              background: 'rgba(0,0,0,0.55)',
+              color: '#fffaf0',
+              fontFamily: 'var(--font-body)',
+              fontSize: 'var(--text-xs)',
+              cursor: 'pointer',
+            }}
+          >
+            适应窗口
+          </button>
+          <div
+            style={{
+              padding: '4px 8px',
+              borderRadius: 6,
+              background: 'rgba(0,0,0,0.45)',
+              color: 'rgba(255,250,240,0.75)',
+              fontFamily: 'var(--font-mono)',
+              fontSize: 'var(--text-xs)',
+              pointerEvents: 'none',
+            }}
+          >
+            {Math.round(view.scale * 100)}%
+          </div>
         </div>
       </div>
 
