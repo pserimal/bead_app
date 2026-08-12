@@ -113,15 +113,33 @@ describe('drawBoard 分层缓存（性能回归锁）', () => {
     expect(codeTexts).toHaveLength(0);
   });
 
-  it('缩放 ≥ 0.35 时绘制格内编码文字（可读时才有成本）', () => {
+  it('缩放 ≥ 0.35 时绘制格内编码文字（文字层离屏缓存，drawImage 铺底）', () => {
     const canvas = makeCanvas();
     drawBoard(canvas, 8, 10, 12, 1, cells, 'A1', null);
     const ops = opsOf(canvas, ctxFor);
-    const codeTexts = ops.filter(
+    // 主层 drawImage：静态层 + 文字层两个源
+    const draws = ops.filter((o) => o.op === 'drawImage');
+    expect(draws.length).toBe(2);
+    // 文字层（第二个 drawImage 源）内含 40 个非 BLANK 格的 fillText；BLANK 格无文字
+    const textLayer = draws[1].args[0] as HTMLCanvasElement;
+    const textOps = opsOf(textLayer, ctxFor);
+    const codeTexts = textOps.filter(
       (o) => o.op === 'fillText' && typeof o.args[0] === 'string' && /^[A-Z][0-9]+$/.test(o.args[0] as string),
     );
-    // 40 个非 BLANK 格 → 40 次 fillText；BLANK 格无文字
     expect(codeTexts).toHaveLength(40);
+  });
+
+  it('文字层缓存：同档位二次绘制复用同一文字层（drawImage 同源）', () => {
+    const canvas = makeCanvas();
+    drawBoard(canvas, 8, 10, 12, 0.8, cells, 'A1', null);
+    const draws = opsOf(canvas, ctxFor).filter((o) => o.op === 'drawImage');
+    const text1 = draws[draws.length - 1].args[0] as HTMLCanvasElement;
+
+    // 同档位（renderScale 1.0）二次绘制：文字层不重建
+    drawBoard(canvas, 8, 10, 12, 0.9, cells, 'A1', null);
+    const draws2 = opsOf(canvas, ctxFor).filter((o) => o.op === 'drawImage');
+    const text2 = draws2[draws2.length - 1].args[0] as HTMLCanvasElement;
+    expect(text2).toBe(text1);
   });
 
   it('静态层缓存：同参数二次绘制不重建色块层（drawImage 铺底复用同一源）', () => {
@@ -129,12 +147,12 @@ describe('drawBoard 分层缓存（性能回归锁）', () => {
     drawBoard(canvas, 8, 10, 12, 0.5, cells, 'A1', null);
     const draws = opsOf(canvas, ctxFor).filter((o) => o.op === 'drawImage');
     expect(draws.length).toBeGreaterThanOrEqual(1);
-    const layer1 = draws[0].args[0] as HTMLCanvasElement;
+    const layer1 = draws[0].args[0] as HTMLCanvasElement; // 第一个 drawImage 源 = 静态层
 
     // 第二次同参数绘制：静态层复用（drawImage 同一源），主层不新增任何色块绘制
     drawBoard(canvas, 8, 10, 12, 0.5, cells, 'A1', null);
     const draws2 = opsOf(canvas, ctxFor).filter((o) => o.op === 'drawImage');
-    const layer2 = draws2[draws2.length - 1].args[0] as HTMLCanvasElement;
+    const layer2 = draws2[0].args[0] as HTMLCanvasElement;
     expect(layer2).toBe(layer1);
     const secondFillRects = opsOf(canvas, ctxFor).filter((o) => o.op === 'fillRect').length;
     // 主层无新增 fillRect（色块全在静态层里）
@@ -142,16 +160,20 @@ describe('drawBoard 分层缓存（性能回归锁）', () => {
   });
 
   it('描边阈值：小字号才有 strokeText，足够大后仅 fillText（省一半文字调用）', () => {
+    const textLayerOf = (canvas: HTMLCanvasElement): HTMLCanvasElement => {
+      const draws = opsOf(canvas, ctxFor).filter((o) => o.op === 'drawImage');
+      return draws[draws.length - 1].args[0] as HTMLCanvasElement; // 最后一个 drawImage 源 = 文字层
+    };
     const small = makeCanvas();
     drawBoard(small, 8, 10, 12, 0.5, cells, 'A1', null);
-    const smallStrokes = opsOf(small, ctxFor).filter((o) => o.op === 'strokeText').length;
+    const smallStrokes = opsOf(textLayerOf(small), ctxFor).filter((o) => o.op === 'strokeText').length;
     // 0.5 缩放 + 12px 格：fontSize*scale 小 → 描边
     expect(smallStrokes).toBeGreaterThan(0);
 
     const big = makeCanvas();
     drawBoard(big, 8, 10, 12, 6, cells, 'A1', null);
-    const bigStrokes = opsOf(big, ctxFor).filter((o) => o.op === 'strokeText').length;
-    // 6× 缩放：字号足够大 → 无描边（0 或仅轴无关）
+    const bigStrokes = opsOf(textLayerOf(big), ctxFor).filter((o) => o.op === 'strokeText').length;
+    // 6× 缩放：字号足够大 → 无描边
     expect(bigStrokes).toBe(0);
   });
 

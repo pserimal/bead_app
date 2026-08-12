@@ -94,6 +94,74 @@ interface StaticLayerEntry {
 /** 主 canvas → 静态层缓存（同一主 canvas 复用；卸载后随 GC 释放） */
 const staticLayerCache = new WeakMap<HTMLCanvasElement, StaticLayerEntry>();
 
+interface TextLayerEntry {
+  /** 档位（renderScale 量化到 0.1）+ 高亮 + 最长编码 + cells 引用 + 描边开关 */
+  bucket: number;
+  highlightCode: string | null;
+  longestCode: string;
+  cellsRef: Map<string, BlueprintCellDto>;
+  useStroke: boolean;
+  layer: HTMLCanvasElement | null;
+}
+
+/** 主 canvas → 编码文字层缓存（整图模式）：文字是重绘最大头（14k fillText+strokeText ≈ 200ms），
+ *  缓存后重绘 = drawImage 两次（~10ms）。整图模式 renderScale ≤ ~1.02（4096 边长阈值），
+ *  档位量化到 0.1 → 缩放停止后几乎总是命中缓存。 */
+const textLayerCache = new WeakMap<HTMLCanvasElement, TextLayerEntry>();
+
+/**
+ * 渲染/复用文字层（编码文字 + 锁定高亮边框，均随 renderScale 变化）。
+ * 位图尺寸 = 主 canvas 尺寸（width×renderScale×dpr），drawImage 1:1 铺底。
+ */
+function getTextLayer(
+  canvas: HTMLCanvasElement,
+  rows: number,
+  cols: number,
+  cellSize: number,
+  renderScale: number,
+  dpr: number,
+  cellsByPosition: Map<string, BlueprintCellDto>,
+  longestCode: string,
+  highlightCode: string | null,
+  fontSize: number,
+  fontFamily: string,
+  useStroke: boolean,
+): HTMLCanvasElement | null {
+  const bucket = Math.round(renderScale * 10) / 10;
+  const cached = textLayerCache.get(canvas);
+  if (
+    cached &&
+    cached.bucket === bucket &&
+    cached.highlightCode === highlightCode &&
+    cached.longestCode === longestCode &&
+    cached.cellsRef === cellsByPosition &&
+    cached.useStroke === useStroke
+  ) {
+    return cached.layer;
+  }
+
+  const boardWidth = cols * cellSize;
+  const boardHeight = rows * cellSize;
+  const width = boardWidth + AXIS_GUTTER * 2;
+  const height = boardHeight + AXIS_GUTTER * 2;
+  const layer = document.createElement('canvas');
+  layer.width = Math.ceil(width * renderScale * dpr);
+  layer.height = Math.ceil(height * renderScale * dpr);
+  const context = layer.getContext('2d');
+  if (!context) {
+    textLayerCache.set(canvas, { bucket, highlightCode, longestCode, cellsRef: cellsByPosition, useStroke, layer: null });
+    return null;
+  }
+  context.setTransform(dpr * renderScale, 0, 0, dpr * renderScale, 0, 0);
+  renderCodes(context, rows, cols, cellSize, cellsByPosition, highlightCode, fontSize, fontFamily, useStroke);
+  if (highlightCode !== null) {
+    renderHighlightFrame(context, rows, cols, cellSize, cellsByPosition, highlightCode);
+  }
+  textLayerCache.set(canvas, { bucket, highlightCode, longestCode, cellsRef: cellsByPosition, useStroke, layer });
+  return layer;
+}
+
+
 /**
  * 渲染/复用静态层（色块 + BLANK 虚线框 + UNMAPPED 斜线 + 修正绿点，含高亮淡出）。
  * 分辨率 = css 尺寸 × dpr（无 renderScale）：纯色块随 CSS 放大轻微模糊可接受，
@@ -514,13 +582,16 @@ export function drawBoard(
     context.drawImage(staticLayer, 0, 0, width, height);
   }
 
-  // ── 编码文字层（可读时才有成本；高亮时非目标格 35% 淡出）──
+  // 文字层（编码 + 高亮边框）离屏缓存：重绘仅 drawImage（~5ms），替代 14k fillText+strokeText（~200ms）
+  // 低缩放（scale < CODE_MIN_SCALE）时文字不可读，保持不绘制（与历史行为一致）
   if (drawCodes) {
-    renderCodes(context, rows, cols, cellSize, cellsByPosition, highlightCode, fontSize, fontFamily, useStroke);
-  }
-  // ── 锁定高亮（编码文字之上、网格线之下）──
-  if (highlightCode !== null) {
-    renderHighlightFrame(context, rows, cols, cellSize, cellsByPosition, highlightCode);
+    const textLayer = getTextLayer(
+      canvas, rows, cols, cellSize, renderScale, dpr,
+      cellsByPosition, longestCode, highlightCode, fontSize, fontFamily, useStroke,
+    );
+    if (textLayer) {
+      context.drawImage(textLayer, 0, 0, width, height);
+    }
   }
   // 网格线 + 坐标轴刻度
   renderGrid(context, rows, cols, cellSize, renderScale * dpr, dpr);
