@@ -49,6 +49,8 @@ interface BoardViewer {
 const TAP_SLOP = 4;
 /** tap 最长时长（ms）：超过视为拖动/长按，不算点击（移动端拖拽误触修复） */
 const TAP_MAX_MS = 400;
+/** tap 延迟触发窗口（ms）：双击（dblclick）在此窗口内到达则取消——双击缩放不算 tap */
+const TAP_DBLCLICK_WINDOW_MS = 300;
 const REDRAW_DEBOUNCE_MS = 150;
 /** 整图模式位图上限：边长 4096（移动端 GPU/浏览器纹理上限——超限 canvas 显示异常/大面积消失，
  * iOS Safari 尤甚）或面积 24MP。超过即切视口裁剪模式：位图固定视口大小，只画可见格子。
@@ -90,6 +92,15 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
   const rafRef = useRef<number | null>(null);
   const redrawRafRef = useRef<number | null>(null); // 视口模式拖动/捏合期间的 rAF 合并
   const readyRef = useRef(false);
+  const tapTimerRef = useRef<number | null>(null); // 延迟 tap：双击窗口内取消
+  const didPinchRef = useRef(false); // 本轮手势捏合过 → 抬起不算 tap（移动端缩放误触）
+  // 卸载清理
+  useEffect(
+    () => () => {
+      if (tapTimerRef.current !== null) window.clearTimeout(tapTimerRef.current);
+    },
+    [],
+  );
   // 回调走 ref：手势 effect 不随回调身份重绑
   const onCellTapRef = useRef(options.onCellTap);
   const onHoverRef = useRef(options.onHover);
@@ -323,6 +334,7 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
         };
       } else if (pointersRef.current.size === 2) {
         dragRef.current = null;
+        didPinchRef.current = true;
         const [a, b] = [...pointersRef.current.values()];
         pinchRef.current = {
           startDist: Math.hypot(b.x - a.x, b.y - a.y),
@@ -406,12 +418,20 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
       dragRef.current = null;
       viewport.style.cursor = 'grab';
       if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
-      // 无拖动 = 点击：位移 < TAP_SLOP 且时长 < TAP_MAX_MS（长按/慢抬不算 tap）
+      // 无拖动 = 点击：位移 < TAP_SLOP、时长 < TAP_MAX_MS、且本轮回合未捏合过
       const moved = drag ? Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) : 99;
       const quick = drag ? event.timeStamp - drag.startTime < TAP_MAX_MS : false;
-      if (moved < TAP_SLOP && quick) {
-        onCellTapRef.current?.(cellAt(event.clientX, event.clientY));
+      if (moved < TAP_SLOP && quick && !didPinchRef.current) {
+        const cell = cellAt(event.clientX, event.clientY);
+        // 延迟触发：双击（dblclick）在窗口内到达时取消（双击缩放不算 tap）
+        if (tapTimerRef.current !== null) window.clearTimeout(tapTimerRef.current);
+        tapTimerRef.current = window.setTimeout(() => {
+          tapTimerRef.current = null;
+          onCellTapRef.current?.(cell);
+        }, TAP_DBLCLICK_WINDOW_MS);
       }
+      // 手势完全结束：重置捏合标志
+      if (pointersRef.current.size === 0) didPinchRef.current = false;
       // 松手把最新 pan/scale 同步回 React state（缩放百分比等 UI 依赖）
       setView(viewRef.current);
     };
@@ -422,6 +442,11 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
     };
 
     const onDoubleClick = (event: MouseEvent) => {
+      // 双击缩放：取消待触发的 tap（延迟窗口内的单点不算点击）
+      if (tapTimerRef.current !== null) {
+        window.clearTimeout(tapTimerRef.current);
+        tapTimerRef.current = null;
+      }
       const current = viewRef.current;
       zoomAt(event.clientX, event.clientY, current.scale > 1 ? 1 / 1.6 : 1.6);
     };

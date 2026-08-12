@@ -101,6 +101,21 @@ export default function CorrectionEditorModal({
 
   // 输入框失焦**不收起**下拉：只在选中编码（pick）后收回——点击弹窗其他区域不再让弹窗"缩一下"
 
+  // 移动端点击单元格打开弹窗时不自动聚焦（autoFocus 会呼出输入法）；桌面保留直接输入
+  const autoFocusInput = useMemo(
+    () => typeof window.matchMedia === 'function' && !window.matchMedia('(pointer: coarse)').matches,
+    [],
+  );
+
+  // 弹窗打开期间锁页面滚动：输入法弹出（visual viewport 变小）时不产生页面滚动条
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
   const commit = async (value: string) => {
     const target = value.trim().toUpperCase();
     if (!(validCodes.includes(target) || target === 'BLANK') || busy) return;
@@ -198,7 +213,7 @@ export default function CorrectionEditorModal({
                 onKeyDown={handleInputKeyDown}
                 onFocus={() => setOpen(true)}
                 placeholder={singleInfo ? `当前 ${singleInfo.current} · 输入或选择编码` : '输入或选择编码（如 A10）'}
-                autoFocus
+                autoFocus={autoFocusInput}
                 style={{
                   ...controlStyle(),
                   width: '100%',
