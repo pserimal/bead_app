@@ -116,12 +116,13 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
   const boardHeight = rows * cellSize + AXIS_GUTTER * 2;
 
   /** 拖动/缩放时直接改 DOM transform（不走 React state），松手才同步回 view。
-   *  视口模式下位图按屏幕像素绘制（已含偏移），wrapper 变换必须为 none。 */
+   *  视口模式下位图按屏幕像素绘制（已含偏移），wrapper 只需中心对齐
+   *  （left:50% top:50% 需 translate(-50%,-50%) 回拉，否则 canvas 偏到视口右下外）。 */
   const applyTransform = useCallback((panX: number, panY: number, scale: number) => {
     const el = wrapperRef.current;
     if (!el) return;
     if (viewportModeRef.current) {
-      el.style.transform = 'none';
+      el.style.transform = 'translate(-50%, -50%)';
       return;
     }
     el.style.transform = `translate(calc(-50% + ${panX}px), calc(-50% + ${panY}px)) scale(${scale})`;

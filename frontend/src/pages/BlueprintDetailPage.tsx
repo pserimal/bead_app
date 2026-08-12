@@ -145,7 +145,7 @@ export default function BlueprintDetailPage() {
                 width: viewer.viewportMode ? '100%' : viewer.boardWidth,
                 height: viewer.viewportMode ? '100%' : viewer.boardHeight,
                 transform: viewer.viewportMode
-                  ? 'none'
+                  ? 'translate(-50%, -50%)'
                   : `translate(calc(-50% + ${view.panX}px), calc(-50% + ${view.panY}px)) scale(${view.scale})`,
                 transformOrigin: 'center center',
               }}

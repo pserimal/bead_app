@@ -75,6 +75,17 @@ async () => {
     trigger();
     await sleep(1300); // 单次重绘（150ms 防抖 + rAF）
     canvas.getContext = origGetContext;
+    // 布局断言：视口模式下 canvas 必须与视口中心对齐（历史 bug：wrapper left:50% 无
+    // translate(-50%) 回拉 → canvas 偏到视口右下外 → 图像消失一大部分；位图内容检查抓不到）
+    const aligned = (() => {
+      const v = canvas.closest('[role="application"]')?.getBoundingClientRect();
+      const c = canvas.getBoundingClientRect();
+      if (!v) return false;
+      return (
+        Math.abs(c.x + c.width / 2 - (v.x + v.width / 2)) < 2 &&
+        Math.abs(c.y + c.height / 2 - (v.y + v.height / 2)) < 2
+      );
+    })();
     // 本次窗口增量 = 最后一个计数器 − 链上上一个计数器（链式 wrap 会累积）
     const last = counters[counters.length - 1];
     const prev = counters[counters.length - 2];
@@ -91,6 +102,7 @@ async () => {
       byType: sub(last.byType, prev?.byType),
       bitmapMP: +((canvas.width * canvas.height) / 1e6).toFixed(1),
       cssSize: `${canvas.style.width}x${canvas.style.height}`,
+      aligned,
     };
   }
 
@@ -153,8 +165,9 @@ async () => {
     const okCalls = r.calls <= t.maxCalls;
     const okMs = r.ms <= t.maxMs;
     const okBitmap = r.bitmapMP <= THRESHOLDS.bitmapMP;
-    r.pass = okCalls && okMs && okBitmap;
-    r.verdict = `${r.pass ? 'PASS' : 'FAIL'} (calls ${r.calls}/${t.maxCalls}, ms ${r.ms}/${t.maxMs}, bitmap ${r.bitmapMP}MP/${THRESHOLDS.bitmapMP}MP)`;
+    const okAligned = r.aligned;
+    r.pass = okCalls && okMs && okBitmap && okAligned;
+    r.verdict = `${r.pass ? 'PASS' : 'FAIL'} (calls ${r.calls}/${t.maxCalls}, ms ${r.ms}/${t.maxMs}, bitmap ${r.bitmapMP}MP/${THRESHOLDS.bitmapMP}MP, aligned ${r.aligned})`;
     if (!r.pass) pass = false;
   }
 
