@@ -38,11 +38,6 @@ export default function BlueprintDetailPage() {
   // 点击单元格编辑（单格修正弹窗，复用校正页的 CorrectionEditorModal）
   const [editor, setEditor] = useState<{ keys: string[] } | null>(null);
   const [immersive, setImmersive] = useState(false);
-  // 触屏设备（平板/手机）：提示文案与交互方式不同（双指捏合、无滚轮）
-  const isTouch = useMemo(
-    () => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches,
-    [],
-  );
 
   const unmapped = useMemo(
     // 兼容旧 blueprint：历史 BLANK 可能曾被保存为 UNMAPPED；编码优先。
@@ -288,10 +283,6 @@ export default function BlueprintDetailPage() {
                 )}
               </div>
             )}
-
-            <div style={{ position: 'absolute', left: 12, bottom: 10, padding: '5px 9px', borderRadius: 6, background: 'rgba(61,43,31,0.72)', color: 'var(--color-surface)', fontSize: 'var(--text-xs)', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
-              {isTouch ? '单指拖动 · 双指缩放 · 双击放大 · 点击格子可改编码' : '拖动平移 · 滚轮缩放 · 双击放大 · 点击格子可改编码'}
-            </div>
           </div>
         </motion.div>
       </motion.div>
