@@ -107,12 +107,23 @@ export default function CorrectionEditorModal({
     [],
   );
 
-  // 弹窗打开期间锁页面滚动：输入法弹出（visual viewport 变小）时不产生页面滚动条
+  // 弹窗打开期间锁页面滚动：输入法弹出（visual viewport 变小）时不产生页面滚动条。
+  // 移动端 overflow:hidden 在 html/body 上并不可靠（iOS Safari/部分 Chrome 仍可滚）——
+  // 用 position:fixed 经典方案：fixed 元素不参与页面滚动，恢复时还原滚动位置。
   useEffect(() => {
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const body = document.body;
+    const prevPosition = body.style.position;
+    const prevWidth = body.style.width;
+    const prevTop = body.style.top;
+    const scrollY = window.scrollY;
+    body.style.position = 'fixed';
+    body.style.width = '100%';
+    body.style.top = `-${scrollY}px`;
     return () => {
-      document.body.style.overflow = prev;
+      body.style.position = prevPosition;
+      body.style.width = prevWidth;
+      body.style.top = prevTop;
+      if (prevPosition !== 'fixed') window.scrollTo(0, scrollY);
     };
   }, []);
 
