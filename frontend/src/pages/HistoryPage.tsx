@@ -22,7 +22,46 @@ const statusStyle: Record<JobStatus, { bg: string; color: string; label: string 
   FAILED: { bg: 'var(--color-error-light)', color: 'var(--color-error)', label: '失败' },
 };
 
-function actionBtn(disabled = false): React.CSSProperties {
+/** 行内进度条：识别任务的本质是「处理进度」——细条 + mono 计数，状态着色 */
+function ProgressBar({ processed, total, status }: { processed: number; total: number; status: JobStatus }) {
+  const pct = total > 0 ? Math.min(100, (processed / total) * 100) : 0;
+  const color =
+    status === 'FAILED'
+      ? 'var(--color-error)'
+      : status === 'PROCESSING' || status === 'PENDING'
+        ? 'var(--color-accent)'
+        : 'var(--color-success)';
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+      <span
+        style={{
+          width: 64,
+          height: 4,
+          borderRadius: 2,
+          background: 'var(--color-border)',
+          overflow: 'hidden',
+          display: 'inline-block',
+          flexShrink: 0,
+        }}
+      >
+        <span
+          style={{
+            display: 'block',
+            width: `${pct}%`,
+            height: '100%',
+            background: color,
+            transition: 'width 300ms ease',
+          }}
+        />
+      </span>
+      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
+        {processed}/{total}
+      </span>
+    </span>
+  );
+}
+
+function baseBtn(disabled = false): React.CSSProperties {
   return {
     padding: '7px 14px',
     borderRadius: 'var(--radius-md)',
@@ -55,6 +94,17 @@ export default function HistoryPage() {
     });
   }, []);
 
+  const selectAllVisible = useCallback(() => {
+    if (!data) return;
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (const job of data.items) next.add(job.id);
+      return next;
+    });
+  }, [data]);
+
+  const clearSelection = useCallback(() => setSelected(new Set()), []);
+
   const handleRename = useCallback(
     async (name: string) => {
       if (!renameTarget) return;
@@ -80,14 +130,37 @@ export default function HistoryPage() {
     }
   }, [deleteJobs, selected]);
 
+  const allVisibleSelected = !!data && data.items.length > 0 && data.items.every((j) => selected.has(j.id));
+
   return (
     <div className="max-w-5xl mx-auto px-4 lg:px-6">
       <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
-        <motion.div variants={staggerItem}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 700 }}>识别任务历史</h1>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', marginTop: 4 }}>
-            点击任务查看只读追踪详情 · 勾选后可批量删除（真删）
-          </p>
+        <motion.div variants={staggerItem} className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 700 }}>识别任务历史</h1>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', marginTop: 4 }}>
+              点击任务查看详情 · 勾选后可批量删除（真删）
+            </p>
+          </div>
+          {selected.size > 0 && (
+            <div
+              className="flex items-center gap-2 px-3 py-2 rounded-xl"
+              style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}
+            >
+              <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>已选 {selected.size} 项</span>
+              <button type="button" onClick={clearSelection} disabled={deleteJobs.isPending} style={baseBtn(deleteJobs.isPending)}>
+                取消全选
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                disabled={deleteJobs.isPending}
+                style={{ ...baseBtn(), background: 'var(--color-error)', borderColor: 'var(--color-error)', color: '#fff', fontWeight: 600 }}
+              >
+                删除所选
+              </button>
+            </div>
+          )}
         </motion.div>
 
         <motion.div variants={staggerItem} className="flex flex-wrap items-center gap-2">
@@ -105,14 +178,13 @@ export default function HistoryPage() {
               {f.label}
             </button>
           ))}
-          {selected.size > 0 && (
+          {data && data.items.length > 0 && (
             <button
               type="button"
-              onClick={() => setConfirmDelete(true)}
-              disabled={deleteJobs.isPending}
-              style={{ ...actionBtn(), background: 'var(--color-error)', borderColor: 'var(--color-error)', color: '#fff', fontWeight: 600 }}
+              onClick={allVisibleSelected ? clearSelection : selectAllVisible}
+              style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', border: 'none', background: 'transparent', cursor: 'pointer', padding: '6px 4px' }}
             >
-              删除所选（{selected.size}）
+              {allVisibleSelected ? '取消全选' : '全选本页'}
             </button>
           )}
         </motion.div>
@@ -136,50 +208,73 @@ export default function HistoryPage() {
                 <div
                   key={job.id}
                   onClick={() => navigate(`/jobs/${job.id}`)}
-                  className="flex items-center justify-between px-4 py-3 rounded-xl cursor-pointer transition"
-                  style={{ background: 'var(--color-card)', border: `1px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border)'}` }}
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-xl cursor-pointer transition"
+                  style={{
+                    background: isSelected ? 'var(--color-accent-light)' : 'var(--color-card)',
+                    border: `1px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                  }}
                   onMouseEnter={(e) => (e.currentTarget.style.borderColor = isSelected ? 'var(--color-accent)' : 'var(--color-border-strong)')}
                   onMouseLeave={(e) => (e.currentTarget.style.borderColor = isSelected ? 'var(--color-accent)' : 'var(--color-border)')}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleSelect(job.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label={`选择任务 ${job.name ?? job.id.slice(0, 8)}`}
-                      style={{ width: 17, height: 17, accentColor: 'var(--color-accent)', cursor: 'pointer' }}
-                    />
-                    <span className="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: st.bg, color: st.color }}>
-                      {st.label}
-                    </span>
-                    <div className="min-w-0">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleSelect(job.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`选择任务 ${job.name ?? job.id.slice(0, 8)}`}
+                    style={{ width: 17, height: 17, accentColor: 'var(--color-accent)', cursor: 'pointer', flexShrink: 0 }}
+                  />
+                  <span className="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: st.bg, color: st.color }}>
+                    {st.label}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
                       <p className="truncate text-sm" style={{ fontWeight: 600 }}>
                         {job.name ?? `${job.id.slice(0, 8)}…`}
                       </p>
-                      <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)' }}>
-                        {job.rows}×{job.cols} · {job.processedCells}/{job.totalCells} · 尝试 {job.attempt + 1}
-                        {job.retryCount > 0 ? `（已重试 ${job.retryCount} 次）` : ''}
-                      </p>
+                      {job.blueprintId && (
+                        <span className="shrink-0 text-xs" style={{ color: 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
+                          → 图纸
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)' }}>
+                        {job.rows}×{job.cols}
+                      </span>
+                      <ProgressBar processed={job.processedCells} total={job.totalCells} status={job.status} />
+                      {job.retryCount > 0 && (
+                        <span style={{ color: 'var(--color-warning)', fontSize: 'var(--text-xs)' }}>已重试 {job.retryCount} 次</span>
+                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setRenameTarget({ id: job.id, name: job.name ?? '' }); }}
-                      style={{ border: 'none', background: 'transparent', color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', cursor: 'pointer', padding: '4px 6px' }}
+                      style={{
+                        border: '1px solid var(--color-border)',
+                        background: 'var(--color-surface)',
+                        color: 'var(--color-text-secondary)',
+                        fontSize: 'var(--text-sm)',
+                        cursor: 'pointer',
+                        padding: '5px 9px',
+                        borderRadius: 'var(--radius-md)',
+                        lineHeight: 1,
+                        opacity: 0.75,
+                      }}
                       title="重命名任务"
                       aria-label={`重命名 ${job.name ?? job.id.slice(0, 8)}`}
                     >
                       ✎
                     </button>
                     <div className="text-right">
-                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
-                        {new Date(job.createdAt).toLocaleString()}
+                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
+                        {new Date(job.createdAt).toLocaleDateString()}
                       </p>
-                      {job.blueprintId && (
-                        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-success)' }}>→ 图纸已生成</p>
-                      )}
+                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
+                        {new Date(job.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -240,14 +335,14 @@ export default function HistoryPage() {
               将永久删除所选任务及其识别事件与生成的图纸（真删，不可恢复）。
             </p>
             <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setConfirmDelete(false)} disabled={deleteJobs.isPending} style={actionBtn()}>
+              <button type="button" onClick={() => setConfirmDelete(false)} disabled={deleteJobs.isPending} style={baseBtn()}>
                 取消
               </button>
               <button
                 type="button"
                 onClick={() => void handleDelete()}
                 disabled={deleteJobs.isPending}
-                style={{ ...actionBtn(), background: 'var(--color-error)', borderColor: 'var(--color-error)', color: '#fff', fontWeight: 600 }}
+                style={{ ...baseBtn(), background: 'var(--color-error)', borderColor: 'var(--color-error)', color: '#fff', fontWeight: 600 }}
               >
                 {deleteJobs.isPending ? '删除中…' : '确认删除'}
               </button>
@@ -306,12 +401,12 @@ function RenameModal({
           aria-label="任务名称"
         />
         <div className="mt-5 flex justify-end gap-2">
-          <button type="button" onClick={onCancel} disabled={busy} style={actionBtn()}>取消</button>
+          <button type="button" onClick={onCancel} disabled={busy} style={baseBtn()}>取消</button>
           <button
             type="button"
             onClick={() => void onConfirm(name)}
             disabled={!name.trim() || busy}
-            style={{ ...actionBtn(!name.trim() || busy), background: 'var(--color-accent)', borderColor: 'var(--color-accent)', color: '#fff', fontWeight: 600 }}
+            style={{ ...baseBtn(!name.trim() || busy), background: 'var(--color-accent)', borderColor: 'var(--color-accent)', color: '#fff', fontWeight: 600 }}
           >
             {busy ? '保存中…' : '保存'}
           </button>
