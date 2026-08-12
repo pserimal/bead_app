@@ -222,24 +222,17 @@ export default function HistoryPage() {
                     onChange={() => toggleSelect(job.id)}
                     onClick={(e) => e.stopPropagation()}
                     aria-label={`选择任务 ${job.name ?? job.id.slice(0, 8)}`}
-                    style={{ width: 17, height: 17, accentColor: 'var(--color-accent)', cursor: 'pointer', flexShrink: 0 }}
+                    style={{ width: 17, height: 17, accentColor: 'var(--color-accent)', cursor: 'pointer', flexShrink: 0, marginRight: 4 }}
                   />
-                  <span className="shrink-0 px-2.5 py-1 rounded-full text-xs font-medium" style={{ background: st.bg, color: st.color }}>
+                  <span className="shrink-0 px-2 py-0.5 rounded-full text-xs font-medium" style={{ background: st.bg, color: st.color }}>
                     {st.label}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-sm" style={{ fontWeight: 600 }}>
-                        {job.name ?? `${job.id.slice(0, 8)}…`}
-                      </p>
-                      {job.blueprintId && (
-                        <span className="shrink-0 text-xs" style={{ color: 'var(--color-success)', fontFamily: 'var(--font-mono)' }}>
-                          → 图纸
-                        </span>
-                      )}
-                    </div>
+                    <p className="truncate text-sm" style={{ fontWeight: 600 }}>
+                      {job.name ?? `${job.id.slice(0, 8)}…`}
+                    </p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
-                      <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)' }}>
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', fontFamily: 'var(--font-mono)' }}>
                         {job.rows}×{job.cols}
                       </span>
                       <ProgressBar processed={job.processedCells} total={job.totalCells} status={job.status} />
