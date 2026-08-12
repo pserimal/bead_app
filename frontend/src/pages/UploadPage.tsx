@@ -170,7 +170,8 @@ export default function UploadPage() {
         rows,
         cols,
         codes: codes.trim() ? codes : undefined,
-        name: jobName,
+        // 未输入名称时回退用图片文件名（去扩展名）
+        name: jobName.trim() || file.name.replace(/\.[^.]+$/, ''),
       },
       {
         onSuccess: (job) => {
@@ -308,7 +309,7 @@ export default function UploadPage() {
             <input
               value={jobName}
               onChange={(e) => setJobName(e.target.value)}
-              placeholder="任务名称（可选，如 樱花图纸）"
+              placeholder="任务名称"
               maxLength={128}
               style={{
                 height: 34,
