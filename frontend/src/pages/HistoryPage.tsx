@@ -210,7 +210,7 @@ export default function HistoryPage() {
                   onClick={() => navigate(`/jobs/${job.id}`)}
                   className="flex items-center gap-3 px-4 py-3.5 rounded-xl cursor-pointer transition"
                   style={{
-                    background: isSelected ? 'var(--color-accent-light)' : 'var(--color-card)',
+                    background: 'var(--color-card)',
                     border: `1px solid ${isSelected ? 'var(--color-accent)' : 'var(--color-border)'}`,
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.borderColor = isSelected ? 'var(--color-accent)' : 'var(--color-border-strong)')}
@@ -253,20 +253,21 @@ export default function HistoryPage() {
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setRenameTarget({ id: job.id, name: job.name ?? '' }); }}
                       style={{
-                        border: '1px solid var(--color-border)',
-                        background: 'var(--color-surface)',
-                        color: 'var(--color-text-secondary)',
-                        fontSize: 'var(--text-sm)',
+                        border: 'none',
+                        background: 'transparent',
+                        color: 'var(--color-text-muted)',
+                        fontSize: 'var(--text-xs)',
                         cursor: 'pointer',
-                        padding: '5px 9px',
-                        borderRadius: 'var(--radius-md)',
-                        lineHeight: 1,
-                        opacity: 0.75,
+                        padding: '4px 2px',
+                        textDecoration: 'underline',
+                        textUnderlineOffset: 3,
                       }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-accent)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
                       title="重命名任务"
                       aria-label={`重命名 ${job.name ?? job.id.slice(0, 8)}`}
                     >
-                      ✎
+                      重命名
                     </button>
                     <div className="text-right">
                       <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
