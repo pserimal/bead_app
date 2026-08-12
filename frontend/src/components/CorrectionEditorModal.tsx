@@ -101,25 +101,28 @@ export default function CorrectionEditorModal({
 
   // 输入框失焦**不收起**下拉：只在选中编码（pick）后收回——点击弹窗其他区域不再让弹窗"缩一下"
 
-  // 移动端点击单元格打开弹窗时不自动聚焦（autoFocus 会呼出输入法）；桌面保留直接输入
-  const autoFocusInput = useMemo(
-    () => typeof window.matchMedia === 'function' && !window.matchMedia('(pointer: coarse)').matches,
-    [],
-  );
-
-  // 弹窗打开期间锁页面滚动：输入法弹出（visual viewport 变小）时不产生页面滚动条。
-  // 移动端 overflow:hidden 在 html/body 上并不可靠（iOS Safari/部分 Chrome 仍可滚）——
-  // 用 position:fixed 经典方案：fixed 元素不参与页面滚动，恢复时还原滚动位置。
+  // 弹窗打开期间锁页面滚动并隐藏滚动条：输入法弹出（visual viewport 变小）时
+  // 不产生页面滚动条。组合方案（移动端可靠）：
+  // - body position:fixed：fixed 元素不参与页面滚动（scrollTo 无效）
+  // - html+body overflow:hidden：内容超出视口时**不显示滚动条**（只 fixed 不设
+  //   overflow 时滚动条仍会因内容超出而出现——实测踩坑）
   useEffect(() => {
+    const html = document.documentElement;
     const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
     const prevPosition = body.style.position;
     const prevWidth = body.style.width;
     const prevTop = body.style.top;
     const scrollY = window.scrollY;
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
     body.style.position = 'fixed';
     body.style.width = '100%';
     body.style.top = `-${scrollY}px`;
     return () => {
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
       body.style.position = prevPosition;
       body.style.width = prevWidth;
       body.style.top = prevTop;
@@ -224,7 +227,6 @@ export default function CorrectionEditorModal({
                 onKeyDown={handleInputKeyDown}
                 onFocus={() => setOpen(true)}
                 placeholder={singleInfo ? `当前 ${singleInfo.current} · 输入或选择编码` : '输入或选择编码（如 A10）'}
-                autoFocus={autoFocusInput}
                 style={{
                   ...controlStyle(),
                   width: '100%',
