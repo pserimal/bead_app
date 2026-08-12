@@ -104,6 +104,25 @@ export default function CorrectionEditorModal({
     inputRef.current?.blur();
   }, []);
 
+  // 输入法弹出（visualViewport 变小）时压缩弹窗高度：内容不超出 → 无内部滚动条
+  // （iOS Safari 的 overlay 滚动条无法用 CSS 隐藏，只能让内容不溢出）
+  const [modalMaxHeight, setModalMaxHeight] = useState('92vh');
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const vh = vv.height;
+      if (vh && vh < window.innerHeight) {
+        setModalMaxHeight(`${Math.max(240, Math.round(vh - 16))}px`);
+      } else {
+        setModalMaxHeight('92vh');
+      }
+    };
+    update();
+    vv.addEventListener('resize', update);
+    return () => vv.removeEventListener('resize', update);
+  }, []);
+
   // 输入框失焦**不收起**下拉：只在选中编码（pick）后收回——点击弹窗其他区域不再让弹窗"缩一下"
 
   // 弹窗打开期间锁页面滚动并隐藏滚动条：输入法弹出（visual viewport 变小）时
@@ -195,7 +214,8 @@ export default function CorrectionEditorModal({
       onMouseDown={onClose /* mousedown 先于输入框 blur：直接卸载弹窗，无"收下拉再关"的闪烁 */}
     >
       <div
-        className="w-[min(560px,94vw)] max-h-[92vh] overflow-y-auto rounded-[var(--radius-2xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-xl)]"
+        className="no-scrollbar w-[min(560px,94vw)] overflow-y-auto rounded-[var(--radius-2xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-xl)]"
+        style={{ maxHeight: modalMaxHeight }}
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -268,7 +288,7 @@ export default function CorrectionEditorModal({
           {open && (
             <div
               data-testid="code-dropdown"
-              className="mt-2 overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-md)]"
+              className="no-scrollbar mt-2 overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-md)]"
               style={{ maxHeight: 320, padding: 4 }}
               onMouseDown={(e) => e.preventDefault() /* 阻止 blur 先于 click */}
             >

@@ -304,6 +304,15 @@ a:hover {
   background: var(--color-text-muted);
 }
 
+/* 隐藏滚动条但保留滚动（弹窗/下拉列表等移动端 UI：滚动条碍眼且易越界） */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge 旧 */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* WebKit/Blink */
+}
+
 /* --- Skeleton Shimmer Animation --- */
 @keyframes shimmer {
   0% {
