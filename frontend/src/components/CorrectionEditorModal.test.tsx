@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import CorrectionEditorModal from './CorrectionEditorModal';
 import type { BlueprintCellDto, ColorDto } from '../types/api';
 
@@ -46,8 +46,9 @@ describe('CorrectionEditorModal 交互', () => {
   it('单格模式：显示「换一颗豆」+ 坐标 + 当前有效码（修正优先）', () => {
     renderModal();
     expect(screen.getByText('换一颗豆')).toBeInTheDocument();
-    expect(screen.getByText(/第 5 行 · 第 8 列/)).toBeInTheDocument();
-    expect(screen.getByText('A10')).toBeInTheDocument();
+    const info = screen.getByText((content, el) => el?.tagName === 'P' && content.includes('第 5 行'));
+    expect(info.textContent).toContain('第 8 列');
+    expect(info.textContent).toContain('当前 A10');
   });
 
   it('多格模式：显示「修正 N 格」+ 识别汇总，不显示单格坐标', () => {
@@ -64,6 +65,46 @@ describe('CorrectionEditorModal 交互', () => {
     expect(props.onConfirmSet).toHaveBeenCalledWith('A10');
   });
 
+  it('输入过滤下拉候选（编码/名称子串）', () => {
+    renderModal();
+    const input = screen.getByLabelText('修正编码');
+    fireEvent.change(input, { target: { value: 'A1' } });
+    const dropdown = within(screen.getByTestId('code-dropdown'));
+    expect(dropdown.getByText('A1')).toBeInTheDocument();
+    expect(dropdown.getByText('A10')).toBeInTheDocument();
+    expect(dropdown.queryByText('B26')).not.toBeInTheDocument();
+  });
+
+  it('键盘导航：↓ 选中下拉项 + Enter → 提交选中项', () => {
+    const props = renderModal();
+    const input = screen.getByLabelText('修正编码');
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.focus(input);
+    fireEvent.keyDown(input, { key: 'ArrowDown' }); // 选中 A1
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(props.onConfirmSet).toHaveBeenCalledWith('A1');
+  });
+
+  it('点击下拉项填入编码', () => {
+    renderModal();
+    const input = screen.getByLabelText('修正编码');
+    fireEvent.focus(input);
+    fireEvent.click(screen.getByText('B26'));
+    expect((input as HTMLInputElement).value).toBe('B26');
+  });
+
+  it('下拉打开时 Esc 先关下拉，再 Esc 关弹窗', () => {
+    const props = renderModal();
+    const input = screen.getByLabelText('修正编码');
+    fireEvent.focus(input);
+    expect(screen.getByText('B26')).toBeInTheDocument(); // 下拉已开
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByText('B26')).not.toBeInTheDocument(); // 下拉关了
+    expect(props.onClose).not.toHaveBeenCalled();
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(props.onClose).toHaveBeenCalled();
+  });
+
   it('无效码 Enter 不提交', () => {
     const props = renderModal();
     const input = screen.getByLabelText('修正编码');
@@ -72,16 +113,12 @@ describe('CorrectionEditorModal 交互', () => {
     expect(props.onConfirmSet).not.toHaveBeenCalled();
   });
 
-  it('Esc 关闭', () => {
+  it('Esc 关闭（下拉未开时直接关弹窗）', () => {
     const props = renderModal();
+    const input = screen.getByLabelText('修正编码');
+    fireEvent.blur(input); // 关闭下拉
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(props.onClose).toHaveBeenCalled();
-  });
-
-  it('点击豆子填入编码并聚焦输入框', () => {
-    renderModal();
-    fireEvent.click(screen.getByLabelText('B26'));
-    expect((screen.getByLabelText('修正编码') as HTMLInputElement).value).toBe('B26');
   });
 
   it('「设为」按钮文案随输入更新', () => {

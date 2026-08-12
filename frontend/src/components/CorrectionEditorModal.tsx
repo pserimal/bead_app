@@ -2,11 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BlueprintCellDto, ColorDto } from '../types/api';
 import { computeBreakdown } from '../lib/correctionModel';
 
-function normalizeHex(hex: string | null | undefined): string | null {
-  const value = (hex ?? '').replace(/^#/, '').trim();
-  return /^[0-9a-f]{6}$/i.test(value) ? `#${value}` : null;
-}
-
 function controlStyle(): React.CSSProperties {
   return {
     height: 34,
@@ -35,70 +30,10 @@ function actionBtn(color: string, disabled = false): React.CSSProperties {
 }
 
 /**
- * 拼豆色板项：一颗拼豆——圆柱造型（顶部高光 + 底部内阴影）+ 中心孔洞（拼豆的招牌特征）。
- * 选中态 = accent 描边 + 微微上浮（"拿起这颗豆"）。
- */
-function Bead({
-  hex,
-  selected,
-  matched,
-  onClick,
-  label,
-}: {
-  hex: string;
-  selected: boolean;
-  matched: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      title={label}
-      onClick={onClick}
-      aria-label={label.split(' · ')[0]}
-      style={{
-        width: 38,
-        height: 38,
-        borderRadius: '50%',
-        background: `radial-gradient(circle at 32% 28%, rgba(255,255,255,0.55), rgba(255,255,255,0) 46%), ${hex}`,
-        border: selected
-          ? '2px solid var(--color-accent)'
-          : matched
-            ? '2px solid var(--color-accent-light)'
-            : '1px solid rgba(61,43,31,0.14)',
-        boxShadow:
-          'inset 0 -3px 5px rgba(61,43,31,0.14), inset 0 2px 3px rgba(255,255,255,0.5), 0 1px 2px rgba(61,43,31,0.1)',
-        transform: selected ? 'translateY(-2px) scale(1.04)' : undefined,
-        cursor: 'pointer',
-        position: 'relative',
-        padding: 0,
-        transition: 'transform 120ms ease, border-color 120ms ease',
-      }}
-    >
-      {/* 中心孔：拼豆中空 */}
-      <span
-        style={{
-          position: 'absolute',
-          left: '50%',
-          top: '50%',
-          width: 9,
-          height: 9,
-          transform: 'translate(-50%, -50%)',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(61,43,31,0.4), rgba(61,43,31,0.12))',
-          pointerEvents: 'none',
-        }}
-      />
-    </button>
-  );
-}
-
-/**
  * 编码修正弹窗（单格/多格共用）：
- * - 交互：Enter 提交、Esc 关闭、点击豆子填入编码、输入与豆盘联动高亮
- * - 视效：色板 = 一盘拼豆（圆柱高光 + 中心孔），选中"拿起"；标题随模式切换
- *   （单格显示坐标/当前码，多格显示识别汇总）
+ * - 选择 = 受控下拉（combobox）：输入即过滤（编码/名称），↑↓ 键盘导航、
+ *   Enter 提交选中项、Esc 先关下拉再关弹窗
+ * - 单格模式显示坐标/当前码，多格显示识别汇总
  */
 export default function CorrectionEditorModal({
   editor,
@@ -118,16 +53,23 @@ export default function CorrectionEditorModal({
   onConfirmRevert: () => void;
 }) {
   const [code, setCode] = useState('');
-  const [filter, setFilter] = useState('');
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const breakdown = useMemo(() => computeBreakdown(editor.keys, cellsByPos), [editor.keys, cellsByPos]);
 
   const upper = code.trim().toUpperCase();
   const valid = validCodes.includes(upper) || upper === 'BLANK';
-  const shownSwatches = filter
-    ? swatches.filter((c) => c.code.includes(filter.toUpperCase()) || c.name.toLowerCase().includes(filter.toLowerCase()))
-    : swatches;
+
+  // 下拉候选：按输入过滤（编码前缀/子串 + 名称子串，与输入大小写无关）
+  const candidates = useMemo(() => {
+    const q = upper.trim();
+    if (!q) return swatches;
+    return swatches.filter(
+      (c) => c.code.includes(q) || c.name.toLowerCase().includes(q.toLowerCase()),
+    );
+  }, [swatches, upper]);
 
   // 单格模式：坐标 + 当前有效码（画布同源：correctedCode ?? code）
   const singleKey = editor.keys.length === 1 ? editor.keys[0] : null;
@@ -142,28 +84,24 @@ export default function CorrectionEditorModal({
       }
     : null;
 
-  // Esc 关闭
+  // Esc：下拉开着先关下拉，否则关弹窗
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (open) setOpen(false);
+        else onClose();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [open, onClose]);
 
-  // Enter 提交（输入框内）
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && valid && !busy) {
-      e.preventDefault();
-      void handleSet();
-    }
-  };
-
-  const handleSet = async () => {
-    if (!valid || busy) return;
+  const commit = async (value: string) => {
+    const target = value.trim().toUpperCase();
+    if (!(validCodes.includes(target) || target === 'BLANK') || busy) return;
     setBusy(true);
     try {
-      await onConfirmSet(upper);
+      await onConfirmSet(target);
     } finally {
       setBusy(false);
     }
@@ -179,9 +117,35 @@ export default function CorrectionEditorModal({
     }
   };
 
-  // 点击豆子：填入编码并聚焦输入框（等待下一步确认；Enter 或"设为"生效）
-  const pickBead = (c: ColorDto) => {
+  const handleInputChange = (value: string) => {
+    setCode(value.toUpperCase());
+    setOpen(true);
+    setActiveIndex(-1);
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (!open) setOpen(true);
+      setActiveIndex((prev) => (prev + 1) % Math.max(1, candidates.length));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex((prev) => (prev <= 0 ? candidates.length - 1 : prev - 1));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      // 下拉有选中项 → 提交选中项；否则提交输入框内容
+      const target = activeIndex >= 0 ? candidates[activeIndex]?.code : upper;
+      if (target) void commit(target);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setOpen(false);
+    }
+  };
+
+  const pickCandidate = (c: ColorDto) => {
     setCode(c.code);
+    setOpen(false);
+    setActiveIndex(-1);
     inputRef.current?.focus();
   };
 
@@ -192,7 +156,7 @@ export default function CorrectionEditorModal({
       onClick={onClose}
     >
       <div
-        className="w-[min(560px,92vw)] max-h-[85vh] overflow-y-auto rounded-[var(--radius-2xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-xl)]"
+        className="w-[min(480px,92vw)] max-h-[85vh] overflow-y-auto rounded-[var(--radius-2xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-xl)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 标题：单格"换一颗豆" + 坐标/当前码；多格保持"修正 N 格" + 识别汇总 */}
@@ -216,39 +180,80 @@ export default function CorrectionEditorModal({
           <button type="button" onClick={onClose} style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-lg)', lineHeight: 1 }} aria-label="关闭">×</button>
         </div>
 
-        <div className="flex gap-2 mb-3">
+        {/* 编码选择：受控下拉（输入过滤 + 键盘导航） */}
+        <div className="relative mb-3">
           <input
             ref={inputRef}
             value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onChange={(e) => handleInputChange(e.target.value)}
             onKeyDown={handleInputKeyDown}
-            placeholder="输入编码（如 A10），或从豆盘选一颗"
+            onFocus={() => setOpen(true)}
+            onBlur={() => setOpen(false)}
+            placeholder="输入或选择编码（如 A10）"
             autoFocus
-            list="correction-codes"
             style={{
               ...controlStyle(),
-              flex: 1,
+              width: '100%',
               height: 40,
               fontFamily: 'var(--font-mono)',
               fontWeight: 600,
               fontSize: 'var(--text-base)',
               borderColor: code && !valid ? 'var(--color-error)' : 'var(--color-border)',
               outline: 'none',
+              boxSizing: 'border-box',
             }}
             aria-label="修正编码"
           />
-          <datalist id="correction-codes">
-            {validCodes.map((c) => <option key={c} value={c} />)}
-          </datalist>
           {code && !valid && (
-            <span className="text-xs self-center" style={{ color: 'var(--color-error)', whiteSpace: 'nowrap' }}>
-              编码不在颜色库
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs" style={{ color: 'var(--color-error)' }}>
+              不在颜色库
             </span>
+          )}
+          {open && (
+            <div
+              data-testid="code-dropdown"
+              className="absolute left-0 right-0 top-[calc(100%+6px)] z-10 overflow-y-auto rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-md)]"
+              style={{ maxHeight: 248 }}
+              onMouseDown={(e) => e.preventDefault() /* 阻止 blur 先于 click */}
+            >
+              {candidates.length === 0 ? (
+                <div className="px-3 py-2.5 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+                  没有匹配的编码
+                </div>
+              ) : (
+                candidates.map((c, i) => (
+                  <button
+                    key={c.code}
+                    type="button"
+                    onMouseEnter={() => setActiveIndex(i)}
+                    onClick={() => pickCandidate(c)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      gap: 10,
+                      width: '100%',
+                      padding: '7px 12px',
+                      border: 'none',
+                      background: i === activeIndex ? 'var(--color-surface-hover)' : 'transparent',
+                      color: 'var(--color-text)',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontSize: 'var(--text-sm)',
+                    }}
+                  >
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{c.code}</span>
+                    {c.name !== c.code && (
+                      <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)' }}>{c.name}</span>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
           )}
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-4">
-          <button type="button" onClick={() => void handleSet()} disabled={!valid || busy} style={actionBtn('var(--color-accent)', !valid || busy)}>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => void commit(upper)} disabled={!valid || busy} style={actionBtn('var(--color-accent)', !valid || busy)}>
             {valid && upper ? `设为 ${upper}` : '设为…'}
           </button>
           <button type="button" onClick={() => void handleRevert()} disabled={busy} style={actionBtn('var(--color-success)', busy)}>
@@ -256,35 +261,9 @@ export default function CorrectionEditorModal({
           </button>
           <button
             type="button"
-            onClick={() => { setCode('BLANK'); inputRef.current?.focus(); }}
+            onClick={() => { setCode('BLANK'); setOpen(false); inputRef.current?.focus(); }}
             style={{ padding: '8px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)', background: 'transparent', color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', fontWeight: 500, cursor: 'pointer' }}
           >空白格 BLANK</button>
-        </div>
-
-        <div className="flex gap-2 items-center mb-2">
-          <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>豆盘</span>
-          <input
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            placeholder="按编码或名称筛选"
-            style={{ ...controlStyle(), height: 30, flex: 1 }}
-            aria-label="筛选色板"
-          />
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {shownSwatches.map((c) => (
-            <Bead
-              key={c.code}
-              hex={normalizeHex(c.hex) ?? '#eee'}
-              selected={upper === c.code}
-              matched={!upper ? false : c.code.includes(upper) || c.code === upper}
-              onClick={() => pickBead(c)}
-              label={`${c.code} · ${c.name}`}
-            />
-          ))}
-          {shownSwatches.length === 0 && (
-            <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>没有匹配的颜色</span>
-          )}
         </div>
       </div>
     </div>
