@@ -135,6 +135,16 @@ export default function CropPage() {
   const [crop, setCrop] = useState<CropRect>(() => defaultCrop(imageSize));
   const [rows, setRows] = useState(() => clampCellCount(state?.rows ?? 29));
   const [cols, setCols] = useState(() => clampCellCount(state?.cols ?? 29));
+  // 行列输入用字符串编辑态：允许删空/中间态自由输入（数字 state 会把空串
+  // clamp 回 1 导致最后一个数字删不掉），失焦时回显合法值
+  const [rowsStr, setRowsStr] = useState(() => String(clampCellCount(state?.rows ?? 29)));
+  const [colsStr, setColsStr] = useState(() => String(clampCellCount(state?.cols ?? 29)));
+  useEffect(() => {
+    setRowsStr(String(rows));
+  }, [rows]);
+  useEffect(() => {
+    setColsStr(String(cols));
+  }, [cols]);
   const [view, setView] = useState<ViewState>({ scale: 1, x: 0, y: 0 });
 
   const stageRef = useRef<HTMLDivElement>(null);
@@ -414,7 +424,7 @@ export default function CropPage() {
 
   function setCellField(setter: (value: number) => void, value: string) {
     const number = Number(value);
-    if (!Number.isFinite(number)) return;
+    if (!Number.isFinite(number) || value === '') return;
     setter(clampCellCount(number));
   }
 
@@ -610,8 +620,12 @@ export default function CropPage() {
                   type="number"
                   min={MIN_CELL_COUNT}
                   max={MAX_CELL_COUNT}
-                  value={cols}
-                  onChange={(e) => setCellField(setCols, e.target.value)}
+                  value={colsStr}
+                  onChange={(e) => {
+                    setColsStr(e.target.value);
+                    setCellField(setCols, e.target.value);
+                  }}
+                  onBlur={() => setColsStr(String(cols))}
                   className="px-3 py-1.5 rounded-lg border w-28"
                   style={{ borderColor: 'var(--color-border)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)' }}
                 />
@@ -622,8 +636,12 @@ export default function CropPage() {
                   type="number"
                   min={MIN_CELL_COUNT}
                   max={MAX_CELL_COUNT}
-                  value={rows}
-                  onChange={(e) => setCellField(setRows, e.target.value)}
+                  value={rowsStr}
+                  onChange={(e) => {
+                    setRowsStr(e.target.value);
+                    setCellField(setRows, e.target.value);
+                  }}
+                  onBlur={() => setRowsStr(String(rows))}
                   className="px-3 py-1.5 rounded-lg border w-28"
                   style={{ borderColor: 'var(--color-border)', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-sm)' }}
                 />
