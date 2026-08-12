@@ -99,6 +99,11 @@ export default function CorrectionEditorModal({
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  // 挂载后确保输入框不聚焦（移动端：打开弹窗不自动呼出输入法）
+  useEffect(() => {
+    inputRef.current?.blur();
+  }, []);
+
   // 输入框失焦**不收起**下拉：只在选中编码（pick）后收回——点击弹窗其他区域不再让弹窗"缩一下"
 
   // 弹窗打开期间锁页面滚动并隐藏滚动条：输入法弹出（visual viewport 变小）时
