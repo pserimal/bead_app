@@ -128,14 +128,23 @@ describe('CorrectionEditorModal 交互', () => {
     expect(screen.getByText('设为 A1')).toBeInTheDocument();
   });
 
-  it('失焦后下拉延迟收起（点击遮罩关闭时不闪烁）', () => {
+  it('失焦后下拉保持打开（只在选中编码后收回）', () => {
     renderModal();
     const input = screen.getByLabelText('修正编码');
     fireEvent.focus(input);
     expect(screen.getByTestId('code-dropdown')).toBeInTheDocument();
     fireEvent.blur(input);
-    // blur 后 120ms 内下拉仍在——遮罩/关闭按钮的 click 先完成弹窗卸载，无中间帧
+    // 失焦不收回——点击弹窗其他区域不会让弹窗"缩一下"
     expect(screen.getByTestId('code-dropdown')).toBeInTheDocument();
+    // 选中编码后收回
+    const dropdown = within(screen.getByTestId('code-dropdown'));
+    fireEvent.click(dropdown.getByText('A1'));
+    expect(screen.queryByTestId('code-dropdown')).not.toBeInTheDocument();
+  });
+
+  it('输入框 placeholder 显示当前编码（单格模式）', () => {
+    renderModal();
+    expect((screen.getByLabelText('修正编码') as HTMLInputElement).placeholder).toContain('当前 A10');
   });
 
   it('下拉项按编码自然排序（A1 < A10 < A2，数字感知）', () => {

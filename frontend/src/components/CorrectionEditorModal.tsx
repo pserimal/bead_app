@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { BlueprintCellDto, ColorDto } from '../types/api';
 import { computeBreakdown, naturalCompare } from '../lib/correctionModel';
 
@@ -98,11 +99,7 @@ export default function CorrectionEditorModal({
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  // 输入框失焦延迟收起下拉：给遮罩/关闭按钮的 click 留出时间，避免"先收下拉再关弹窗"的闪烁
-  const blurTimerRef = useRef<number | null>(null);
-  useEffect(() => () => {
-    if (blurTimerRef.current !== null) window.clearTimeout(blurTimerRef.current);
-  }, []);
+  // 输入框失焦**不收起**下拉：只在选中编码（pick）后收回——点击弹窗其他区域不再让弹窗"缩一下"
 
   const commit = async (value: string) => {
     const target = value.trim().toUpperCase();
@@ -157,7 +154,7 @@ export default function CorrectionEditorModal({
     inputRef.current?.focus();
   };
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-30 flex items-center justify-center p-4"
       style={{ background: 'rgba(61, 43, 31, 0.45)' }}
@@ -199,19 +196,8 @@ export default function CorrectionEditorModal({
                 value={code}
                 onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={handleInputKeyDown}
-                onFocus={() => {
-                  if (blurTimerRef.current !== null) {
-                    window.clearTimeout(blurTimerRef.current);
-                    blurTimerRef.current = null;
-                  }
-                  setOpen(true);
-                }}
-                onBlur={() => {
-                  // 延迟收起：遮罩/关闭按钮的 click 先完成弹窗卸载，避免中间帧闪烁
-                  if (blurTimerRef.current !== null) window.clearTimeout(blurTimerRef.current);
-                  blurTimerRef.current = window.setTimeout(() => setOpen(false), 120);
-                }}
-                placeholder="输入或选择编码（如 A10）"
+                onFocus={() => setOpen(true)}
+                placeholder={singleInfo ? `当前 ${singleInfo.current} · 输入或选择编码` : '输入或选择编码（如 A10）'}
                 autoFocus
                 style={{
                   ...controlStyle(),
@@ -318,6 +304,7 @@ export default function CorrectionEditorModal({
           >设为空白</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
