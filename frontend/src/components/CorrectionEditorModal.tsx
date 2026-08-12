@@ -151,7 +151,7 @@ export default function CorrectionEditorModal({
     setCode(c.code);
     setOpen(false);
     setActiveIndex(-1);
-    inputRef.current?.focus();
+    // 注意：不能 focus 回输入框——focus 会触发 onFocus → setOpen(true)，下拉重新打开
   };
 
   return createPortal(
