@@ -1,11 +1,16 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useBlueprint } from '../hooks/useBlueprints';
-import type { BlueprintCellDto } from '../types/api';
+import { getColors } from '../api/colors';
+import { updateBlueprintCells } from '../api/blueprints';
+import type { BlueprintCellDto, ColorDto } from '../types/api';
 import { staggerContainer, staggerItem } from '../lib/animations';
 import type { HoverCell } from '../lib/boardCanvas';
 import { useBoardViewer } from '../hooks/useBoardViewer';
+import CorrectionEditorModal from '../components/CorrectionEditorModal';
+import { useToast } from '../components/ToastContext';
 import ImmersionBoard from '../components/ImmersionBoard';
 
 function controlStyle(): React.CSSProperties {
@@ -26,8 +31,12 @@ function controlStyle(): React.CSSProperties {
 export default function BlueprintDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data: blueprint, isLoading, error } = useBlueprint(id ?? null);
   const [hover, setHover] = useState<HoverCell | null>(null);
+  // 点击单元格编辑（单格修正弹窗，复用校正页的 CorrectionEditorModal）
+  const [editor, setEditor] = useState<{ keys: string[] } | null>(null);
   const [immersive, setImmersive] = useState(false);
   // 触屏设备（平板/手机）：提示文案与交互方式不同（双指捏合、无滚轮）
   const isTouch = useMemo(
@@ -66,6 +75,81 @@ export default function BlueprintDetailPage() {
     ).length;
   }, [blueprint]);
 
+  // 点击单元格 → 打开单格修正弹窗（编辑坐标与 hover tooltip 同一来源）
+  const handleCellTap = useMemo(
+    () => (cell: HoverCell | null) => {
+      if (cell) setEditor({ keys: [`${cell.row}:${cell.col}`] });
+    },
+    [],
+  );
+
+  // 单格提交：设置新码 / 恢复原码（code=null），成功后刷新详情（静态层/文字层随 cells 重建）
+  const applySingleCorrection = useMemo(
+    () => async (code: string | null) => {
+      if (!id || !editor) return false;
+      try {
+        const [row, col] = editor.keys[0].split(':').map(Number);
+        await updateBlueprintCells(id, [{ row, col, code }]);
+        toast(code == null ? '已恢复原识别码' : `已设为 ${code}`, 'success');
+        setEditor(null);
+        void queryClient.invalidateQueries({ queryKey: ['blueprint', id] });
+        return true;
+      } catch (e) {
+        toast((e as Error).message, 'error');
+        return false;
+      }
+    },
+    [editor, id, queryClient, toast],
+  );
+
+  // 色板/合法编码（懒加载：首次点击单元格才拉全量颜色库；与校正页共享 queryKey 缓存）
+  const { data: allColors } = useQuery({
+    queryKey: ['colors', 'all'],
+    queryFn: async () => {
+      const items: ColorDto[] = [];
+      let page = 1;
+      for (;;) {
+        const res = await getColors({ pageSize: 100, page });
+        items.push(...res.items);
+        if (res.page >= res.totalPages) break;
+        page += 1;
+      }
+      return items;
+    },
+    enabled: editor != null,
+  });
+  const colorsByCode = useMemo(() => {
+    const map = new Map<string, ColorDto>();
+    for (const c of allColors ?? []) map.set(c.code, c);
+    return map;
+  }, [allColors]);
+  const validCodeList = useMemo(() => {
+    const codes = (blueprint?.validCodes?.length ? blueprint.validCodes : allColors?.map((c) => c.code)) ?? [];
+    return codes;
+  }, [blueprint, allColors]);
+  // 色板：按色相排序（与校正页一致）
+  const swatches = useMemo(() => {
+    const hue = (hex: string) => {
+      const v = hex.replace(/^#/, '');
+      const r = Number.parseInt(v.slice(0, 2), 16) / 255;
+      const g = Number.parseInt(v.slice(2, 4), 16) / 255;
+      const b = Number.parseInt(v.slice(4, 6), 16) / 255;
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      if (max === min) return -1;
+      const d = max - min;
+      let h = 0;
+      if (max === r) h = ((g - b) / d) % 6;
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      return h * 60;
+    };
+    return validCodeList
+      .map((code) => colorsByCode.get(code))
+      .filter((c): c is ColorDto => c != null)
+      .sort((a, b) => hue(a.hex) - hue(b.hex));
+  }, [validCodeList, colorsByCode]);
+
   const cellSize = blueprint ? Math.max(12, Math.min(48, 1440 / Math.max(blueprint.cols, blueprint.rows))) : 48;
 
   // 画布查看器：手势/重绘/坐标数学全部来自共享 hook
@@ -77,6 +161,8 @@ export default function BlueprintDetailPage() {
     cellSize,
     // 悬停 tooltip：同格内移动不更新（React 同引用 bail-out）
     onHover: (cell) => setHover((prev) => (prev && cell && prev.row === cell.row && prev.col === cell.col ? prev : cell)),
+    // 点击（无拖动）→ 打开单格编码编辑弹窗
+    onCellTap: handleCellTap,
   });
 
   if (isLoading) return <p style={{ color: 'var(--color-text-muted)' }}>加载中…</p>;
@@ -204,11 +290,24 @@ export default function BlueprintDetailPage() {
             )}
 
             <div style={{ position: 'absolute', left: 12, bottom: 10, padding: '5px 9px', borderRadius: 6, background: 'rgba(61,43,31,0.72)', color: 'var(--color-surface)', fontSize: 'var(--text-xs)', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
-              {isTouch ? '单指拖动 · 双指缩放 · 双击放大' : '拖动平移 · 滚轮缩放 · 双击放大'}
+              {isTouch ? '单指拖动 · 双指缩放 · 双击放大 · 点击格子可改编码' : '拖动平移 · 滚轮缩放 · 双击放大 · 点击格子可改编码'}
             </div>
           </div>
         </motion.div>
       </motion.div>
+
+      {/* 点击单元格编辑编码（复用校正页弹窗：输入校验 + 色板 + 恢复原码） */}
+      {editor && (
+        <CorrectionEditorModal
+          editor={editor}
+          cellsByPos={cellsByPosition}
+          swatches={swatches}
+          validCodes={validCodeList}
+          onClose={() => setEditor(null)}
+          onConfirmSet={(code) => applySingleCorrection(code)}
+          onConfirmRevert={() => applySingleCorrection(null)}
+        />
+      )}
 
       {/* 沉浸拼豆模式：全屏浏览 + 点击锁定编码高亮 */}
       {immersive && blueprint && (
