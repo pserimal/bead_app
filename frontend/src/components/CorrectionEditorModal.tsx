@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BlueprintCellDto, ColorDto } from '../types/api';
-import { computeBreakdown } from '../lib/correctionModel';
+import { computeBreakdown, naturalCompare } from '../lib/correctionModel';
 
 function controlStyle(): React.CSSProperties {
   return {
@@ -62,13 +62,15 @@ export default function CorrectionEditorModal({
   const upper = code.trim().toUpperCase();
   const valid = validCodes.includes(upper) || upper === 'BLANK';
 
-  // 下拉候选：按输入过滤（编码前缀/子串 + 名称子串，与输入大小写无关）
+  // 下拉候选：按输入过滤（编码/名称子串）+ **编码自然排序**（A1 < A2 < A10，数字感知）
   const candidates = useMemo(() => {
     const q = upper.trim();
-    if (!q) return swatches;
-    return swatches.filter(
-      (c) => c.code.includes(q) || c.name.toLowerCase().includes(q.toLowerCase()),
-    );
+    const filtered = q
+      ? swatches.filter(
+          (c) => c.code.includes(q) || c.name.toLowerCase().includes(q.toLowerCase()),
+        )
+      : swatches;
+    return [...filtered].sort((a, b) => naturalCompare(a.code, b.code));
   }, [swatches, upper]);
 
   // 单格模式：坐标 + 当前有效码（画布同源：correctedCode ?? code）
@@ -95,6 +97,12 @@ export default function CorrectionEditorModal({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+
+  // 输入框失焦延迟收起下拉：给遮罩/关闭按钮的 click 留出时间，避免"先收下拉再关弹窗"的闪烁
+  const blurTimerRef = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (blurTimerRef.current !== null) window.clearTimeout(blurTimerRef.current);
+  }, []);
 
   const commit = async (value: string) => {
     const target = value.trim().toUpperCase();
@@ -153,11 +161,12 @@ export default function CorrectionEditorModal({
     <div
       className="fixed inset-0 z-30 flex items-center justify-center p-4"
       style={{ background: 'rgba(61, 43, 31, 0.45)' }}
-      onClick={onClose}
+      onMouseDown={onClose /* mousedown 先于输入框 blur：直接卸载弹窗，无"收下拉再关"的闪烁 */}
     >
       <div
         className="w-[min(560px,94vw)] max-h-[92vh] overflow-y-auto rounded-[var(--radius-2xl)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-xl)]"
         onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
       >
         {/* 标题：单格"换一颗豆" + 坐标/当前码；多格保持"修正 N 格" + 识别汇总 */}
         <div className="mb-6 flex items-start justify-between gap-3">
@@ -190,8 +199,18 @@ export default function CorrectionEditorModal({
                 value={code}
                 onChange={(e) => handleInputChange(e.target.value)}
                 onKeyDown={handleInputKeyDown}
-                onFocus={() => setOpen(true)}
-                onBlur={() => setOpen(false)}
+                onFocus={() => {
+                  if (blurTimerRef.current !== null) {
+                    window.clearTimeout(blurTimerRef.current);
+                    blurTimerRef.current = null;
+                  }
+                  setOpen(true);
+                }}
+                onBlur={() => {
+                  // 延迟收起：遮罩/关闭按钮的 click 先完成弹窗卸载，避免中间帧闪烁
+                  if (blurTimerRef.current !== null) window.clearTimeout(blurTimerRef.current);
+                  blurTimerRef.current = window.setTimeout(() => setOpen(false), 120);
+                }}
                 placeholder="输入或选择编码（如 A10）"
                 autoFocus
                 style={{

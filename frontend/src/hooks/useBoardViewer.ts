@@ -47,6 +47,8 @@ interface BoardViewer {
 }
 
 const TAP_SLOP = 4;
+/** tap 最长时长（ms）：超过视为拖动/长按，不算点击（移动端拖拽误触修复） */
+const TAP_MAX_MS = 400;
 const REDRAW_DEBOUNCE_MS = 150;
 /** 整图模式位图上限：边长 4096（移动端 GPU/浏览器纹理上限——超限 canvas 显示异常/大面积消失，
  * iOS Safari 尤甚）或面积 24MP。超过即切视口裁剪模式：位图固定视口大小，只画可见格子。
@@ -60,6 +62,8 @@ interface PointerDrag {
   startY: number;
   startPanX: number;
   startPanY: number;
+  /** 按下时间戳：拖拽/长按不算 tap（移动端手指抖动 + 慢抬会误触发单元格点击） */
+  startTime: number;
 }
 
 interface PinchState {
@@ -315,6 +319,7 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
           startY: event.clientY,
           startPanX: current.panX,
           startPanY: current.panY,
+          startTime: event.timeStamp,
         };
       } else if (pointersRef.current.size === 2) {
         dragRef.current = null;
@@ -392,6 +397,7 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
           startY: remaining[1].y,
           startPanX: current.panX,
           startPanY: current.panY,
+          startTime: event.timeStamp,
         };
         return;
       }
@@ -400,9 +406,10 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
       dragRef.current = null;
       viewport.style.cursor = 'grab';
       if (viewport.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
-      // 无拖动 = 点击
+      // 无拖动 = 点击：位移 < TAP_SLOP 且时长 < TAP_MAX_MS（长按/慢抬不算 tap）
       const moved = drag ? Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) : 99;
-      if (moved < TAP_SLOP) {
+      const quick = drag ? event.timeStamp - drag.startTime < TAP_MAX_MS : false;
+      if (moved < TAP_SLOP && quick) {
         onCellTapRef.current?.(cellAt(event.clientX, event.clientY));
       }
       // 松手把最新 pan/scale 同步回 React state（缩放百分比等 UI 依赖）

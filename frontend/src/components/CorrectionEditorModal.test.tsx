@@ -115,8 +115,8 @@ describe('CorrectionEditorModal 交互', () => {
 
   it('Esc 关闭（下拉未开时直接关弹窗）', () => {
     const props = renderModal();
-    const input = screen.getByLabelText('修正编码');
-    fireEvent.blur(input); // 关闭下拉
+    // autoFocus 在 jsdom 会触发 focus → 下拉可能已开；两次 Esc 必然关闭（第一次关下拉，第二次关弹窗）
+    fireEvent.keyDown(window, { key: 'Escape' });
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(props.onClose).toHaveBeenCalled();
   });
@@ -126,5 +126,31 @@ describe('CorrectionEditorModal 交互', () => {
     const input = screen.getByLabelText('修正编码');
     fireEvent.change(input, { target: { value: 'A1' } });
     expect(screen.getByText('设为 A1')).toBeInTheDocument();
+  });
+
+  it('失焦后下拉延迟收起（点击遮罩关闭时不闪烁）', () => {
+    renderModal();
+    const input = screen.getByLabelText('修正编码');
+    fireEvent.focus(input);
+    expect(screen.getByTestId('code-dropdown')).toBeInTheDocument();
+    fireEvent.blur(input);
+    // blur 后 120ms 内下拉仍在——遮罩/关闭按钮的 click 先完成弹窗卸载，无中间帧
+    expect(screen.getByTestId('code-dropdown')).toBeInTheDocument();
+  });
+
+  it('下拉项按编码自然排序（A1 < A10 < A2，数字感知）', () => {
+    renderModal();
+    const input = screen.getByLabelText('修正编码');
+    fireEvent.focus(input);
+    const dropdown = within(screen.getByTestId('code-dropdown'));
+    const codes = Array.from(dropdown.getAllByRole('button')).map((b) => b.querySelector('span')?.textContent ?? '');
+    expect(codes).toEqual(['A1', 'A10', 'B26']);
+  });
+
+  it('遮罩 mousedown 关闭（不经过 blur 收起下拉的闪烁路径）', () => {
+    const props = renderModal();
+    const overlay = screen.getByLabelText('关闭').parentElement?.parentElement?.parentElement as HTMLElement;
+    fireEvent.mouseDown(overlay);
+    expect(props.onClose).toHaveBeenCalled();
   });
 });
