@@ -148,40 +148,39 @@ export default function ImmersionBoard({
         退出沉浸 ✕
       </button>
 
-      {/* 信息条（底部居中）：坐标/编码/置信度 + 锁定状态 + 解锁 */}
-      <div
-        className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 px-4 py-2.5 rounded-xl max-w-[calc(100vw-2rem)]"
-        style={{
-          background: 'rgba(23,19,15,0.88)',
-          border: '1px solid rgba(255,250,240,0.16)',
-          color: '#fffaf0',
-          backdropFilter: 'blur(6px)',
-          fontFamily: 'var(--font-mono)',
-        }}
-      >
-        {info ? (
-          <>
-            <span style={{ fontSize: 'var(--text-sm)' }}>
-              行 {info.row + 1} · 列 {info.col + 1}
+      {/* 信息条（底部居中）：坐标/编码/置信度 + 锁定状态 + 解锁（无点击时不显示） */}
+      {info && (
+        <div
+          className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3 px-4 py-2.5 rounded-xl max-w-[calc(100vw-2rem)]"
+          style={{
+            background: 'rgba(23,19,15,0.88)',
+            border: '1px solid rgba(255,250,240,0.16)',
+            color: '#fffaf0',
+            backdropFilter: 'blur(6px)',
+            fontFamily: 'var(--font-mono)',
+          }}
+        >
+          <span style={{ fontSize: 'var(--text-sm)' }}>
+            行 {info.row + 1} · 列 {info.col + 1}
+          </span>
+          <span style={{ fontSize: 'var(--text-base)', fontWeight: 700 }}>{info.code}</span>
+          {info.conf != null && (
+            <span style={{ fontSize: 'var(--text-xs)', opacity: 0.7 }}>
+              {Math.round(info.conf * 100)}%
             </span>
-            <span style={{ fontSize: 'var(--text-base)', fontWeight: 700 }}>{info.code}</span>
-            {info.conf != null && (
-              <span style={{ fontSize: 'var(--text-xs)', opacity: 0.7 }}>
-                {Math.round(info.conf * 100)}%
+          )}
+          {info.corrected != null && (
+            <span style={{ fontSize: 'var(--text-xs)', opacity: 0.85 }}>
+              修正 {cellsByPosition.get(`${info.row}:${info.col}`)?.code} → {info.corrected}
+            </span>
+          )}
+          {lockedCode != null && (
+            <>
+              <span className="hidden sm:inline" style={{ width: 1, height: 20, background: 'rgba(255,250,240,0.22)' }} />
+              <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-accent)', fontWeight: 600 }}>
+                ◎ {lockedCode === 'BLANK' ? '空白' : lockedCode} · {lockedCount} 格
               </span>
-            )}
-            {info.corrected != null && (
-              <span style={{ fontSize: 'var(--text-xs)', opacity: 0.85 }}>
-                修正 {cellsByPosition.get(`${info.row}:${info.col}`)?.code} → {info.corrected}
-              </span>
-            )}
-            <span className="hidden sm:inline" style={{ width: 1, height: 20, background: 'rgba(255,250,240,0.22)' }} />
-            {lockedCode != null ? (
-              <>
-                <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-accent)', fontWeight: 600 }}>
-                  ◎ {lockedCode === 'BLANK' ? '空白' : lockedCode} · {lockedCount} 格
-                </span>
-                <button
+              <button
                   type="button"
                   onClick={() => setLockedCode(null)}
                   style={{
@@ -197,18 +196,9 @@ export default function ImmersionBoard({
                   解锁
                 </button>
               </>
-            ) : (
-              <span style={{ fontSize: 'var(--text-xs)', opacity: 0.6 }}>
-                点击格子锁定其编码
-              </span>
             )}
-          </>
-        ) : (
-          <span style={{ fontSize: 'var(--text-xs)', opacity: 0.6 }}>
-            点击任意格子查看并锁定其编码 · 拖动平移 · 双指/滚轮缩放 · 双击放大
-          </span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
