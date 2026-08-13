@@ -262,30 +262,6 @@ export default function UploadPage() {
 
           {imageUrl && (
             <div className="flex flex-wrap gap-4 mt-4">
-              <label className="flex flex-col gap-1">
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>行数 (1-500)</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={500}
-                  value={rows}
-                  onChange={(e) => setRows(Number(e.target.value))}
-                  className="px-3 py-1.5 rounded-lg border w-24"
-                  style={{ borderColor: 'var(--color-border)' }}
-                />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>列数 (1-500)</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={500}
-                  value={cols}
-                  onChange={(e) => setCols(Number(e.target.value))}
-                  className="px-3 py-1.5 rounded-lg border w-24"
-                  style={{ borderColor: 'var(--color-border)' }}
-                />
-              </label>
               <label className="flex flex-col gap-1 flex-1 min-w-48">
                 <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
                   图纸级编码（可选，逗号分隔，如 A01,H12）
