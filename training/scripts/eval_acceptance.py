@@ -51,6 +51,42 @@ from ocr_core.bead_ocr_crnn import (  # noqa: E402
 from ocr_core.code_library import load_codes  # noqa: E402
 from training.scripts.eval_cell_baseline import _prep_cell  # noqa: E402
 
+
+def load_eval_backend(model_path: Path) -> tuple[callable, list[str], bool]:
+    """Load a ``.pt`` checkpoint or an ONNX export for evaluation.
+
+    Returns ``(forward, chars, color)`` where ``forward(tensor) -> logits``
+    (T, B, C) and ``color`` mirrors ``model.input_channels == 3``.  The ONNX
+    path reads ``manifest.json``/``charset.json`` next to ``model.onnx``
+    (written by ``export_onnx.py``), so the exact same fixed benchmark can
+    run against either runtime — this is how conversion parity is gated.
+    """
+    if model_path.is_dir():
+        model_path = model_path / "model.onnx"
+    if model_path.suffix == ".onnx":
+        import onnxruntime as ort
+
+        manifest = {}
+        mf = model_path.parent / "manifest.json"
+        if mf.exists():
+            manifest = json.loads(mf.read_text(encoding="utf-8"))
+        session = ort.InferenceSession(str(model_path),
+                                       providers=["CPUExecutionProvider"])
+        in_name = manifest.get("input_name", "images")
+        out_name = manifest.get("output_name", "logits")
+        color = bool(manifest.get("input_channels", 1) == 3)
+        chars = json.loads(
+            (model_path.parent / "charset.json").read_text(encoding="utf-8")
+        )["chars"]
+
+        def forward(tensor: torch.Tensor) -> torch.Tensor:
+            out = session.run([out_name], {in_name: tensor.numpy()})[0]
+            return torch.from_numpy(out)
+
+        return forward, chars, color
+    model, chars = load_checkpoint(model_path, device="cpu")
+    return model, chars, getattr(model, "input_channels", 1) == 3
+
 # ── Fixed benchmark sets (version 1) ──────────────────────────────────
 # Real-labeled sets are the production-truth proxy (they are also used in
 # training, but they are the only ground truth we have for real boards; the
@@ -110,15 +146,15 @@ def load_heldout(cells_dir: Path) -> tuple[list[np.ndarray], list[str]]:
     return imgs, labels
 
 
-def eval_set(model: torch.nn.Module, chars: list[str], imgs, labels,
+def eval_set(forward: callable, chars: list[str], color: bool, imgs, labels,
              full_trie: dict) -> tuple[float, float, float, float, float]:
     """(blank_acc, code_acc, overall, blank_conf_mean, code_conf_mean).
 
     Uses the same input prep as production and the same confidence formula
     (free-path CTC collapse). trie is the full library + BLANK, matching
-    image_service's valid_codes=None path.
+    image_service's valid_codes=None path.  ``forward`` is either a loaded
+    ``torch.nn.Module`` or an ONNX session wrapper — identical math on both.
     """
-    color = getattr(model, "input_channels", 1) == 3
     c2i = {c: i for i, c in enumerate(chars)}
     blank_preds: list[float] = []
     code_preds: list[float] = []
@@ -131,7 +167,7 @@ def eval_set(model: torch.nn.Module, chars: list[str], imgs, labels,
                 tensor = torch.from_numpy(batch).float().permute(0, 3, 1, 2) / 255.0
             else:
                 tensor = torch.from_numpy(batch).float().unsqueeze(1) / 255.0
-            logits = model(tensor)
+            logits = forward(tensor)
             log_probs = torch.log_softmax(logits, dim=2)
             decoded = constrained_decode(logits, full_trie, c2i, blank=0)
             # Free-path confidence (same as ocr_core.inference._greedy_conf).
@@ -176,10 +212,12 @@ def gate(candidate: Path, production: Path, out_json: Path | None,
          skip_holdout: bool = False) -> int:
     results: dict = {"version": 1, "candidate": str(candidate),
                      "production": str(production), "sets": {}}
-    prod_model, prod_chars = load_checkpoint(production, device="cpu")
-    cand_model, cand_chars = load_checkpoint(candidate, device="cpu")
-    print(f"production: {production.name} ({len(prod_chars)} chars)")
-    print(f"candidate : {candidate.name} ({len(cand_chars)} chars)")
+    prod_forward, prod_chars, prod_color = load_eval_backend(production)
+    cand_forward, cand_chars, cand_color = load_eval_backend(candidate)
+    prod_runtime = "onnx" if production.suffix == ".onnx" else "pytorch"
+    cand_runtime = "onnx" if candidate.suffix == ".onnx" else "pytorch"
+    print(f"production: {production.name} ({prod_runtime}, {len(prod_chars)} chars)")
+    print(f"candidate : {candidate.name} ({cand_runtime}, {len(cand_chars)} chars)")
     prod_trie = build_full_trie(prod_chars)
     cand_trie = build_full_trie(cand_chars)
 
@@ -189,8 +227,8 @@ def gate(candidate: Path, production: Path, out_json: Path | None,
         if not labels:
             print(f"  [warn] {name}: no labels loaded from {path}")
             continue
-        p = eval_set(prod_model, prod_chars, imgs, labels, prod_trie)
-        c = eval_set(cand_model, cand_chars, imgs, labels, cand_trie)
+        p = eval_set(prod_forward, prod_chars, prod_color, imgs, labels, prod_trie)
+        c = eval_set(cand_forward, cand_chars, cand_color, imgs, labels, cand_trie)
         results["sets"][name] = {
             "n": len(labels),
             "production": {"blank_acc": p[0], "code_acc": p[1], "overall": p[2],
@@ -215,8 +253,8 @@ def gate(candidate: Path, production: Path, out_json: Path | None,
         if HOLDOUT_DIR.exists():
             imgs, labels = load_heldout(HOLDOUT_DIR)
             if labels:
-                p = eval_set(prod_model, prod_chars, imgs, labels, prod_trie)
-                c = eval_set(cand_model, cand_chars, imgs, labels, cand_trie)
+                p = eval_set(prod_forward, prod_chars, prod_color, imgs, labels, prod_trie)
+                c = eval_set(cand_forward, cand_chars, cand_color, imgs, labels, cand_trie)
                 results["sets"]["synthetic_heldout"] = {
                     "n": len(labels),
                     "production": {"blank_acc": p[0], "code_acc": p[1], "overall": p[2],

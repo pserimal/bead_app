@@ -67,6 +67,30 @@ python -m training.scripts.eval_acceptance \
 Exit code 0 = PASS, 1 = FAIL. Reports are stored under
 `training/docs/acceptance-*.json` (not committed; local-only).
 
+### ONNX candidates (conversion parity)
+
+Since 2026-08-13, `--candidate` (and `--production`) also accept an ONNX
+model exported by `training/scripts/export_onnx.py` (pass the `model.onnx`
+path; `manifest.json` + `charset.json` next to it provide input/output
+names and the charset). This is how the Rust local-server runtime is gated:
+the **same fixed benchmark runs against both runtimes** with identical
+preprocessing/decode/confidence math, so a conversion that drifts is
+rejected exactly like a model that regresses.
+
+First ONNX-vs-PyTorch gate run (2026-08-13, crnn_color_mard_v8):
+
+| Set | n | prod (pt) vs cand (onnx) |
+|-----|---|--------------------------|
+| code_main | 8644 | identical (code 0.9903) |
+| blank_clean | 4503 | identical (1.0000 / 1.0000) |
+| blank_polluted | 344 | identical (0.9459 / 0.9957) |
+| blank_polluted_ref | 684 | identical (0.9756 / 0.9846) |
+| synthetic_heldout | 10240 | identical (0.9977 / 0.9764) |
+
+**PASS** — 24,415 cells, every metric bit-identical between `model.pt` and
+`model.onnx` (logit diff ≤ 3e-5). Model → ONNX conversion is lossless for
+inference purposes.
+
 ## Result — v7 vs v8 (2026-08-09)
 
 | Set | metric | v7 (prod) | v8 (cand) | delta |
