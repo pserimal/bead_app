@@ -1,0 +1,17 @@
+# Build environment for this machine (2026-08-13).
+#
+# Two Windows quirks are fixed here so plain `cargo build` works from any
+# shell:
+# 1. `D:\devtools\MinGW\bin` sits earlier in PATH than MSVC's bin, so rustc
+#    would otherwise find GNU coreutils `link` instead of MSVC `link.exe`
+#    ("link: extra operand" errors). Pinning the MSVC linker by full path
+#    sidesteps PATH order entirely.
+# 2. Windows SDK libs are not on any default search path — rustc's `cc`
+#    integration did not resolve them here, so LIB is set explicitly
+#    (MSVC CRT + Win11 SDK 26100 um/ucrt).
+
+[target.x86_64-pc-windows-msvc]
+linker = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostx64\\x64\\link.exe"
+
+[env]
+LIB = "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.44.35207\\lib\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.26100.0\\um\\x64;C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.26100.0\\ucrt\\x64"

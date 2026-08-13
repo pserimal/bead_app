@@ -41,7 +41,7 @@ def export_onnx(checkpoint: Path, out_dir: Path, opset: int = 17, verify: bool =
 
     input_channels = int(getattr(model, "input_channels", 1))
     input_size = list(getattr(type(model), "INPUT_SIZE", [48, 48]))
-    out_dir.mkdir(parents=True, exist_ok=False)
+    out_dir.mkdir(parents=True, exist_ok=True)
     model_path = out_dir / "model.onnx"
 
     example = torch.zeros((1, input_channels, input_size[0], input_size[1]), dtype=torch.float32)
@@ -82,6 +82,16 @@ def export_onnx(checkpoint: Path, out_dir: Path, opset: int = 17, verify: bool =
         "created_at": datetime.now(timezone.utc).isoformat(),
         "model_sha256": _sha256(model_path),
     }
+    # Merge into an existing artifact manifest (e.g. a published .pt model):
+    # keep the pt fields, add the onnx fields, and record the onnx export time
+    # separately so the pt manifest is never overwritten.
+    manifest_path = out_dir / "manifest.json"
+    if manifest_path.exists():
+        existing = json.loads(manifest_path.read_text(encoding="utf-8"))
+        onnx_created = manifest.pop("created_at")
+        existing.update(manifest)
+        existing["onnx_created_at"] = onnx_created
+        manifest = existing
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     (out_dir / "charset.json").write_text(
         json.dumps({"chars": chars, "charset_hash": manifest["charset_hash"]}, indent=2),

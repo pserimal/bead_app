@@ -97,6 +97,7 @@ build/
 
 # 模型 artifact：权重不入库（library.json 快照提交，model.pt 由 publish_checkpoint.py 生成）
 artifacts/models/**/model.pt
+artifacts/models/**/model.onnx
 artifacts/models/current
 
 # Python image-service 运行时
