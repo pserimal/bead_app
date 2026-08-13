@@ -165,20 +165,20 @@ The old **FastAPI backend** (`backend/`) was fully removed in commit `77d564d` (
 
 ## COMMANDS
 
-### 本地启动（WSL2 + Windows interop，2026-08-11 实测）
+### 本地启动（Git Bash on Windows，2026-08-13 实测）
 
-环境事实：bash 是 WSL2；三个服务都是 **Windows 进程**（JDK/conda/node 在 Windows 侧）；远程 DB `192.168.5.88:5432` **可达**（server 默认配置直连，无需本地 PG）。
+环境事实：bash 是 **Git Bash（MINGW64）**——Windows 原生进程树，不再是 WSL；路径用 `C:/...` 或 `/c/...`（**无 `/mnt/`**）；三个服务都是 **Windows 进程**（JDK/conda/node 在 Windows 侧）；远程 DB `192.168.5.88:5432` **可达**（server 默认配置直连，无需本地 PG）。
 
 **坑（违反必踩）**：
-1. `cmd.exe /c "... > file"` 嵌套重定向在 interop 下解析失效（文件不创建）——禁用
-2. bash `&` 后台启动 Windows exe，bash 命令退出时 interop 子进程被 WSL 杀掉——禁用
-3. 必须用 **PowerShell `Start-Process`** 创建脱离 WSL 进程树的独立进程；PowerShell 从 WSL 调用会静默挂起（GUI 子系统），**所有命令加 timeout**，通过日志 + netstat 验证而非等命令返回
-4. Windows 进程读不了 WSL symlink `artifacts/models/current` → `MODEL_ARTIFACT_DIR` 用真实目录（当前 `crnn_color_mard_v8-2026-08-09T04-30-00Z`）
-5. Windows 全局 `NODE_ENV=production` → vite dev 必须 `$env:NODE_ENV="development"`
+1. 服务启动仍用 **PowerShell `Start-Process`**（脱离 bash 进程树，可靠）；PowerShell 调用会静默挂起（GUI 子系统），**所有命令加 timeout**，通过日志 + netstat 验证而非等命令返回
+2. 避免 `cmd.exe /c "... > file"` 嵌套重定向（引号解析不可靠）——bash 直接重定向即可（`java.exe ... > log 2>&1`）
+3. Windows 全局 `NODE_ENV=production` → vite dev 必须 `NODE_ENV=development`（Git Bash 下 env 前缀**直接有效**，无需 cross-env 包装启动服务；跑 vitest 仍用 cross-env）
+4. `artifacts/models/current` 是 Git symlink → 服务进程读不了 → `MODEL_ARTIFACT_DIR` 用真实目录（当前 `crnn_color_mard_v8-2026-08-09T04-30-00Z`）
+5. **探测 Windows 服务/远程 DB 用 Windows 工具**（netstat/curl/pg_isready 直接可用——Git Bash 原生网络栈，无 WSL 网络隔离问题）；WSL 的 `/dev/tcp` 探测已禁用（误报过）
 
 ```bash
 # 三件套启动模板（每条命令加 timeout 15-60s）
-PS=/mnt/c/WINDOWS/system32/WindowsPowerShell/v1.0/powershell.exe
+PS=/c/WINDOWS/system32/WindowsPowerShell/v1.0/powershell.exe
 
 # 1) server :8080（默认配置连远程 192.168.5.88）
 $PS -NoProfile -Command 'Start-Process -FilePath "D:\devtools\jdk\jdk-21.0.2\bin\java.exe" -ArgumentList "-jar","D:\projects\python\ai_dou\server\build\libs\bead-server-0.1.0.jar" -WorkingDirectory "D:\projects\python\ai_dou" -RedirectStandardOutput "D:\projects\python\ai_dou\.scratch\server.log" -RedirectStandardError "D:\projects\python\ai_dou\.scratch\server.err.log" -WindowStyle Hidden'
@@ -189,11 +189,11 @@ $PS -NoProfile -Command '$env:MODEL_ARTIFACT_DIR="D:\projects\python\ai_dou\arti
 # 3) frontend :5173（--host 0.0.0.0 局域网可访问；NODE_ENV 必须 development）
 $PS -NoProfile -Command '$env:NODE_ENV="development"; Start-Process -FilePath "D:\devtools\node-v24.11.1-win-x64\node.exe" -ArgumentList "node_modules\vite\bin\vite.js --host 0.0.0.0" -WorkingDirectory "D:\projects\python\ai_dou\frontend" -RedirectStandardOutput "D:\projects\python\ai_dou\.scratch\frontend.log" -RedirectStandardError "D:\projects\python\ai_dou\.scratch\frontend.err.log" -WindowStyle Hidden'
 
-# 验证（Windows 侧 netstat + curl.exe；WSL curl 不通 Windows 进程）
-/mnt/c/WINDOWS/system32/netstat.exe -ano | grep -E ':(5173|8080|8001)' | grep LISTEN
-/mnt/c/WINDOWS/system32/curl.exe -s http://localhost:8001/health     # {"status":"UP","model_ready":true,...}
-/mnt/c/WINDOWS/system32/curl.exe -s "http://localhost:8080/api/v1/colors?page=1&pageSize=3"  # 291 条 mard
-# 停止：netstat 拿 PID → taskkill.exe /PID <pid> /F
+# 验证（Git Bash 下 netstat/curl 直接可用）
+netstat -ano | grep -E ':(5173|8080|8001)' | grep LISTEN
+curl -s http://localhost:8001/health     # {"status":"UP","model_ready":true,...}
+curl -s "http://localhost:8080/api/v1/colors?page=1&pageSize=3"  # 291 条 mard
+# 停止：netstat 拿 PID → taskkill /PID <pid> /F
 ```
 
 ### 性能测试（必跑，修改图纸查看相关文件后）
