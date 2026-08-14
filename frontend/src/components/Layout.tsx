@@ -137,7 +137,7 @@ export default function Layout({ children }: LayoutProps) {
           )}
         </AnimatePresence>
       </motion.nav>
-      <main className="flex-1">
+      <main className="flex-1 pt-6">
         {children}
       </main>
     </div>
