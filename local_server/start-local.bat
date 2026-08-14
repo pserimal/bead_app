@@ -1,6 +1,6 @@
 @echo off
 rem bead-local-server 一键启动（局域网 Web 应用，无需 JDK/Python/Node）
-rem 前端已编译内嵌于 bead-local-server.exe。
+rem 前端由服务从本目录 dist\ 磁盘读取（改版只需替换 dist\，无需重编/重启服务）。
 rem 服务将在后台无窗口运行（日志: data\server.log），本窗口自动关闭；
 rem 浏览器自动打开页面。停止服务请运行 stop-local.bat
 setlocal

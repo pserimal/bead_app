@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { getModels, activateModel, type ModelMeta } from '../api/models';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useCreateJob } from '../hooks/useJobs';
@@ -38,6 +39,32 @@ export default function UploadPage() {
   const [rows, setRows] = useState(29);
   const [cols, setCols] = useState(29);
   const [codes, setCodes] = useState('');
+  // 识别模型动态切换（模型列表 + 当前激活 + 切换）
+  const [models, setModels] = useState<ModelMeta[]>([]);
+  const [currentModel, setCurrentModel] = useState<string | null>(null);
+  const [modelSwitching, setModelSwitching] = useState(false);
+
+  useEffect(() => {
+    getModels()
+      .then((r) => {
+        setModels(r.items);
+        setCurrentModel(r.current);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleModelChange = useCallback((id: string) => {
+    if (!id || id === currentModel) return;
+    setModelSwitching(true);
+    activateModel(id)
+      .then((r) => {
+        setCurrentModel(r.current);
+        toast?.show?.('识别模型已切换');
+      })
+      .catch(() => toast?.show?.('模型切换失败'))
+      .finally(() => setModelSwitching(false));
+  }, [currentModel, toast]);
+
   // 019：任务自定义名称（可选，默认留空 = 不命名）
   const [jobName, setJobName] = useState('');
 
@@ -200,7 +227,7 @@ export default function UploadPage() {
           </p>
         </motion.div>
 
-        {/* 任务名称 + 网格 + 开始识别（顶部操作排） */}
+        {/* 任务名称 + 模型选择 + 网格 + 开始识别（顶部操作排） */}
         <motion.div variants={staggerItem} className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <input
@@ -221,6 +248,32 @@ export default function UploadPage() {
               }}
               aria-label="任务名称"
             />
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
+              识别模型
+              <select
+                value={currentModel ?? ''}
+                onChange={(e) => handleModelChange(e.target.value)}
+                disabled={!models.length || modelSwitching}
+                style={{
+                  height: 34,
+                  padding: '0 8px',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 'var(--text-sm)',
+                  outline: 'none',
+                }}
+                aria-label="识别模型"
+              >
+                {models.length === 0 && <option value="">（无可用模型）</option>}
+                {models.map((m) => (
+                  <option key={m.id} value={m.id}>{m.id.split('-')[0]}{m.id === currentModel ? '（当前）' : ''}</option>
+                ))}
+              </select>
+              {modelSwitching && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-warning)' }}>切换中…</span>}
+            </label>
             <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
               网格：{rows} × {cols} = {rows * cols} 格
               {crop && imageSize && (

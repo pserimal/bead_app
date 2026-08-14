@@ -107,14 +107,31 @@ async fn main() -> anyhow::Result<()> {
         &["data/library.json", "../artifacts/colors/library.json"],
         &["artifacts/colors/library.json"],
     );
-    let artifact_dir = resolve_path(
-        "BEAD_ARTIFACT_DIR",
-        &[
-            "models/crnn_color_mard_v8-2026-08-09T04-30-00Z",
-            "../artifacts/models/crnn_color_mard_v8-2026-08-09T04-30-00Z",
-        ],
-        &["artifacts/models/crnn_color_mard_v8-2026-08-09T04-30-00Z"],
+    // Models directory + persisted active model (BEAD_ARTIFACT_DIR env wins).
+    let models_dir = resolve_path(
+        "BEAD_MODELS_DIR",
+        &["models", "../artifacts/models"],
+        &["artifacts/models"],
     );
+    let current_file = std::path::Path::new(&db_path)
+        .parent()
+        .map(|p| p.join("model-current.txt"))
+        .unwrap_or_else(|| std::path::PathBuf::from("data/model-current.txt"));
+    let persisted = std::fs::read_to_string(&current_file)
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
+    let artifact_dir = std::env::var("BEAD_ARTIFACT_DIR")
+        .ok()
+        .filter(|v| !v.is_empty())
+        .or_else(|| {
+            // Persisted value is a bare artifact dir name — resolve against models_dir.
+            persisted.map(|p| std::path::Path::new(&models_dir).join(p).to_string_lossy().to_string())
+        })
+        .unwrap_or_else(|| {
+            let d = std::path::Path::new(&models_dir).join("crnn_color_mard_v8-2026-08-09T04-30-00Z");
+            d.to_string_lossy().to_string()
+        });
 
     let db = db::open(std::path::Path::new(&db_path))?;
     let service = JobService::new(Arc::new(db));
@@ -137,6 +154,9 @@ async fn main() -> anyhow::Result<()> {
         seed_version,
         auto_ocr: true,
         frontend: bead_local_server::api::Frontend::resolve("dist"),
+        models_dir: std::path::PathBuf::from(models_dir.clone()),
+        model_registry: bead_local_server::api::AppState::discover_models(std::path::Path::new(&models_dir)),
+        model_current_file: current_file,
     });
 
     // Resume jobs interrupted by a previous shutdown (re-run OCR in-process).

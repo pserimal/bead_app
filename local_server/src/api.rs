@@ -68,6 +68,72 @@ pub struct AppState {
     /// where events are delivered manually through /internal/jobs/...).
     pub auto_ocr: bool,
     pub frontend: Frontend,
+    /// Discovered model artifacts (`artifacts/models/` dirs with model.onnx).
+    pub models_dir: std::path::PathBuf,
+    pub model_registry: Vec<ModelMeta>,
+    /// Persisted active model id (data/model-current.txt).
+    pub model_current_file: std::path::PathBuf,
+}
+
+#[derive(Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelMeta {
+    pub id: String,
+    pub arch: Option<String>,
+    pub num_classes: Option<usize>,
+}
+
+impl AppState {
+    /// Scan `models_dir` for artifacts (dirs containing model.onnx) and load
+    /// their metadata from manifest.json.
+    pub fn discover_models(models_dir: &std::path::Path) -> Vec<ModelMeta> {
+        let mut metas = Vec::new();
+        let Ok(entries) = std::fs::read_dir(models_dir) else {
+            return metas;
+        };
+        for e in entries.flatten() {
+            let dir = e.path();
+            if !dir.is_dir() || !dir.join("model.onnx").exists() {
+                continue;
+            }
+            let id = dir.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let (arch, num_classes) = match std::fs::read_to_string(dir.join("manifest.json")) {
+                Ok(text) => {
+                    let m: serde_json::Value = serde_json::from_str(&text).unwrap_or_default();
+                    (
+                        m.get("model_arch").and_then(|v| v.as_str()).map(String::from),
+                        m.get("num_classes").and_then(|v| v.as_u64()).map(|v| v as usize),
+                    )
+                }
+                Err(_) => (None, None),
+            };
+            metas.push(ModelMeta { id, arch, num_classes });
+        }
+        metas.sort_by(|a, b| a.id.cmp(&b.id));
+        metas
+    }
+
+    /// Activate a model by artifact id: load from disk, swap under the lock,
+    /// persist the choice. In-flight jobs pick it up at their next batch.
+    pub fn activate_model(&self, id: &str) -> anyhow::Result<ModelMeta> {
+        let meta = self
+            .model_registry
+            .iter()
+            .find(|m| m.id == id)
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!(ApiException::not_found("MODEL_NOT_FOUND", format!("模型不存在: {id}"))))?;
+        let dir = self.models_dir.join(id);
+        let model = OnnxModel::load(&dir)?;
+        {
+            let mut slot = self.model.lock().unwrap();
+            *slot = Some(model);
+        }
+        if let Some(parent) = self.model_current_file.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        let _ = std::fs::write(&self.model_current_file, id);
+        Ok(meta)
+    }
 }
 
 pub fn router(state: Arc<AppState>) -> Router {
@@ -86,6 +152,9 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/api/v1/blueprints/{id}/cells/export-corrections", get(export_corrections))
         .route("/api/v1/colors", get(list_colors))
         .route("/api/v1/colors/{code}", get(get_color))
+        .route("/api/v1/models", get(list_models))
+        .route("/api/v1/models/current", get(current_model))
+        .route("/api/v1/models/{id}/activate", post(activate_model))
         .route("/internal/jobs/{id}/events", post(internal_event))
         .route_layer(body_limit)
         .fallback(serve_static)
@@ -480,6 +549,44 @@ async fn internal_event(
     ev.job_id = id; // path is authoritative
     let applied = state.service.apply_event(&ev).map_err(to_api)?;
     Ok(Json(InternalEventResponse { applied }))
+}
+
+// ── Models (dynamic switching) ────────────────────────────────────────
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ModelsResponse {
+    items: Vec<ModelMeta>,
+    current: Option<String>,
+}
+
+async fn list_models(State(state): State<Arc<AppState>>) -> Json<ModelsResponse> {
+    let current = state
+        .model
+        .lock()
+        .unwrap()
+        .as_ref()
+        .map(|m| m.artifact_id.clone());
+    Json(ModelsResponse { items: state.model_registry.clone(), current })
+}
+
+async fn current_model(State(state): State<Arc<AppState>>) -> Json<ModelsResponse> {
+    let current = state
+        .model
+        .lock()
+        .unwrap()
+        .as_ref()
+        .map(|m| m.artifact_id.clone());
+    Json(ModelsResponse { items: state.model_registry.clone(), current })
+}
+
+async fn activate_model(
+    State(state): State<Arc<AppState>>,
+    AxumPath(id): AxumPath<String>,
+) -> Result<Json<serde_json::Value>, ApiException> {
+    let meta = state.activate_model(&id).map_err(to_api)?;
+    println!("[model] activated {}", meta.id);
+    Ok(Json(serde_json::json!({"current": meta.id, "switched": true})))
 }
 
 // ── OCR worker (in-process replacement of the Python image-service) ──

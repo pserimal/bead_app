@@ -24,7 +24,7 @@ if not exist "%OUT%\models" mkdir "%OUT%\models"
 
 rem ── 前端（独立 dist/ 目录部署，不 embed——前端改版只替换 dist/，无需重编）──
 if not exist "%OUT%\dist" mkdir "%OUT%\dist"
-xcopy /e /i /y "..\frontend\dist\*" "%OUT%\dist\" >nul
+xcopy /e /i /y "..\frontend\dist\*" "%OUT%\dist" >nul
 
 echo [ok] frontend dist copied (%OUT%\dist)
 

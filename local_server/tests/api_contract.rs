@@ -41,6 +41,9 @@ fn test_app() -> (Router, Arc<AppState>) {
         frontend: bead_local_server::api::Frontend {
             dist_dir: std::path::PathBuf::from("tests/fixtures/dist"),
         },
+        models_dir: std::env::temp_dir().join("bead-test-models"),
+        model_registry: Vec::new(),
+        model_current_file: std::env::temp_dir().join("bead-test-model-current.txt"),
     });
     (router(state.clone()), state)
 }
@@ -447,6 +450,25 @@ async fn events_are_dropped_after_terminal_state() {
     let (_, body) = send(&app, get(&app, &format!("/api/v1/jobs/{id}"))).await;
     assert_eq!(body["status"], "SUCCEEDED");
     assert!(body["blueprintId"].as_str().is_some_and(|s| !s.is_empty()));
+}
+
+#[tokio::test]
+async fn models_list_and_activate_unknown() {
+    let (app, _) = test_app();
+    // empty registry in tests (no artifacts dir); current = None (OCR disabled)
+    let (status, body) = send(&app, get(&app, "/api/v1/models")).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["items"].as_array().unwrap().len(), 0);
+    assert!(body["current"].is_null() || body["current"].is_string());
+
+    let (status, body) = send(&app, Request::builder()
+        .method(Method::POST)
+        .uri("/api/v1/models/does-not-exist/activate")
+        .body(Body::empty())
+        .unwrap())
+    .await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body["code"], "MODEL_NOT_FOUND");
 }
 
 #[tokio::test]

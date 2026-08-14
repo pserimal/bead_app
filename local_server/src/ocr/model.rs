@@ -43,6 +43,8 @@ pub struct OnnxModel {
     pub chars: Vec<String>,
     pub char_to_idx: HashMap<char, usize>,
     pub supported_codes: Vec<String>,
+    /// Artifact dir name this model was loaded from (e.g. `crnn_color_mard_v8-…`).
+    pub artifact_id: String,
 }
 
 impl OnnxModel {
@@ -80,6 +82,11 @@ impl OnnxModel {
         let session = ort::session::Session::builder()?
             .commit_from_file(&model_path)
             .context("onnxruntime failed to load model.onnx")?;
+        let artifact_id = artifact_dir
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
         Ok(Self {
             session,
             input_name: manifest.input_name.unwrap_or_else(|| "images".into()),
@@ -87,6 +94,7 @@ impl OnnxModel {
             chars: charset.chars,
             char_to_idx,
             supported_codes,
+            artifact_id,
         })
     }
 
