@@ -16,15 +16,15 @@ if not exist "%OUT%\models" mkdir "%OUT%\models"
 
 copy /y target\release\bead-local-server.exe "%OUT%" >nul
 copy /y start-local.bat "%OUT%" >nul
-copy /y ..\server\src\main\resources\default_colors.json "%OUT%\data\" >nul
-copy /y ..\artifacts\colors\library.json "%OUT%\data\" >nul
+copy /y ..\server\src\main\resources\default_colors.json "%OUT%\data" >nul
+copy /y ..\artifacts\colors\library.json "%OUT%\data" >nul
 
 set "ART=..\artifacts\models\crnn_color_mard_v8-2026-08-09T04-30-00Z"
 if not exist "%OUT%\models\crnn_color_mard_v8-2026-08-09T04-30-00Z" mkdir "%OUT%\models\crnn_color_mard_v8-2026-08-09T04-30-00Z"
-copy /y "%ART%\model.onnx" "%OUT%\models\crnn_color_mard_v8-2026-08-09T04-30-00Z\" >nul
-copy /y "%ART%\manifest.json" "%OUT%\models\crnn_color_mard_v8-2026-08-09T04-30-00Z\" >nul
-copy /y "%ART%\charset.json" "%OUT%\models\crnn_color_mard_v8-2026-08-09T04-30-00Z\" >nul
-copy /y "%ART%\code_dict.json" "%OUT%\models\crnn_color_mard_v8-2026-08-09T04-30-00Z\" >nul
+copy /y "%ART%\model.onnx" "%OUT%\models\crnn_color_mard_v8-2026-08-09T04-30-00Z" >nul
+copy /y "%ART%\manifest.json" "%OUT%\models\crnn_color_mard_v8-2026-08-09T04-30-00Z" >nul
+copy /y "%ART%\charset.json" "%OUT%\models\crnn_color_mard_v8-2026-08-09T04-30-00Z" >nul
+copy /y "%ART%\code_dict.json" "%OUT%\models\crnn_color_mard_v8-2026-08-09T04-30-00Z" >nul
 
 if exist "%CONDA_PREFIX%\Lib\site-packages\onnxruntime\capi\onnxruntime.dll" (
     copy /y "%CONDA_PREFIX%\Lib\site-packages\onnxruntime\capi\onnxruntime.dll" "%OUT%" >nul
