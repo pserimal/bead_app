@@ -23,9 +23,6 @@ pub const BATCH_SIZE: usize = 128;
 struct Manifest {
     input_name: Option<String>,
     output_name: Option<String>,
-    input_channels: Option<u32>,
-    #[serde(default)]
-    input_size: Option<Vec<u32>>,
 }
 
 #[derive(Deserialize)]
@@ -129,8 +126,11 @@ pub fn ocr_cells_from_crop(
     cols: usize,
     bbox: (usize, usize, usize, usize),
     mard_codes: &[String],
+    valid_codes: Option<&[String]>,
 ) -> Result<Vec<CellResult>> {
-    // Closed vocabulary: mard codes (alpha prefix + digit suffix) + BLANK.
+    // Closed vocabulary: mard codes (alpha prefix + digit suffix) + BLANK,
+    // intersected with the caller's valid_codes (never widened) — same as
+    // ocr_core.inference.ocr_cells_from_crop.
     let train_vocab: Vec<String> = mard_codes
         .iter()
         .filter(|c| {
@@ -141,7 +141,13 @@ pub fn ocr_cells_from_crop(
         })
         .cloned()
         .collect();
-    let mut codes_set: Vec<String> = train_vocab;
+    let mut codes_set: Vec<String> = match valid_codes {
+        Some(valid) => train_vocab
+            .into_iter()
+            .filter(|c| valid.iter().any(|v| v.eq_ignore_ascii_case(c)))
+            .collect(),
+        None => train_vocab,
+    };
     if model.supported_codes.iter().any(|c| c == "BLANK") {
         codes_set.push("BLANK".into());
     }

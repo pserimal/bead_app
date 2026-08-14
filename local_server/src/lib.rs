@@ -1,9 +1,12 @@
-//! bead-local-server library crate — OCR core (P1).
+//! bead-local-server library crate.
 //!
-//! Pipeline: board image → per-cell 10%-inset crop → letterbox 48×48
-//! (cv2-INTER_AREA-equivalent resize) → ONNX Runtime CRNN → constrained
-//! trie decode + free-path confidence. Parity with the Python/PyTorch path
-//! is gated by `training/scripts/eval_acceptance.py` (ONNX candidates) and
-//! by `tests/parity.rs`.
+//! OCR core (P1, `ocr/`) + axum API / SQLite service layer (P2, `api.rs`,
+//! `service.rs`, `db.rs`, `models.rs`, `export.rs`) — a single-binary local
+//! LAN runtime mirroring the Kotlin cloud server's /api/v1 contract.
 
+pub mod api;
+pub mod db;
+pub mod export;
+pub mod models;
 pub mod ocr;
+pub mod service;
