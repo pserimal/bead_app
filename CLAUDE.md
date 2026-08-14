@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Top-level parts:
 
-- **`local_server/`** — Rust single-binary runtime: axum API + SQLite + ONNX Runtime OCR + embedded React frontend (rust-embed). LAN deployment via `build-release.bat` → `release/` → `start-local.bat` (auto-opens browser) / `stop-local.bat`
+- **`local_server/`** — Rust single-binary runtime: axum API + SQLite + ONNX Runtime OCR + serves the React frontend **from disk** (`release/dist/` — replacing files takes effect immediately, no recompile). LAN deployment via `build-release.bat` → `release/` → `start-local.bat` (auto-opens browser) / `stop-local.bat`
 - **`frontend/`** — React/Vite SPA; talks to `/api/v1` same-origin (dev: Vite proxy → `:8080`)
 - **`training/`** — Python CRNN training + annotation + model publishing (dev-time only)
 - **`ocr_core/`** — Python OCR core shared by training/export (charset, CRNN arch, inference reference). Rust runtime does its own inference via ONNX.
@@ -23,7 +23,7 @@ Top-level parts:
         ▼
 [ bead-local-server.exe ]
         ├─ axum /api/v1/* ──▶ SQLite (data/bead-local.db, WAL)
-        ├─ static assets    ──▶ rust-embed (frontend/dist)
+        ├─ static assets    ──▶ disk dist/ (frontend/dist → release/dist, hot-swap, no recompile)
         └─ OCR worker       ──▶ ONNX Runtime (model.onnx), in-process thread
 ```
 
@@ -47,6 +47,7 @@ ORT_DYLIB_PATH=<...> cargo test                                      # 21 tests
 ORT_DYLIB_PATH=<...> cargo run --release --bin bench_acceptance      # gate
 
 # Release pack (frontend build + exe + DLL + data + models → zip)
+# NOTE: frontend is NOT embedded — served from disk; hot-swap = copy frontend/dist over release/dist
 cd frontend && npm run build
 cd local_server && cmd /c build-release.bat                          # → bead-local-server-v0.1.0.zip
 

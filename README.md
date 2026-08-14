@@ -21,12 +21,12 @@
 [ bead-local-server.exe  （单进程，零外部依赖）]
         │  axum
         ├─ /api/v1/* ──── SQLite（data/bead-local.db）
-        ├─ 静态资源 ────── 前端 React build（rust-embed 内嵌）
+        ├─ 静态资源 ────── 前端 React build（磁盘 dist/ 目录，替换即生效）
         └─ OCR worker ──── ONNX Runtime（model.onnx）进程内推理
 ```
 
 - **local_server/** — Rust（axum + SQLite + ONNX Runtime）：API、任务编排、事件、蓝图生成、前端托管
-- **frontend/** — React + TypeScript + Vite（构建产物嵌入 exe，也可 npm run dev 开发）
+- **frontend/** — React + TypeScript + Vite（构建产物部署为 `release/dist/`，磁盘托管、替换即生效、无需重编 exe；也可 npm run dev 开发）
 - **training/** — Python CRNN 训练 + 数据标注 + 模型发布（开发期工具，非运行时依赖）
 - **ocr_core/** — 训练/导出共用的 Python OCR 核心（运行时推理在 Rust）
 
@@ -82,7 +82,7 @@ python -m training.scripts.eval_acceptance --candidate <ckpt|onnx> --production 
 - **axum 0.8** + **tokio** — HTTP API
 - **rusqlite (SQLite, bundled)** — 持久化（WAL）
 - **ort (ONNX Runtime 1.23.2, load-dynamic)** — CRNN 推理
-- **rust-embed** — 前端静态资源
+- **axum 静态文件服务** — 前端 `dist/` 目录磁盘托管（替换即生效；非 embed）
 - **serde / chrono / uuid / image / zip**
 
 ### 前端

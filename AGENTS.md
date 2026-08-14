@@ -7,13 +7,13 @@
 
 拼豆助手 (ai_dou) — Perler bead pattern recognition app. Users upload images of bead boards, crop the grid region, set rows/cols; the system OCRs alphanumeric bead codes per cell and generates read-only bead blueprints with color lookup from an official multi-brand bead color library.
 
-**2026-08-15 架构决策：Kotlin 后端已删除，仅保留 Rust 运行时。** 原 `server/`（Spring Boot + Kotlin，云端 PostgreSQL + Python image_service 事件协议）已整体移除；本地运行与部署统一由 `local_server/`（Rust 单二进制：axum API + SQLite + ONNX CRNN 推理，前端编译内嵌）承担。训练管线（Python）保留，仅用于开发期训练/评估/导出。
+**2026-08-15 架构决策：Kotlin 后端已删除，仅保留 Rust 运行时。** 原 `server/`（Spring Boot + Kotlin，云端 PostgreSQL + Python image_service 事件协议）已整体移除；本地运行与部署统一由 `local_server/`（Rust 单二进制：axum API + SQLite + ONNX CRNN 推理；前端以独立 `dist/` 目录磁盘托管，替换即生效，无需重编）承担。训练管线（Python）保留，仅用于开发期训练/评估/导出。
 
 ```
-frontend/  ──build──▶  嵌入 local_server/release/bead-local-server.exe
+frontend/  ──build──▶  local_server/release/dist/（磁盘 serve，替换即生效，无需重编）
                            │  axum :8080（0.0.0.0，局域网）
                            │  ├─ /api/v1/*（契约 007）
-                           │  ├─ 静态资源（rust-embed，SPA）
+                           │  ├─ 静态资源（磁盘 dist/ 目录，SPA，no-cache）
                            │  ├─ SQLite（data/bead-local.db，WAL）
                            │  └─ ONNX Runtime 推理（进程内 worker 线程）
 training/（Python，开发期）──export_onnx──▶ artifacts/models/*/model.onnx
@@ -117,7 +117,7 @@ ai_dou/
 
 ## UNIQUE STYLES
 
-- 单二进制运行时：axum + SQLite + ONNX Runtime + rust-embed 前端，双端零依赖
+- 单二进制运行时：axum + SQLite + ONNX Runtime + 磁盘托管前端（`release/dist/`，替换即生效，前端改版无需重编 exe），双端零依赖
 - 进程内 OCR worker（std::thread）与 HTTP 事件回调走同一条幂等 apply_event 路径（保留 /internal/jobs/{id}/events 端点）
 - 单字符集事实源 `ocr_core/charset.py`；Rust 端从 artifact charset.json 读取
 - 模型转换门禁：eval_acceptance 支持 onnx 候选 + Rust bench_acceptance 硬编码参照值
@@ -136,11 +136,13 @@ ai_dou/
 ### 构建 / 启动 / 测试（Rust 运行时）
 
 ```bash
-# 前端构建（产物 embed 进 exe）
+# 前端构建（产物在 frontend/dist；部署 = 拷贝到 release/dist/，运行中的服务立即生效，无需重编/重启）
 cd frontend && node.exe node_modules/vite/bin/vite.js build
+cp -r dist/* ../local_server/release/dist/   # 可选：或直接跑下面的 build-release.bat
 
-# 一条命令出包：构建 + 自包含 release/ + 打 zip（自动排除 db/uploads）
+# 一条命令出包：重编 exe + 同步 dist + 自包含 release/ + 打 zip（自动排除 db/uploads）
 cd local_server && cmd //c build-release.bat
+# 注：脚本中 `..\server\...\default_colors.json` 的 copy 已失效（server/ 已删）——因 release/data/ 已有该文件，报错无害
 # 产物：local_server/bead-local-server-v0.1.0.zip（解压任意目录 → 双击 start-local.bat）
 
 # 一键启动（发布/开发机均可）：
@@ -182,7 +184,7 @@ cd frontend && npm test                     # 175 tests
 
 ## NOTES
 
-- 前端 dev proxy：`/api` → `http://localhost:8080`（vite.config.ts）；生产同源（embed）
+- 前端 dev proxy：`/api` → `http://localhost:8080`（vite.config.ts）；生产同源（Rust 磁盘 serve `release/dist/`）
 - 上传限制：30MB（axum DefaultBodyLimit 32MB 兜底），JPEG/PNG
 - 基线模型：`crnn_color_mard_v8`（zip exact_match 0.9405，post-CTC-fix）；**当前生产 = bean-mard-v1**（2026-08-15 用户确认部署）。bean-mard-v1 = v8 配方 + 5 级模糊合成图纸 + 新标注（合成模糊 heldout +8.6pp）；模糊图纸生成器与 blank-cap 代码保留；若用户后续提供真实模糊标注可重训 bean-mard-v2。
 - **模型验收门禁**：任何新 checkpoint 部署前必须跑 `eval_acceptance`（基准集与容差固定，不允许为过门禁增删）；Rust 端再跑 `bench_acceptance`
