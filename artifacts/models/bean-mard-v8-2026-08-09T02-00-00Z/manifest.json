@@ -1,0 +1,16 @@
+{
+  "model_name": "bean-mard-v8",
+  "version": "2026-08-09T02-00-00Z",
+  "format_version": 1,
+  "model_arch": "crnn-v2-rgb",
+  "num_classes": 35,
+  "charset_hash": "6c8166975e62b54c5d26bf2f0655590333b1eca9368516cb646cd24978b065f6",
+  "code_dict_version": "sha256:64525a1971c99610bb0e4400d139af6ef9c96b7a388985c64f4b48d848640b9d",
+  "created_at": "2026-08-08T18:39:56.503688+00:00",
+  "training": {
+    "seed": 0,
+    "epochs": 30,
+    "synth_n": 0,
+    "color": true
+  }
+}

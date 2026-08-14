@@ -129,7 +129,7 @@ async fn main() -> anyhow::Result<()> {
             persisted.map(|p| std::path::Path::new(&models_dir).join(p).to_string_lossy().to_string())
         })
         .unwrap_or_else(|| {
-            let d = std::path::Path::new(&models_dir).join("crnn_color_mard_v8-2026-08-09T04-30-00Z");
+            let d = std::path::Path::new(&models_dir).join("bean-mard-v11-2026-08-14T00-00-00Z");
             d.to_string_lossy().to_string()
         });
 

@@ -2,8 +2,8 @@
 
 Usage:
     conda run -n bead-train python -m training.scripts.export_onnx \
-        --checkpoint training/checkpoints/crnn_color_v7.pt \
-        --out-dir artifacts/models/crnn_color_v7-onnx
+        --checkpoint training/checkpoints/bean-mard-v8.pt \
+        --out-dir artifacts/models/bean-mard-v8-onnx
 
 The exported graph keeps the model output as [T, B, C]. Image preprocessing,
 CTC/trie decoding, confidence normalization, and color lookup remain outside

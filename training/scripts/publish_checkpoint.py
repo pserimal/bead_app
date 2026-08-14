@@ -2,8 +2,8 @@
 
 Usage (from repo root):
     python -m training.scripts.publish_checkpoint \\
-        --checkpoint training/checkpoints/crnn_real_m.pt \\
-        --name crnn_real_m --version 2026-08-01T00-00-00Z
+        --checkpoint training/checkpoints/bean-mard-v10.pt \\
+        --name bean-mard-v10 --version 2026-08-01T00-00-00Z
 
     python -m training.scripts.publish_checkpoint --colors   # 生成颜色库快照
 

@@ -79,6 +79,9 @@ pub struct AppState {
 #[serde(rename_all = "camelCase")]
 pub struct ModelMeta {
     pub id: String,
+    /// Display name: manifest `model_name` if present, else the artifact
+    /// dir name (id).
+    pub name: String,
     pub arch: Option<String>,
     pub num_classes: Option<usize>,
 }
@@ -97,17 +100,21 @@ impl AppState {
                 continue;
             }
             let id = dir.file_name().unwrap_or_default().to_string_lossy().to_string();
-            let (arch, num_classes) = match std::fs::read_to_string(dir.join("manifest.json")) {
+            let (name, arch, num_classes) = match std::fs::read_to_string(dir.join("manifest.json")) {
                 Ok(text) => {
                     let m: serde_json::Value = serde_json::from_str(&text).unwrap_or_default();
                     (
+                        m.get("model_name")
+                            .and_then(|v| v.as_str())
+                            .map(String::from)
+                            .unwrap_or_else(|| id.clone()),
                         m.get("model_arch").and_then(|v| v.as_str()).map(String::from),
                         m.get("num_classes").and_then(|v| v.as_u64()).map(|v| v as usize),
                     )
                 }
-                Err(_) => (None, None),
+                Err(_) => (id.clone(), None, None),
             };
-            metas.push(ModelMeta { id, arch, num_classes });
+            metas.push(ModelMeta { id, name, arch, num_classes });
         }
         metas.sort_by(|a, b| a.id.cmp(&b.id));
         metas
@@ -403,7 +410,7 @@ async fn create_job(
             parsed_codes.clone(),
             stored,
             state.seed_version.clone(),
-            "crnn_color_mard_v8".to_string(),
+            "bean-mard-v11".to_string(),
             name,
         )
         .map_err(to_api)?;

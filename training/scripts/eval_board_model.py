@@ -107,7 +107,7 @@ def per_code_table(r: dict, top_n: int = 8) -> list[str]:
 def main() -> int:
     ckpts = [Path(sys.argv[i]) for i in range(1, len(sys.argv))] or [
         ROOT / "training" / "checkpoints" / "crnn_board_m2.pt",
-        ROOT / "training" / "checkpoints" / "crnn_real_m.pt",
+        ROOT / "training" / "checkpoints" / "bean-mard-v10.pt",
     ]
     out_json: dict = {}
 

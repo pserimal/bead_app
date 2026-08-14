@@ -24,7 +24,7 @@ reproduce that behavior for comparison.
 Usage:
     cd <repo-root>
     /path/to/python.exe training/scripts/eval_cell_baseline.py \
-        --checkpoint training/checkpoints/crnn_real_m.pt
+        --checkpoint training/checkpoints/bean-mard-v10.pt
 
 Sweep all checkpoints (used to pick the baseline artifact):
     /path/to/python.exe training/scripts/eval_cell_baseline.py \

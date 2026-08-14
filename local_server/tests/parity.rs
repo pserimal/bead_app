@@ -17,7 +17,7 @@ use bead_local_server::ocr::OnnxModel;
 use serde::Deserialize;
 
 const DEFAULT_ARTIFACT: &str =
-    "D:/projects/python/ai_dou/artifacts/models/crnn_color_mard_v8-2026-08-09T04-30-00Z";
+    "D:/projects/python/ai_dou/artifacts/models/bean-mard-v11-2026-08-14T00-00-00Z";
 const DEFAULT_FIXTURES: &str = "D:/projects/python/ai_dou/.scratch/parity-fixtures";
 const REPO_ROOT: &str = "D:/projects/python/ai_dou";
 
