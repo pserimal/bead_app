@@ -374,7 +374,8 @@ function renderCodes(
       const isTarget = highlightCode !== null && (cell?.correctedCode ?? cell?.code) === highlightCode;
       ctx.globalAlpha = highlightCode !== null && !isTarget ? 0.35 : 1;
       const code = cell?.correctedCode ?? cell?.code ?? '';
-      if (!code) continue;
+      // UNMAPPED 格子不绘制文字（灰底斜线已标识，修正页/警告条有坐标）
+      if (!code || code === 'UNMAPPED') continue;
       const x = left + col * cellSize;
       const y = top + row * cellSize;
       const hex = normalizeHex(cell?.color?.hex);

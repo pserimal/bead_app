@@ -32,7 +32,9 @@ export default function ImmersionBoard({
     let best = '';
     for (const cell of blueprint.cells) {
       const eff = cell.correctedCode ?? cell.code;
-      if (eff !== 'BLANK' && eff && eff.length > best.length) best = eff;
+      // UNMAPPED 只是待修正标记（8 字符），不参与字体计算——否则会拉小全图字号
+      if (eff === 'BLANK' || eff === 'UNMAPPED' || !eff) continue;
+      if (eff.length > best.length) best = eff;
     }
     return best;
   }, [blueprint]);
