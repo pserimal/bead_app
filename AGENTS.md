@@ -163,8 +163,11 @@ ORT_DYLIB_PATH=... cargo run --release --bin bench_acceptance
 
 ```bash
 # conda 环境：bead-train（Python）；从仓库根运行
+# 训练：省略 --out 自动命名 training/checkpoints/bean-mard-v<N>.pt（N 递增）
 python -m training.scripts.train_crnn --synth-n 50000 --epochs 30
-python -m training.scripts.publish_checkpoint --checkpoint <ckpt> --name <n> --version <v>
+# 发布：省略 --name 自动编号 bean-mard-v<N>（基于 artifacts/models 最大 N+1）
+# 名字必须符合 bean-mard-v<N> 格式（model_naming.py 校验）
+python -m training.scripts.publish_checkpoint --checkpoint training/checkpoints/bean-mard-v<N>.pt
 # ONNX 导出（发布双产物，manifest 合并）：
 python -m training.scripts.export_onnx --checkpoint artifacts/models/<n>-<v>/model.pt \
     --out-dir artifacts/models/<n>-<v> --verify

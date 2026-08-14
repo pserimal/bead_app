@@ -3,18 +3,20 @@
 Usage:
     # Real only (8644 labeled marked cells from training/samples/)
     cd training && python -m training.scripts.train_crnn \\
-        --real-only --epochs 30 --out checkpoints/crnn_real_v1.pt
+        --real-only --epochs 30 --out checkpoints/bean-mard-v1.pt
 
     # Mixed: synthetic pretraining (covers all 65 codes) + real fine-tuning
     cd training && python -m training.scripts.train_crnn \\
-        --synth-n 50000 --epochs 30 --out checkpoints/crnn_v3.pt
+        --synth-n 50000 --epochs 30 --out checkpoints/bean-mard-v2.pt
 
     # Custom real data directory
     cd training && python -m training.scripts.train_crnn \\
         --real-dir /path/to/marked/cells \\
         --manifest /path/to/manifest.csv \\
-        --epochs 30 --out checkpoints/crnn.pt
+        --epochs 30 --out checkpoints/bean-mard-v3.pt
 
+    # Auto-naming: omit --out → writes training/checkpoints/bean-mard-v<N>.pt
+    # (N = max existing + 1, see training/scripts/model_naming.py)
 The training loop expects:
 - torch installed (`pip install torch torchvision`)
 - Real data format: PNG files where the first underscore-delimited token of
@@ -485,6 +487,13 @@ def train(args):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"[train] device={device}")
 
+    # ── Resolve output path (auto-name bean-mard-v<N>.pt when --out omitted) ──
+    if args.out is None:
+        from training.scripts.model_naming import next_checkpoint_name
+
+        args.out = str(_REPO_ROOT / "training" / "checkpoints" / next_checkpoint_name())
+        print(f"[train] --out omitted → auto-named {args.out}")
+
     # ── Load real data first (needed to derive vocab if --real-dir given) ──
     real_samples: list = []
     real_codes_seen: set[str] = set()
@@ -684,7 +693,9 @@ def parse_args():
     p.add_argument("--lr", type=float, default=1e-3)
     p.add_argument("--num-workers", type=int, default=0)
     p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--out", type=str, default="checkpoints/crnn.pt")
+    p.add_argument("--out", type=str, default=None,
+                   help="Output checkpoint path. Omit to auto-name bean-mard-v<N>.pt "
+                        "(next available N in training/checkpoints/).")
     p.add_argument("--augment", action="store_true", default=False,
                    help="Apply light data augmentation (rotation ±5°, "
                         "brightness ±12%; RGB saturation ±15% in --color mode).")

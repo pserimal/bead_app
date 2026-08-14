@@ -5,6 +5,10 @@ Usage (from repo root):
         --checkpoint training/checkpoints/bean-mard-v10.pt \\
         --name bean-mard-v10 --version 2026-08-01T00-00-00Z
 
+    # Auto-naming (naming convention 2026-08-15): omit --name → next bean-mard-v<N>
+    # from artifacts/models/ (max existing N + 1). Name validated to
+    # bean-mard-v<N> format. See training/scripts/model_naming.py.
+    python -m training.scripts.publish_checkpoint \n        --checkpoint training/checkpoints/bean-mard-v46.pt
     python -m training.scripts.publish_checkpoint --colors   # 生成颜色库快照
 
 Legacy checkpoints (old 3-key dict, no format_version) are migrated in memory
@@ -115,15 +119,26 @@ def publish_colors() -> Path:
 def main() -> None:
     ap = argparse.ArgumentParser(description="Publish CRNN training artifact (010 R3)")
     ap.add_argument("--checkpoint", type=Path)
-    ap.add_argument("--name", default="crnn")
+    ap.add_argument("--name", default=None,
+                    help="Artifact name (bean-mard-v<N>). Omit to auto-number "
+                         "from artifacts/models/ (next available N).")
     ap.add_argument("--version", default=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%SZ"))
     ap.add_argument("--colors", action="store_true", help="生成颜色库快照 artifacts/colors/library.json")
     args = ap.parse_args()
 
+    if args.checkpoint:
+        # ── 命名规范（2026-08-15 统一）：bean-mard-v<N>，按事件顺序递增 ──
+        from training.scripts.model_naming import next_artifact_name, validate_name
+
+        if args.name is None:
+            args.name = next_artifact_name()
+            print(f"[name] --name omitted → auto-named {args.name}")
+        if not validate_name(args.name):
+            ap.error(f"模型名必须符合 bean-mard-v<N> 格式，得到: {args.name!r}")
+        publish_checkpoint(args.checkpoint, args.name, args.version)
+
     if args.colors:
         publish_colors()
-    if args.checkpoint:
-        publish_checkpoint(args.checkpoint, args.name, args.version)
     if not args.colors and not args.checkpoint:
         ap.error("需要 --checkpoint 或 --colors")
 
