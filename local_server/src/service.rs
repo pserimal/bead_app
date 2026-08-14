@@ -323,6 +323,23 @@ impl JobService {
                 self.touch_heartbeat(&tx, &job)?;
             }
         }
+        // Events are in-flight tracking data: capped while running, dropped
+        // entirely once the job is terminal (the blueprint holds the result).
+        let terminal_now = {
+            let j = self.get_job_conn(&tx, e.job_id)?;
+            matches!(
+                j.status,
+                JobStatus::Succeeded | JobStatus::SucceededWithWarnings | JobStatus::Failed
+            )
+        };
+        if terminal_now {
+            tx.execute(
+                "DELETE FROM recognition_job_event WHERE job_id = ?1",
+                [e.job_id.to_string()],
+            )?;
+        } else {
+            self.prune_cell_events(&tx, e.job_id)?;
+        }
         tx.commit()?;
         Ok(true)
     }
@@ -442,6 +459,12 @@ impl JobService {
             "UPDATE recognition_job SET blueprint_id = ?2, status = 'SUCCEEDED', updated_at = ?3 WHERE id = ?1",
             params![job.id.to_string(), bp_id.to_string(), crate::db::ts_to_sql(now())],
         )?;
+        // The blueprint now holds every cell — drop the per-job copy (it is
+        // only needed while the job is in flight; keeps the db compact).
+        tx.execute(
+            "DELETE FROM recognition_job_cell WHERE job_id = ?1",
+            [job.id.to_string()],
+        )?;
         Ok(())
     }
 
@@ -481,6 +504,66 @@ impl JobService {
                 params![job.id.to_string(), error_code, error_message, crate::db::ts_to_sql(now())],
             )?;
         }
+        Ok(())
+    }
+
+    /// Fold the WAL into the main db file and reclaim deleted-page space
+    /// (VACUUM) so the data dir stays compact after a job finishes.
+    /// Order matters: VACUUM writes into the WAL, then checkpoint folds it
+    /// and TRUNCATE zeroes the -wal file.
+    pub fn compact(&self) {
+        let conn = self.db.lock().unwrap();
+        let _ = conn.execute_batch("VACUUM");
+        let _ = conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE)");
+    }
+
+    /// Historical cleanup for terminal (SUCCEEDED) jobs written by older
+    /// versions: drop their events and per-job cell copies (the blueprint
+    /// holds the data). Called at startup; FAILED jobs keep their cells for
+    /// debugging.
+    pub fn prune_terminal_history(&self) -> usize {
+        let jobs = {
+            let conn = self.db.lock().unwrap();
+            let mut stmt = conn
+                .prepare("SELECT * FROM recognition_job WHERE status = 'SUCCEEDED'")
+                .unwrap();
+            stmt.query_map([], job_from_row)
+                .unwrap()
+                .filter_map(|r| r.ok())
+                .collect::<Vec<Job>>()
+        };
+        for job in &jobs {
+            let conn = self.db.lock().unwrap();
+            let _ = conn.execute(
+                "DELETE FROM recognition_job_event WHERE job_id = ?1",
+                [job.id.to_string()],
+            );
+            let _ = conn.execute(
+                "DELETE FROM recognition_job_cell WHERE job_id = ?1",
+                [job.id.to_string()],
+            );
+        }
+        if !jobs.is_empty() {
+            self.compact();
+        }
+        jobs.len()
+    }
+
+    /// Cap per-job cell events (CELL_PROCESSED/CELL_FAILED/HEARTBEAT) to the
+    /// most recent KEEP (200). Lifecycle events (JOB_STARTED, RETRY_SCHEDULED,
+    /// JOB_SUCCEEDED, JOB_FAILED) are always kept.
+    fn prune_cell_events(&self, conn: &Connection, job_id: Uuid) -> Result<()> {
+        const KEEP: i64 = 200;
+        conn.execute(
+            "DELETE FROM recognition_job_event WHERE job_id = ?1
+             AND type IN ('CELL_PROCESSED','CELL_FAILED','HEARTBEAT')
+             AND id NOT IN (
+                 SELECT id FROM recognition_job_event
+                 WHERE job_id = ?1 AND type IN ('CELL_PROCESSED','CELL_FAILED','HEARTBEAT')
+                 ORDER BY attempt DESC, sequence DESC LIMIT ?2
+             )",
+            params![job_id.to_string(), KEEP],
+        )?;
         Ok(())
     }
 

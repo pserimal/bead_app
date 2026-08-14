@@ -140,6 +140,12 @@ async fn main() -> anyhow::Result<()> {
 
     // Resume jobs interrupted by a previous shutdown (re-run OCR in-process).
     bead_local_server::api::resume_interrupted(&state);
+    // Historical cleanup: cap cell events / drop cell copies for jobs that
+    // finished under an older version (keeps the db file compact).
+    let pruned = state.service.prune_terminal_history();
+    if pruned > 0 {
+        println!("[start] pruned history for {pruned} terminal jobs");
+    }
 
     let app = router(state).layer(tower_http::cors::CorsLayer::permissive());
     let addr = format!("0.0.0.0:{port}");

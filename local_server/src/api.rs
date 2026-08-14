@@ -118,6 +118,7 @@ pub struct PageParams {
     pub sort_dir: Option<String>,
     pub status: Option<String>,
     pub q: Option<String>,
+    pub ids: Option<String>,
 }
 
 fn page_params(p: &PageParams, default_size: i64) -> (i64, i64) {
@@ -342,7 +343,8 @@ async fn delete_jobs(
     State(state): State<Arc<AppState>>,
     Query(params): Query<PageParams>,
 ) -> Result<Json<serde_json::Value>, ApiException> {
-    let ids_str = params.q.as_deref().unwrap_or("");
+    // 019: ids is a comma-separated query param (`/jobs?ids=a,b`).
+    let ids_str = params.ids.as_deref().unwrap_or("");
     let parsed: Vec<Uuid> = ids_str
         .split(',')
         .map(|s| s.trim())
@@ -495,7 +497,10 @@ fn run_ocr_worker(
     loop {
         let outcome = run_ocr_once(svc, model, mard_codes, job_id, rows, cols, &crop_box, valid_codes.clone(), &image_bytes);
         match outcome {
-            Ok(()) => return,
+            Ok(()) => {
+                svc.compact();
+                return;
+            }
             Err(msg) => {
                 let payload = serde_json::json!({
                     "code": "OCR_ERROR",

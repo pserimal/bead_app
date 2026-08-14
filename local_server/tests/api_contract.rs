@@ -401,6 +401,52 @@ async fn error_contract_shape_and_validation() {
 }
 
 #[tokio::test]
+async fn delete_jobs_batch_removes_job_and_blueprint() {
+    let (app, _) = test_app();
+    let id1 = create_job(&app).await;
+    let id2 = create_job(&app).await;
+    let (status, body) = send(&app, Request::builder()
+        .method(Method::DELETE)
+        .uri(format!("/api/v1/jobs?ids={id1},{id2}"))
+        .body(Body::empty())
+        .unwrap())
+    .await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["deleted"], 2);
+    let (status, _) = send(&app, get(&app, &format!("/api/v1/jobs/{id1}"))).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    // empty ids → 400
+    let (status, body) = send(&app, Request::builder()
+        .method(Method::DELETE)
+        .uri("/api/v1/jobs?ids=")
+        .body(Body::empty())
+        .unwrap())
+    .await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(body["code"], "EMPTY_IDS");
+}
+
+#[tokio::test]
+async fn events_are_dropped_after_terminal_state() {
+    let (app, _) = test_app();
+    let id = create_job(&app).await;
+    post_cell(&app, id, 2, 0, 0, "H1", None).await;
+    post_cell(&app, id, 3, 0, 1, "H2", None).await;
+    post_cell(&app, id, 4, 1, 0, "H3", None).await;
+    post_cell(&app, id, 5, 1, 1, "H1", None).await;
+    // in-flight: events still present (JOB_STARTED + 4 cells)
+    let (_, body) = send(&app, get(&app, &format!("/api/v1/jobs/{id}/events"))).await;
+    assert_eq!(body["items"].as_array().unwrap().len(), 5);
+    succeed_job(&app, id).await;
+    // terminal: all events dropped (tracking data, blueprint holds results)
+    let (_, body) = send(&app, get(&app, &format!("/api/v1/jobs/{id}/events"))).await;
+    assert_eq!(body["total"], 0);
+    let (_, body) = send(&app, get(&app, &format!("/api/v1/jobs/{id}"))).await;
+    assert_eq!(body["status"], "SUCCEEDED");
+    assert!(body["blueprintId"].as_str().is_some_and(|s| !s.is_empty()));
+}
+
+#[tokio::test]
 async fn color_library_list_and_single() {
     let (app, _) = test_app();
     let (status, body) = send(&app, get(&app, "/api/v1/colors?q=H1")).await;
