@@ -6,14 +6,6 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 
-# Backend
-backend/__pycache__/
-backend/.pytest_cache/
-backend/uploads/
-backend/bead_app.db
-backend/condaenv.*.requirements.txt
-backend/=*
-
 # Frontend
 node_modules/
 dist/
@@ -42,8 +34,9 @@ training/data/
 .gstack/
 .superpowers/
 .pi-subagents/
+.scratch/
 
-# Runtime uploads (root-level shared mount; backend/uploads/ also covers docker volume)
+# Runtime uploads
 uploads/
 examples/
 
@@ -64,6 +57,8 @@ Thumbs.db
 frontend/.env
 frontend/.env.*
 *.db
+*.sqlite3
+*.sqlite
 
 # Python virtualenvs
 .venv/
@@ -75,7 +70,7 @@ ENV/
 .vscode/
 .vs/
 
-# Tool caches (pytest already covered above)
+# Tool caches
 .mypy_cache/
 .ruff_cache/
 .ipynb_checkpoints/
@@ -84,21 +79,17 @@ htmlcov/
 coverage.xml
 *.cover
 
-# Coverage DB / SQLite variants (backend/bead_app.db already covered explicitly)
-*.sqlite3
-*.sqlite
-
-# Build output (dist/ already covered above)
+# Build output
 build/
-# ── 新架构（2026-08 重写）──
 
-# Wayfinder 本地 tracker 全部数据（本地决策记录，不入库）
-.scratch/
+# ── 新架构（2026-08 Rust 重写）──
 
-# 模型 artifact：权重不入库（library.json 快照提交，model.pt 由 publish_checkpoint.py 生成）
+# 模型 artifact：权重不入库（library.json 快照提交，model.pt/onnx 由发布脚本生成）
 artifacts/models/**/model.pt
 artifacts/models/**/model.onnx
 artifacts/models/current
 
-# Python image-service 运行时
-image_service_tmp/
+# local_server 构建产物与发布包
+local_server/target/
+local_server/release/
+local_server/bead-local-server-v*.zip

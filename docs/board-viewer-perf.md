@@ -28,7 +28,7 @@ allocation / redraw frequency.
 
 ## How to run (≈2 minutes)
 
-1. **Start services** (see AGENTS.md "本地启动"): server :8080, image_service :8001, frontend :5173.
+1. **Start the local server** (see AGENTS.md "构建/启动"): `cd local_server/release && start-local.bat` (or `cargo run` in dev) — the Rust binary serves the frontend + API on :8080.
 2. **Open a large blueprint** (≥90×158, e.g. the 14,220-cell test board):
    `http://192.168.5.156:5173/blueprints/<id>` — wait for load.
 3. **Reload the page first** — the redraw-skip-on-shrink design means the

@@ -1,176 +1,70 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. The authoritative knowledge base is **AGENTS.md** — read it first; this file is the one-screen summary.
 
 ## What this is
 
-拼豆助手 (ai_dou) — Perler bead pattern recognition app. Users upload a photo of a bead board, crop the grid region, set rows/cols; the backend OCRs the alphanumeric bead codes printed in each cell, looks each code up in an official multi-brand bead color library (1950 codes, 15 brands, sourced from [maxcleme/beadcolors](https://github.com/maxcleme/beadcolors)), and produces a read-only bead blueprint.
+拼豆助手 (ai_dou) — Perler bead pattern recognition app. Users upload a photo of a bead board, crop the grid region, set rows/cols; the system OCRs the alphanumeric bead codes printed in each cell, looks them up in a bead color library, and produces a read-only bead blueprint.
 
-The repo is organized into four top-level parts:
+**2026-08-15: the Kotlin cloud backend (`server/` Spring Boot + `image_service/` Python FastAPI) was removed. The runtime is now a single Rust binary.**
 
-- **`frontend/`** — React/Vite SPA (`:5173`), talks to the Spring API via `/api/*` (Vite proxy → `:8080`)
-- **`server/`** — Spring Boot + Kotlin API service (`:8080`), PostgreSQL-backed; the only external HTTP service
-- **`image_service/`** — internal Python FastAPI CRNN service (`:8001`, internal network only); does the actual OCR
-- **`ocr_core/`** — shared OCR core package (charset, code library, CRNN arch + inference); consumed by both `image_service/` and `training/`
-- **`training/`** — model training + data annotation; produces versioned model artifacts consumed by `image_service/`; also hosts `scripts/build_color_library.py` (017: official beadcolors CSV → color library JSON)
+Top-level parts:
 
-## Color library (017)
-
-Official multi-brand bead color data from **[maxcleme/beadcolors](https://github.com/maxcleme/beadcolors)** (`gen/v1/*.csv`, 15 brands) → **1950 codes** with a `brand` field, replacing the old 65-code custom snapshot.
-
-- Generate: `python -m training.scripts.build_color_library --csv-dir <dir> --out <json>` (dedup same code+color; cross-brand conflicts prefixed e.g. `MARD-A10`; sort `brand → code`; JSON keys `brand, code, color_name, color_hex, sort_order`)
-- Snapshots: `artifacts/colors/library.json` (OCR) + `server/src/main/resources/default_colors.json` (Spring seed)
-- DB: `color_library` table with `brand` column (V1 schema); seeded on boot by `ColorSeedRunner`
-- Init policy: `bead.db.recreate-on-start=true` (default) → Flyway clean + migrate + reseed every boot; set `false` to keep data
+- **`local_server/`** — Rust single-binary runtime: axum API + SQLite + ONNX Runtime OCR + embedded React frontend (rust-embed). LAN deployment via `build-release.bat` → `release/` → `start-local.bat` (auto-opens browser) / `stop-local.bat`
+- **`frontend/`** — React/Vite SPA; talks to `/api/v1` same-origin (dev: Vite proxy → `:8080`)
+- **`training/`** — Python CRNN training + annotation + model publishing (dev-time only)
+- **`ocr_core/`** — Python OCR core shared by training/export (charset, CRNN arch, inference reference). Rust runtime does its own inference via ONNX.
+- **`artifacts/`** — model artifacts (`model.pt` + `model.onnx` dual outputs) + color library snapshot
 
 ## Architecture (one-screen mental model)
 
 ```
-[ Browser (React/Vite, :5173) ]
-        │  /api/v1/*  (Vite proxy → :8080, CORS allowed)
+[ Browser (本机/局域网) ]  http://<IP>:8080
         ▼
-[ Spring Boot + Kotlin (server/, :8080) ]            [ PostgreSQL 192.168.5.88:5432 (or compose db) ]
-        ├─ api/      JobController, BlueprintController, ColorController, InternalEventController
-        ├─ service/  JobService (008: idempotent events, atomic blueprint, recovery sweep)
-        │            PythonTaskDispatcher (009: multipart dispatch → image_service)
-        ├─ model/    JPA entities (recognition_job, blueprint, color_library …)
-        └─ config/   Flyway migrations, ColorSeedRunner, DatabaseInitConfig (recreate-on-start), RecoveryScheduler, CORS
-        │
-        │  POST /v1/tasks (multipart: image + cropBox + rows/cols)
-        ▼
-[ Python image_service (:8001, internal) ]   ←── [ ocr_core/ (shared) ]
-        ├─ worker: decode cells → callback events
-        └─ POST /internal/jobs/{id}/events (per-cell, heartbeat, terminal)
+[ bead-local-server.exe ]
+        ├─ axum /api/v1/* ──▶ SQLite (data/bead-local.db, WAL)
+        ├─ static assets    ──▶ rust-embed (frontend/dist)
+        └─ OCR worker       ──▶ ONNX Runtime (model.onnx), in-process thread
 ```
 
-**Recognition flow**: upload → `POST /api/v1/jobs` → Spring saves image + creates job (PENDING) → dispatcher submits to Python → Python runs CRNN (ocr_core) → per-cell `CELL_PROCESSED` callbacks → Spring applies idempotently → `JOB_SUCCEEDED` atomically creates Blueprint. The frontend polls the job via React Query (2s) and renders the blueprint read-only.
+**Recognition flow**: upload → `POST /api/v1/jobs` (multipart) → job created (PENDING, JOB_STARTED) → in-process OCR worker decodes cells → per-cell `CELL_PROCESSED` events through the same idempotent `apply_event` path as the (kept) `/internal/jobs/{id}/events` endpoint → `JOB_SUCCEEDED` atomically creates the Blueprint. Frontend polls via React Query (2s).
 
-Protocol details (events, sequences, retries, recovery) are defined in the wayfinder tracker: `.scratch/spring-kotlin-python-rewrite/` (14 closed decision tickets + `IMPLEMENTATION-NOTES.md`).
+**Event policy**: events are in-flight tracking data — capped at 200 while running, deleted entirely at terminal state (blueprint holds results). Compact (`VACUUM + wal_checkpoint(TRUNCATE)`) runs after jobs finish to keep the db file small.
 
-## Commands
+## Key contracts
 
-### Backend (server)
+- `/api/v1` DTOs mirror `frontend/src/types/api.ts` (007: camelCase, PageResponse/ApiError/JobDetail/BlueprintDetail). Keep `local_server/src/models.rs` and the frontend types aligned.
+- Crop math contract (10% inset) exists in two implementations: `local_server/src/export.rs` (crop_rect) and the frontend CellThumb preview — see `docs/crop-math.md`.
+- Model acceptance gate: `training/scripts/eval_acceptance.py` (fixed benchmark, 0.005 tolerance; accepts .pt or .onnx) + Rust-side `local_server/src/bin/bench_acceptance.rs` (hardcoded reference values).
+- Color library: runtime seed `data/default_colors.json` (mard 291, `#` stripped) + OCR vocabulary `artifacts/colors/library.json`.
+
+## Commands (quick)
+
 ```bash
-# Build/test (JDK 21 + Gradle 8.10; conda env bead-java on Windows, or gradlew)
-cd server && gradle test --no-daemon            # 9 contract tests (MockMvc + jsonPath)
-cd server && gradle bootJar --no-daemon         # build runnable jar
-java -jar server/build/libs/bead-server-0.1.0.jar   # :8080, Swagger at /swagger-ui
+# Rust runtime
+cd local_server && ORT_DYLIB_PATH=<onnxruntime.dll> cargo run        # :8080
+ORT_DYLIB_PATH=<...> cargo test                                      # 21 tests
+ORT_DYLIB_PATH=<...> cargo run --release --bin bench_acceptance      # gate
+
+# Release pack (frontend build + exe + DLL + data + models → zip)
+cd frontend && npm run build
+cd local_server && cmd /c build-release.bat                          # → bead-local-server-v0.1.0.zip
+
+# Dev frontend
+cd frontend && npm run dev                                           # :5173 → :8080 proxy
+
+# Training (conda env bead-train, repo root)
+python -m training.scripts.train_crnn ...
+python -m training.scripts.export_onnx --checkpoint <pt> --out-dir <artifact> --verify
+python -m training.scripts.eval_acceptance --candidate <pt|onnx> --production <current>
 ```
 
-### Image service (Python)
-```bash
-# From repo root (ocr_core must resolve); conda env bead-train (torch + cv2 + fastapi)
-MODEL_ARTIFACT_DIR=artifacts/models/current \
-  python -m uvicorn image_service.app.main:app --host 127.0.0.1 --port 8001
-# /health → {"model_ready": true}; /v1/tasks is the only job endpoint
-```
+## Pitfalls (top 5)
 
-### Training
-```bash
-# Train a CRNN model (writes format_version=1 checkpoint with metadata)
-python -m training.scripts.train_crnn --synth-n 50000 --epochs 30
+1. MinGW `link` shadows MSVC linker — `.cargo/config.toml` pins linker + LIB (Windows SDK 26100)
+2. ort uses `load-dynamic` + `api-23`; set `ORT_DYLIB_PATH` to the 1.23.2 DLL (same core as Python reference); ship DLL next to exe
+3. Numerical parity rules: batch 128, uint8-quantized input (round→u8→/255), INTER_AREA = weighted area average
+4. `.bat` files must be CRLF; `"%OUT%\data\"` trailing backslash breaks copy; `taskkill //PID` in Git Bash
+5. SQLite deletes don't shrink files — always `compact()` (VACUUM + checkpoint) after pruning
 
-# Publish a checkpoint as an immutable artifact (010 R3)
-python -m training.scripts.publish_checkpoint \
-    --checkpoint training/checkpoints/crnn_real_m.pt --name crnn_real_m --version <v>
-
-# Baseline / acceptance eval (011)
-python -m training.scripts.eval_cell_baseline --checkpoint <ckpt> --legacy
-
-# Rebuild color library from official beadcolors CSVs (017)
-python -m training.scripts.build_color_library --csv-dir <csv-dir> --out artifacts/colors/library.json
-#   then copy the same output to server/src/main/resources/default_colors.json
-
-# Merge Zippland 291-color mapping (COCO/漫漫/盼盼/咪小窝; MARD skipped — ADR 0005)
-python -m training.scripts.import_zippland_palette --mapping <colorSystemMapping.json> [--dry-run]
-
-# Generate a synthetic bead board with per-cell metadata (ADR 0005)
-python -m training.scripts.generate_board --image photo.jpg --brand mard [--cols 90] [--seed 7]
-#   → training/data/boards/<stem>/{board.png, board.json, board_preview.png}
-#   board.json cells[]: 1-based row/col + code + color_hex (exact labels for cell cropping)
-
-# Eval against real stand crops (grid-level; needs positioned GT)
-python -m training.scripts.eval_stand
-```
-
-### Frontend
-```bash
-cd frontend && npm install
-cd frontend && npm run dev      # dev server :5173, proxies /api → :8080
-cd frontend && npm run build    # tsc -b && vite build
-cd frontend && npm test         # vitest run --passWithNoTests (138 tests)
-```
-
-### Compose (013)
-```bash
-cp .env.example .env && docker compose up -d --build        # postgres + spring + python
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build  # dev ports
-```
-
-## Project-specific gotchas
-
-- **No `pyproject.toml`** — `image_service/` runs via `uvicorn image_service.app.main:app` from repo root (so `ocr_core` resolves). Training scripts run via `python -m training.scripts.X` from repo root.
-- **Conda envs**: `bead-app` (old backend, retired — no longer needed), `bead-train` (torch/cv2/fastapi for training + image_service), `bead-java` (JDK 21 + Gradle + PostgreSQL tools). Windows-side envs; WSL has no network.
-- **Postgres**: dev uses remote `192.168.5.88:5432` (admin/123456, databases `bead_app` + `bead_app_test`); compose provides its own db service. Credentials are injected via env, not hardcoded (except `.env.example` template).
-- **Image upload limits**: 20 MB max, JPEG/PNG only — enforced in JobController.
-- **Model artifact contract (010 R3)**: `artifacts/models/<name>-<version>/{model.pt, charset.json, manifest.json}`; `artifacts/models/current` points to the active one; `image_service` loads via `MODEL_ARTIFACT_DIR`. Legacy 3-key checkpoints are **rejected** by `ocr_core.load_checkpoint` (must migrate via `publish_checkpoint.py`).
-- **Checkpoint metadata hard-checks (010 R2)**: `format_version`, `model_arch`, `num_classes`, `input_size`, `charset_hash` mismatch → `CheckpointFormatError` at load.
-- **Confidence fix (011 F1)**: `ocr_core.inference` normalizes confidence as `exp(score/T)` (per-step log-prob), not `exp(score/len(code))` — the old formula rejected everything at min_conf=0.5.
-- **CTC constrained decode (F5, exp 002)**: `constrained_decode` must be CTC-aware — blank frames don't advance the trie, and only *consecutive* identical frames collapse (`2 _ 2` ≠ `22`). `blank_penalty` default is now 0.0 (penalizing blank hurt trained models; 0 is optimal for both old and new checkpoints). Without this, board-trained models decode at ~6 % vs 98 % greedy.
-- **Board generator renders huge images**: `board_generator` disables PIL's decompression-bomb guard (`Image.MAX_IMAGE_PIXELS = None`) — boards can exceed 178 MP (e.g. 300 cols × tall portrait source). Don't re-add the guard inside that module.
-- **Diagrams print brand-native codes (`render_code`)**: the color library stores conflict prefixes (`COCO-H07`) but boards must print `H07` — `-` is outside the OCR charset. `load_brand_palette` strips prefixes; never print raw library codes into cells.
-- **Frontend proxies `/api` → `http://localhost:8080`** via `vite.config.ts`. Use `apiClient` from `frontend/src/api/client.ts` (baseURL `/api/v1`, 30s timeout, error interceptor mapping `{code, message, details, traceId}`).
-- **Tailwind v4 CSS-based config** — config lives in `frontend/src/index.css`. **ESLint flat config** (`frontend/eslint.config.js`). No Prettier.
-- **No global state library** — React Query (`hooks/useJobs.ts`, `useBlueprints.ts`, `useColorLibrary.ts`); only one React Context (`ToastContext`).
-- **Kotlin + Spring**: classes used as beans are plain classes (internal thread pool in `PythonTaskDispatcher` — `@Async` on final Kotlin classes silently fails; don't reintroduce it).
-- **Event idempotency (008)**: `(job_id, attempt, sequence)` unique; JOB_STARTED uses sequence=0 so Python's sequence 1..N never collides; internal events use `appendInternalEvent` (next free sequence in current attempt).
-
-## Where things live (quick lookup)
-
-| Looking for… | File |
-|---|---|
-| /api/v1 contract (DTOs, errors, pagination) | `server/src/main/kotlin/com/beadapp/server/schema/Dtos.kt` |
-| Job lifecycle + idempotent events + recovery | `server/.../service/JobService.kt` |
-| Spring → Python dispatch | `server/.../service/PythonTaskDispatcher.kt` |
-| Python callback endpoint | `server/.../api/InternalEventController.kt` |
-| Flyway schema (008) | `server/src/main/resources/db/migration/V1__initial_schema.sql` |
-| Python image-service entry | `image_service/app/main.py` (+ `worker.py`, `event_sender.py`) |
-| Shared OCR core | `ocr_core/` (`bead_ocr_crnn.py`, `inference.py`, `charset.py`, `code_library.py`) |
-| Checkpoint publish | `training/scripts/publish_checkpoint.py` |
-| Color library build | `training/scripts/build_color_library.py` (017) |
-| Palette merge (Zippland) | `training/scripts/import_zippland_palette.py` (ADR 0005) |
-| Synthetic boards | `training/models/board_generator.py` + `training/scripts/generate_board.py` (ADR 0005) |
-| Board cell cropping | `training/scripts/crop_board.py` |
-| Board-model eval | `training/scripts/eval_board_model.py` (zip/heldout/val + per-board) |
-| CTC decode fix | `ocr_core/bead_ocr_crnn.py` `constrained_decode` (F5, exp 002) |
-| Baseline + acceptance (011) | `training/scripts/eval_cell_baseline.py`, `training/docs/baseline-2026-07-31.md` |
-| Model acceptance gate | `training/scripts/eval_acceptance.py` + `docs/acceptance.md` (2026-08-09: 部署前强制 gate) |
-| CRNN training | `training/scripts/train_crnn.py` |
-| Real bead images (input data) | `examples/` (stand crops + annotation zips) |
-| Trained checkpoints | `training/checkpoints/*.pt` (gitignored); artifacts in `artifacts/models/` |
-| Compose topology | `docker-compose.yml` (+ `docker-compose.dev.yml`) |
-| Wayfinder tracker (decisions) | `.scratch/spring-kotlin-python-rewrite/` |
-| Bead board canvas | `frontend/src/components/BeadBoard.tsx` |
-| Cropping UI (complexity hotspot) | `frontend/src/pages/UploadPage.tsx` (single-region crop + 8 handles + numeric input) |
-| Job trace view | `frontend/src/pages/JobDetailPage.tsx` |
-
-## Agent skills
-
-### Issue tracker
-
-Issues live as GitHub issues in `pserimal/bead_app`. See `docs/agents/issue-tracker.md`.
-
-### Domain docs
-
-Single-context layout: one `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
-
-## Detailed subdirectory docs
-
-Per-subdirectory `AGENTS.md` files contain exhaustive structure/conventions/anti-patterns notes that this file deliberately does not duplicate:
-
-- `AGENTS.md` — project-wide overview, command reference, layout summary
-- `training/README.md` — training-part quickstart, data layout, checkpoint workflow
-- `frontend/AGENTS.md` — frontend structure, component conventions, anti-patterns
-- `frontend/src/components/AGENTS.md`, `frontend/src/pages/AGENTS.md`
-
-The old `backend/` FastAPI service was retired in the Spring rewrite (commit `77d564d`); its `AGENTS.md` files no longer exist.
+Full details, env pitfalls, and the history of architecture decisions: **AGENTS.md** + `.scratch/spring-kotlin-python-rewrite/` (wayfinder tracker, incl. the 2026-08-15 Kotlin removal decision).

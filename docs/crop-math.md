@@ -18,16 +18,17 @@ y1 = cropBox.y + (row+1) * cellH - iy
 crop = (x0, y0, max(1, x1-x0), max(1, y1-y0))   # 再裁剪到图片边界内
 ```
 
-## 三处实现
+## 两处实现
 
 | 位置 | 文件 | 用途 |
 |------|------|------|
-| Python 推理 | `ocr_core/inference.py` | 识别时逐格裁剪 |
-| Kotlin 导出 | `server/.../service/ImageCropService.kt` → `cropRect()` | 校正数据导出 zip |
+| Rust 导出 | `local_server/src/export.rs` → `crop_rect()` | 校正数据导出 zip（2026-08-15 起，替代原 Kotlin ImageCropService） |
 | 前端预览 | `frontend/src/lib/correctionModel.ts` → `cellCropRect()` | 校正页缩略图 |
+
+注：识别时逐格裁剪在 Rust 推理路径（`local_server/src/ocr/preprocess.rs`，10% 内缩同数学）；Python `ocr_core/inference.py` 仅作训练评估参照。
 
 ## 测试护栏
 
-- Kotlin：`server/src/test/.../ImageCropServiceTest.kt`（6 例：10% 内缩边界、非整数取整、最小 1px、纯色主色、HSV 色相）
+- Rust：`local_server/src/export.rs` 单测 + `tests/api_contract.rs` 导出 zip 契约测试
 - 前端：`frontend/src/lib/correctionModel.test.ts`（cellCropRect 同数学）
 - Python：无独立单测（推理路径由 eval 基准间接覆盖）
