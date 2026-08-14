@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 rem 构建发布版并准备自包含运行目录：release\
 rem   bead-local-server.exe + onnxruntime.dll + start-local.bat
 rem   + data\default_colors.json + data\library.json + models\<artifact>\
@@ -46,6 +47,10 @@ if exist "%CONDA_PREFIX%\Lib\site-packages\onnxruntime\capi\onnxruntime.dll" (
 ) else (
     echo [warn] onnxruntime.dll NOT found in conda; copy it manually next to the exe
 )
+
+rem ── 清理发布目录模型：只保留生产模型（v11），且只留 onnx（运行时不需要 pt）──
+for /d %%d in ("%OUT%\models\*") do if /i not "%%~nxd"=="bean-mard-v11-2026-08-14T00-00-00Z" rmdir /s /q "%%d"
+del /q "%OUT%\models\bean-mard-v11-2026-08-14T00-00-00Z\*.pt" 2>nul
 
 rem ── 打 zip（自动排除运行数据：db/uploads 不进入发布包；运行目录数据原样保留）──
 set "ZIP=%~dp0bead-local-server-v0.1.0.zip"
