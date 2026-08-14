@@ -65,7 +65,7 @@ export default function UploadPage() {
       .finally(() => setModelSwitching(false));
   }, [currentModel, toast]);
 
-  // 019：任务自定义名称（可选，默认留空 = 不命名）
+  // 019：任务名称（必填，不允许留空提交）
   const [jobName, setJobName] = useState('');
 
   const codeError = useMemoCodeError(codes);
@@ -175,9 +175,13 @@ export default function UploadPage() {
   }
 
   const canSubmit =
-    !!imageFile && !!imageUrl && !!imageSize && !!crop && crop.w >= MIN_CROP && crop.h >= MIN_CROP && rows >= 1 && rows <= 500 && cols >= 1 && cols <= 500 && !codeError;
+    !!imageFile && !!imageUrl && !!imageSize && !!crop && crop.w >= MIN_CROP && crop.h >= MIN_CROP && rows >= 1 && rows <= 500 && cols >= 1 && cols <= 500 && !codeError && jobName.trim().length > 0;
 
   async function handleSubmit() {
+    if (!jobName.trim()) {
+      toast('请先填写任务名称，再开始识别', 'error');
+      return;
+    }
     const file = imageFile ?? fileRef.current?.files?.[0];
     if (!file || !imageSize || !crop) {
       toast('图片文件已失效，请重新选择图片', 'error');
@@ -197,8 +201,7 @@ export default function UploadPage() {
         rows,
         cols,
         codes: codes.trim() ? codes : undefined,
-        // 未输入名称时回退用图片文件名（去扩展名）
-        name: jobName.trim() || file.name.replace(/\.[^.]+$/, ''),
+        name: jobName.trim(), // 必填
       },
       {
         onSuccess: (job) => {
@@ -230,24 +233,27 @@ export default function UploadPage() {
         {/* 任务名称 + 模型选择 + 网格 + 开始识别（顶部操作排） */}
         <motion.div variants={staggerItem} className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
-            <input
-              value={jobName}
-              onChange={(e) => setJobName(e.target.value)}
-              placeholder="任务名称"
-              maxLength={128}
-              style={{
-                height: 34,
-                padding: '0 10px',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                background: 'var(--color-surface)',
-                color: 'var(--color-text)',
-                fontFamily: 'var(--font-body)',
-                fontSize: 'var(--text-sm)',
-                outline: 'none',
-              }}
-              aria-label="任务名称"
-            />
+            <label style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
+              <span style={{ color: 'var(--color-error)', fontWeight: 600, lineHeight: 1 }} title="必填">*</span>
+              <input
+                value={jobName}
+                onChange={(e) => setJobName(e.target.value)}
+                placeholder="任务名称（必填）"
+                maxLength={128}
+                style={{
+                  height: 34,
+                  padding: '0 10px',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: 'var(--text-sm)',
+                  outline: 'none',
+                }}
+                aria-label="任务名称"
+              />
+            </label>
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
               识别模型
               <select
@@ -282,7 +288,11 @@ export default function UploadPage() {
               )}
             </span>
           </div>
-          <Button onClick={handleSubmit} disabled={!canSubmit || createJob.isPending}>
+          <Button
+            onClick={handleSubmit}
+            disabled={!canSubmit || createJob.isPending}
+            title={!jobName.trim() ? '请先填写任务名称' : undefined}
+          >
             {createJob.isPending ? <Spinner size="sm" /> : '开始识别'}
           </Button>
         </motion.div>
