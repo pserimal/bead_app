@@ -17,6 +17,13 @@ use crate::models::*;
 use crate::ocr::OnnxModel;
 use crate::service::{ApiException, JobService};
 
+/// Frontend build output, embedded at compile time (`npm run build` must
+/// have produced `frontend/dist`). Served same-origin so the React app's
+/// relative `/api/v1` calls hit this server — zero frontend changes.
+#[derive(rust_embed::RustEmbed)]
+#[folder = "$CARGO_MANIFEST_DIR/../../frontend/dist"]
+struct Assets;
+
 pub struct AppState {
     pub service: JobService,
     /// None when OCR is disabled (contract tests); the worker only runs when
@@ -44,7 +51,36 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/api/v1/colors", get(list_colors))
         .route("/api/v1/colors/{code}", get(get_color))
         .route("/internal/jobs/{id}/events", post(internal_event))
+        .fallback(serve_static)
         .with_state(state)
+}
+
+/// SPA static serving: exact files from the embedded dist, unknown non-API
+/// paths fall back to index.html (react-router), unknown API paths get the
+/// standard JSON 404.
+async fn serve_static(uri: axum::http::Uri) -> Response {
+    if uri.path().starts_with("/api/") || uri.path().starts_with("/internal/") {
+        return ApiException::not_found("NOT_FOUND", format!("资源不存在: {}", uri.path())).into_response();
+    }
+    let path = uri.path().trim_start_matches('/');
+    let path = if path.is_empty() { "index.html" } else { path };
+    let found = Assets::get(path);
+    match found {
+        Some(content) => {
+            let mime = mime_guess::from_path(path).first_or_octet_stream();
+            ([(header::CONTENT_TYPE, mime.as_ref())], content.data.into_owned()).into_response()
+        }
+        None => {
+            // SPA fallback for client-side routes — force text/html.
+            match Assets::get("index.html") {
+                Some(content) => {
+                    ([(header::CONTENT_TYPE, "text/html; charset=utf-8")], content.data.into_owned())
+                        .into_response()
+                }
+                None => (StatusCode::NOT_FOUND, "not found").into_response(),
+            }
+        }
+    }
 }
 
 // ── Error plumbing ───────────────────────────────────────────────────

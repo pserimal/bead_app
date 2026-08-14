@@ -21,6 +21,34 @@ fn env_or(key: &str, default: &str) -> String {
     std::env::var(key).unwrap_or_else(|_| default.to_string())
 }
 
+/// Resolve a path with precedence: env var → candidates relative to the exe
+/// directory (release layout `data/…`, repo layout `../server/…`) → candidates
+/// relative to the current working directory (dev: cargo run from repo root
+/// or local_server/).
+fn resolve_path(env_key: &str, exe_candidates: &[&str], cwd_candidates: &[&str]) -> String {
+    if let Ok(v) = std::env::var(env_key) {
+        if !v.is_empty() {
+            return v;
+        }
+    }
+    let exe_dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+        .unwrap_or_default();
+    for c in exe_candidates {
+        let p = exe_dir.join(c);
+        if p.exists() {
+            return p.to_string_lossy().to_string();
+        }
+    }
+    for c in cwd_candidates {
+        if std::path::Path::new(c).exists() {
+            return c.to_string();
+        }
+    }
+    exe_candidates[0].to_string()
+}
+
 fn load_color_seed(path: &str) -> Vec<ColorEntry> {
     let text = std::fs::read_to_string(path).unwrap_or_else(|e| {
         eprintln!("[colors] seed file missing ({path}): {e}; color API will be empty");
@@ -62,14 +90,31 @@ fn load_mard_codes(library_path: &str) -> Vec<String> {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let port: u16 = env_or("BEAD_PORT", "8080").parse().unwrap_or(8080);
-    let artifact_dir = env_or(
-        "BEAD_ARTIFACT_DIR",
-        "artifacts/models/crnn_color_mard_v8-2026-08-09T04-30-00Z",
-    );
     let db_path = env_or("BEAD_DB_PATH", "data/bead-local.db");
+    if let Some(parent) = std::path::Path::new(&db_path).parent() {
+        if !parent.as_os_str().is_empty() {
+            std::fs::create_dir_all(parent)?;
+        }
+    }
     let uploads_dir = env_or("BEAD_UPLOADS_DIR", "uploads");
-    let colors_path = env_or("BEAD_COLORS_PATH", "server/src/main/resources/default_colors.json");
-    let library_path = env_or("BEAD_LIBRARY_PATH", "artifacts/colors/library.json");
+    let colors_path = resolve_path(
+        "BEAD_COLORS_PATH",
+        &["data/default_colors.json", "../server/src/main/resources/default_colors.json"],
+        &["server/src/main/resources/default_colors.json"],
+    );
+    let library_path = resolve_path(
+        "BEAD_LIBRARY_PATH",
+        &["data/library.json", "../artifacts/colors/library.json"],
+        &["artifacts/colors/library.json"],
+    );
+    let artifact_dir = resolve_path(
+        "BEAD_ARTIFACT_DIR",
+        &[
+            "models/crnn_color_mard_v8-2026-08-09T04-30-00Z",
+            "../artifacts/models/crnn_color_mard_v8-2026-08-09T04-30-00Z",
+        ],
+        &["artifacts/models/crnn_color_mard_v8-2026-08-09T04-30-00Z"],
+    );
 
     let db = db::open(std::path::Path::new(&db_path))?;
     let service = JobService::new(Arc::new(db));
