@@ -10,7 +10,7 @@ Design principles
 2. Evaluation uses the PRODUCTION inference path (letterbox 48x48, RGB
    channel order, constrained decode over the full library + BLANK, and
    the free-path confidence formula) — the numbers reported here are what
-   a deployed image_service would produce.
+   a deployed runtime would produce (Python reference; Rust runtime mirrors via bench_acceptance).
 3. A candidate checkpoint must be >= the current production model on every
    key metric within a small tolerance, otherwise the gate FAILS and the
    candidate must NOT be deployed. "Better on unseen colors" is a goal,
@@ -152,7 +152,7 @@ def eval_set(forward: callable, chars: list[str], color: bool, imgs, labels,
 
     Uses the same input prep as production and the same confidence formula
     (free-path CTC collapse). trie is the full library + BLANK, matching
-    image_service's valid_codes=None path.  ``forward`` is either a loaded
+    the runtime's valid_codes=None path.  ``forward`` is either a loaded
     ``torch.nn.Module`` or an ONNX session wrapper — identical math on both.
     """
     c2i = {c: i for i, c in enumerate(chars)}
