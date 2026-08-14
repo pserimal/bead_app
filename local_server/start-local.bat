@@ -20,7 +20,7 @@ if not defined BEAD_DB_PATH set "BEAD_DB_PATH=%ROOT%data\bead-local.db"
 if not defined BEAD_UPLOADS_DIR set "BEAD_UPLOADS_DIR=%ROOT%uploads"
 if not defined BEAD_COLORS_PATH set "BEAD_COLORS_PATH=%ROOT%data\default_colors.json"
 if not defined BEAD_LIBRARY_PATH set "BEAD_LIBRARY_PATH=%ROOT%data\library.json"
-if not defined BEAD_ARTIFACT_DIR set "BEAD_ARTIFACT_DIR=%ROOT%models\bean-mard-v1-2026-08-14T00-00-00Z"
+if not defined BEAD_ARTIFACT_DIR set "BEAD_ARTIFACT_DIR=%ROOT%models\crnn_color_mard_v8-2026-08-09T04-30-00Z"
 
 echo [start] 正在后台启动 bead-local-server（端口 %BEAD_PORT%）...
 
