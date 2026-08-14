@@ -5,7 +5,7 @@
 use std::sync::{Arc, Mutex};
 
 use axum::body::Bytes;
-use axum::extract::{Multipart, Path as AxumPath, Query, State};
+use axum::extract::{DefaultBodyLimit, Multipart, Path as AxumPath, Query, State};
 use axum::http::{header, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, patch, post};
@@ -38,6 +38,9 @@ pub struct AppState {
 }
 
 pub fn router(state: Arc<AppState>) -> Router {
+    // axum's default multipart body limit is 2MB — raise it to 32MB so
+    // phone photos upload like on the Kotlin server (30MB app-level cap).
+    let body_limit = DefaultBodyLimit::max(32 * 1024 * 1024);
     Router::new()
         .route("/api/v1/jobs", post(create_job).get(list_jobs))
         .route("/api/v1/jobs/{id}", get(job_detail).patch(rename_job))
@@ -51,6 +54,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/api/v1/colors", get(list_colors))
         .route("/api/v1/colors/{code}", get(get_color))
         .route("/internal/jobs/{id}/events", post(internal_event))
+        .route_layer(body_limit)
         .fallback(serve_static)
         .with_state(state)
 }
