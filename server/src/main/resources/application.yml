@@ -34,7 +34,7 @@ bead:
     base-url: http://localhost:8001
   ocr:
     # 生产推理模型快照名（image_service 实际加载 artifacts/models/current）
-    model-snapshot: ${BEAD_OCR_MODEL_SNAPSHOT:crnn_color_mard_v8}
+    model-snapshot: ${BEAD_OCR_MODEL_SNAPSHOT:bean-mard-v1}
   cors:
     # allowedOriginPatterns（支持通配）：本机直连 + 局域网设备经 Vite proxy（http://<设备IP>:5173）
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://*:5173}

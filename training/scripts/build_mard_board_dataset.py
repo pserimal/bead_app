@@ -123,7 +123,11 @@ def _mard_entries() -> list[dict]:
 
 
 def _watermark(board: Image.Image, rng: random.Random) -> Image.Image:
-    """Tile random near-white/light-gray watermark text across the whole page."""
+    """Tile random near-white/light-gray watermark text across the whole page.
+
+    Mirrors real shared diagrams: a semi-transparent diagonal-ish gray
+    watermark (e.g. "马小马 8510099") tiled over the board.
+    """
     wm_font = _get_wm_font()
     if wm_font is None:
         return board
@@ -138,8 +142,10 @@ def _watermark(board: Image.Image, rng: random.Random) -> Image.Image:
     step_y = max(th + 1, int(th * rng.uniform(1.25, 1.75)))
     ox = rng.randint(-step_x, step_x)
     oy = rng.randint(-step_y, step_y)
-    # Real diagrams vary between translucent white and pale gray marks.
-    base = rng.choice([(255, 255, 255), (235, 235, 235), (215, 215, 215)])
+    # Real watermarks are gray (slightly darker or lighter than background),
+    # semi-transparent, and can be tilted.  Vary alpha and base.
+    base = rng.choice([(255, 255, 255), (235, 235, 235), (215, 215, 215),
+                       (190, 190, 190)])
     alpha = rng.randint(22, 62)
 
     overlay = Image.new("RGBA", board.size, (0, 0, 0, 0))
@@ -149,6 +155,48 @@ def _watermark(board: Image.Image, rng: random.Random) -> Image.Image:
             draw.text((x + ox - bbox[0], y + oy - bbox[1]), text,
                       font=font, fill=(*base, alpha))
     return Image.alpha_composite(board.convert("RGBA"), overlay).convert("RGB")
+
+
+def _apply_upload_quality(board: Image.Image, rng: random.Random) -> Image.Image:
+    """Simulate real upload degradation at the whole-board level.
+
+    Real users upload photos/downloaded diagrams of varying quality: mostly
+    slight out-of-focus + JPEG compression, occasionally heavily blurred /
+    downscaled.  Applying this BEFORE cropping means every cropped cell
+    inherits the same degradation — exactly like production.
+
+    Levels (by fraction of boards):
+      - 55%%: clear (no blur, light JPEG)
+      - 30%%: slight defocus (Gaussian radius 0.8-1.5) + JPEG 80-90
+      - 13%%: moderate blur (radius 2-3) + JPEG 65-80
+      - 2%%:  heavy blur (radius 4-6) + strong JPEG 40-60
+    """
+    import io
+    from PIL import ImageFilter
+    r = rng.random()
+    if r < 0.55:
+        blur_r = 0.0
+        jpeg_q = rng.randint(80, 92)
+    elif r < 0.85:
+        blur_r = rng.uniform(0.8, 1.5)
+        jpeg_q = rng.randint(78, 90)
+    elif r < 0.98:
+        blur_r = rng.uniform(2.0, 3.0)
+        jpeg_q = rng.randint(62, 80)
+    else:
+        blur_r = rng.uniform(4.0, 6.0)
+        jpeg_q = rng.randint(40, 60)
+
+    if blur_r > 0:
+        board = board.filter(ImageFilter.GaussianBlur(radius=blur_r))
+
+    # JPEG re-compression (simulates phone/social-platform upload).
+    buf = io.BytesIO()
+    board.save(buf, format="JPEG", quality=jpeg_q)
+    buf.seek(0)
+    board = Image.open(buf).convert("RGB")
+    return board
+
 
 
 def _blue_grid(board: Image.Image, rows: int, cols: int,
@@ -240,6 +288,9 @@ def build(out_root: Path, boards: int = 24, rows: int = 32,
         board = _blue_grid(board, rows, cols, board_rng)
         if board_rng.random() <= watermark_prob:
             board = _watermark(board, board_rng)
+        # Simulate real upload degradation (blur + JPEG) at the board level
+        # so every cropped cell inherits it, matching production.
+        board = _apply_upload_quality(board, board_rng)
 
         bdir = board_root / f"board_{board_no:03d}"
         bdir.mkdir()

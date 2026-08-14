@@ -61,7 +61,15 @@ def _copy_real_annotations(ann_root: Path, cells_dir: Path, rows: list[dict],
 
 
 def build(name: str, boards_dir: Path, out_root: Path,
-          ann_root: Path | None = None) -> dict:
+          ann_root: Path | None = None, blank_cap: int | None = 4000) -> dict:
+    """Build the training set.
+
+    ``blank_cap`` caps how many BLANK cells are kept (randomly sampled) so
+    heavy blank annotations (e.g. 6607 blanks in one corrections dir) don't
+    dominate training and skew the model toward predicting BLANK everywhere.
+    None = no cap.
+    """
+    import random as _rng
     if ann_root is None:
         ann_root = _REPO_ROOT / "training" / "samples" / "标注数据"
     dst = out_root / name
@@ -91,6 +99,19 @@ def build(name: str, boards_dir: Path, out_root: Path,
         if sub.is_dir():
             _copy_real_annotations(sub, cells, rows, f"m_{sub.name[:1]}")
 
+    # 3. Cap BLANK count to keep the label distribution sane.
+    if blank_cap is not None:
+        blank_idx = [i for i, r in enumerate(rows) if r["编码"] == "BLANK"]
+        if len(blank_idx) > blank_cap:
+            _rng.seed(0)
+            _rng.shuffle(blank_idx)
+            drop = set(blank_idx[blank_cap:])
+            kept = [r for i, r in enumerate(rows) if i not in drop]
+            for i in sorted(drop, reverse=True):
+                (cells / rows[i]["文件名"]).unlink(missing_ok=True)
+            print(f"  [cap] BLANK {len(blank_idx)} -> {blank_cap}")
+            rows = kept
+
     with open(dst / "manifest.csv", "w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["编码", "文件名", "行", "列", "色相", "亮度"])
         w.writeheader()
@@ -112,8 +133,11 @@ def main() -> None:
                    default=_REPO_ROOT / "training" / "data")
     p.add_argument("--ann-root", type=Path,
                    default=_REPO_ROOT / "training" / "samples" / "标注数据")
+    p.add_argument("--blank-cap", type=int, default=4000,
+                   help="max BLANK cells kept (None = unlimited)")
     args = p.parse_args()
-    build(args.name, args.boards_dir, args.out_root, args.ann_root)
+    build(args.name, args.boards_dir, args.out_root, args.ann_root,
+          blank_cap=args.blank_cap)
 
 
 if __name__ == "__main__":
