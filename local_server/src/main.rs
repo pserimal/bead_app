@@ -138,6 +138,9 @@ async fn main() -> anyhow::Result<()> {
         auto_ocr: true,
     });
 
+    // Resume jobs interrupted by a previous shutdown (re-run OCR in-process).
+    bead_local_server::api::resume_interrupted(&state);
+
     let app = router(state).layer(tower_http::cors::CorsLayer::permissive());
     let addr = format!("0.0.0.0:{port}");
     let listener = tokio::net::TcpListener::bind(&addr).await?;

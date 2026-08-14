@@ -432,6 +432,54 @@ async fn internal_event(
 
 // ── OCR worker (in-process replacement of the Python image-service) ──
 
+/// Resume jobs that were PROCESSING when the server stopped: bump the attempt
+/// via a JOB_FAILED(STALE_RESTART) event (auto-retry or terminal), then
+/// re-run the OCR worker from the stored image for those still PROCESSING.
+pub fn resume_interrupted(state: &Arc<AppState>) {
+    let jobs = state.service.processing_jobs();
+    for job in jobs {
+        let ev = InboundEvent {
+            job_id: job.id,
+            attempt: job.attempt,
+            sequence: job.attempt * 10_000 + 1000,
+            event_type: EventType::JobFailed,
+            timestamp: None,
+            payload: serde_json::json!({
+                "code": "STALE_RESTART",
+                "message": "服务重启，任务恢复重试",
+            }),
+        };
+        let _ = state.service.apply_event(&ev);
+        let Ok(job) = state.service.get_job(job.id) else { continue };
+        if job.status != JobStatus::Processing {
+            continue; // retries exhausted → FAILED
+        }
+        // Re-run from the stored image.
+        let path = state.uploads_dir.join(&job.input_image_path);
+        let Ok(bytes) = std::fs::read(&path) else {
+            eprintln!("[recover] image missing for {}: {:?}", job.id, path);
+            continue;
+        };
+        let svc = state.service.clone();
+        let model = state.model.clone();
+        let mard_codes = state.mard_codes.clone();
+        std::thread::spawn(move || {
+            run_ocr_worker(
+                &svc,
+                &model,
+                &mard_codes,
+                job.id,
+                job.rows,
+                job.cols,
+                job.crop_box,
+                job.valid_codes,
+                axum::body::Bytes::from(bytes),
+            );
+        });
+        println!("[recover] re-running job {}", job.id);
+    }
+}
+
 fn run_ocr_worker(
     svc: &JobService,
     model: &Mutex<Option<OnnxModel>>,
@@ -508,6 +556,12 @@ fn run_ocr_once(
         .map_err(|e| format!("OCR_ERROR: {e}"))?
     };
     let base = sequence_base_for_attempt(svc, job_id);
+    // Fill cells the OCR pipeline dropped (decode output outside the closed
+    // vocabulary): emit UNMAPPED so JOB_SUCCEEDED's processed==total check
+    // passes and the cell is surfaced for correction instead of failing the
+    // whole job (cloud server fails the job; local mode is friendlier).
+    let mut present: std::collections::HashSet<(usize, usize)> =
+        results.iter().map(|(r, c, _, _)| (*r, *c)).collect();
     for (idx, (r, c, code, conf)) in results.iter().enumerate() {
         let ev = InboundEvent {
             job_id,
@@ -523,13 +577,33 @@ fn run_ocr_once(
         };
         svc.apply_event(&ev).map_err(|e| e.to_string())?;
     }
+    let mut fill_seq = base + results.len() as i64 + 1;
+    for r in 0..rows {
+        for c in 0..cols {
+            if present.contains(&(r as usize, c as usize)) {
+                continue;
+            }
+            let ev = InboundEvent {
+                job_id,
+                attempt: current_attempt(svc, job_id),
+                sequence: fill_seq,
+                event_type: EventType::CellProcessed,
+                timestamp: None,
+                payload: serde_json::json!({
+                    "row": r, "col": c, "code": "UNMAPPED", "confidence": 0.0,
+                }),
+            };
+            fill_seq += 1;
+            svc.apply_event(&ev).map_err(|e| e.to_string())?;
+        }
+    }
     let ev = InboundEvent {
         job_id,
         attempt: current_attempt(svc, job_id),
-        sequence: base + results.len() as i64 + 1,
+        sequence: fill_seq,
         event_type: EventType::JobSucceeded,
         timestamp: None,
-        payload: serde_json::json!({"processedCells": results.len(), "totalCells": (rows * cols) as usize}),
+        payload: serde_json::json!({"processedCells": (rows * cols) as usize, "totalCells": (rows * cols) as usize}),
     };
     svc.apply_event(&ev).map_err(|e| e.to_string())?;
     Ok(())

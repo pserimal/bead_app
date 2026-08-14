@@ -571,6 +571,16 @@ impl JobService {
         self.get_job_conn(&conn, id)
     }
 
+    /// Jobs stuck in PROCESSING (e.g. after a restart killed the worker).
+    pub fn processing_jobs(&self) -> Vec<Job> {
+        let conn = self.db.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT * FROM recognition_job WHERE status = 'PROCESSING'").unwrap();
+        stmt.query_map([], job_from_row)
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .collect()
+    }
+
     pub fn list_jobs(
         &self,
         status: Option<String>,
