@@ -203,7 +203,7 @@ ORT_DYLIB_PATH=... cargo run --release --bin bench_acceptance
 1. 服务启动仍用 **PowerShell `Start-Process`**（脱离 bash 进程树，可靠）；PowerShell 调用会静默挂起（GUI 子系统），**所有命令加 timeout**，通过日志 + netstat 验证而非等命令返回
 2. 避免 `cmd.exe /c "... > file"` 嵌套重定向（引号解析不可靠）——bash 直接重定向即可（`java.exe ... > log 2>&1`）
 3. Windows 全局 `NODE_ENV=production` → vite dev 必须 `NODE_ENV=development`（Git Bash 下 env 前缀**直接有效**，无需 cross-env 包装启动服务；跑 vitest 仍用 cross-env）
-4. `artifacts/models/current` 是 Git symlink → 服务进程读不了 → `MODEL_ARTIFACT_DIR` 用真实目录（当前 `crnn_color_mard_v8-2026-08-09T04-30-00Z`）
+4. `artifacts/models/current` 是 Git symlink → 服务进程读不了 → `MODEL_ARTIFACT_DIR` 用真实目录（当前 `bean-mard-v1-2026-08-14T00-00-00Z`）
 5. **探测 Windows 服务/远程 DB 用 Windows 工具**（netstat/curl/pg_isready 直接可用——Git Bash 原生网络栈，无 WSL 网络隔离问题）；WSL 的 `/dev/tcp` 探测已禁用（误报过）
 
 ```bash
@@ -276,7 +276,7 @@ cd server && gradle bootJar --no-daemon     # Flyway runs on startup (validate m
 - Upload size limit: 20MB, allowed types: JPEG/PNG only
 - Baseline model: `crnn_real_m.pt` — zip exact_match **0.9405** post-CTC-fix (2026-08-07, blank_penalty=0); historical 0.7008 pre-fix (011 acceptance rule was written against the old number; new service must beat 0.9405 on zip + ≥0.79 on board heldout, see `crnn_mixed_v12`)
 - **Model acceptance gate (2026-08-09)**: 任何新 checkpoint 部署前必须跑 `python -m training.scripts.eval_acceptance --candidate <new> --production <current>`。固定基准 = 4 个真实标注集 + 1 个独立 seed(13579) 合成 heldout；候选在每集的 blank_acc/code_acc/overall 必须 ≥ 生产 - 0.005，否则 exit 1。基准集和容差固定，不允许为让候选通过而悄悄增删。详见 `docs/acceptance.md`。
-- **模型命名规范 (2026-08-09)**: 只用 mard 编码合集训练（合成图纸全 mard + mard 专属标注）的模型属于 **mard 专属模型**，名称必须体现：`crnn_color_mard_v<N>`（color=RGB 输入, mard=品牌专属）。多品牌/非 mard 模型用 `crnn_mixed_*` 等名称，不得混用。生产 current 当前指向 `crnn_color_mard_v8`。
+- **模型命名规范 (2026-08-09)**: 只用 mard 编码合集训练（合成图纸全 mard + mard 专属标注）的模型属于 **mard 专属模型**，名称 `bean-mard-v<N>`（bean=模糊图纸训练标记, mard=品牌专属）。当前生产 = `bean-mard-v1`（模糊图纸 + 新标注，2026-08-14 部署）。多品牌/非 mard 模型用 `crnn_mixed_*` 等名称。
 - **真实样本收集 (2026-08-09)**: 新真实标注直接丢进 `training/samples/标注数据/<新目录>/`（命名：`CODE_*.png` / `blank_*.png` / `CODE_r.._c.._h.._v..png` / `BLANK_r.._c.._h.._v..png`），跑 `python -m training.scripts.build_color_dataset_v2 --name color_v<N>` 即自动并入训练集（自动扫描该目录下所有子目录）。corrections 目录（用户手工校正）是最高质量真实样本，主攻方向。
 - Legacy checkpoints (no format_version) must go through `publish_checkpoint.py` before use
 - Color library: 1950 codes from [maxcleme/beadcolors](https://github.com/maxcleme/beadcolors); regenerate via `training/scripts/build_color_library.py`; `ColorSeedRunner` seeds DB on boot (`bead.db.recreate-on-start`)
