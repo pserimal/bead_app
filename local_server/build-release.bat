@@ -33,6 +33,19 @@ if exist "%CONDA_PREFIX%\Lib\site-packages\onnxruntime\capi\onnxruntime.dll" (
     echo [warn] onnxruntime.dll NOT found in conda; copy it manually next to the exe
 )
 
+rem ── 打 zip（自动排除运行数据：db/uploads 不进入发布包；运行目录数据原样保留）──
+set "ZIP=%~dp0bead-local-server-v0.1.0.zip"
+if exist "%ZIP%" del "%ZIP%"
+if exist "%~dp0.stage-zip" rmdir /s /q "%~dp0.stage-zip"
+mkdir "%~dp0.stage-zip\bead-local-server"
+xcopy /e /i /y "%OUT%\*" "%~dp0.stage-zip\bead-local-server\" >nul
+rem 排除运行数据（db 与上传图片），zip 保持干净；release\ 目录不受影响
+for %%F in ("%~dp0.stage-zip\bead-local-server\data\bead-local.db*" "%~dp0.stage-zip\bead-local-server\data\server*.log" "%~dp0.stage-zip\bead-local-server\uploads\*.*") do del /q "%%F" 2>nul
+"%WINDIR%\System32\tar.exe" -a -cf "%ZIP%" -C "%~dp0.stage-zip" bead-local-server
+rmdir /s /q "%~dp0.stage-zip"
+
 echo.
 echo 发布目录: %OUT%  （自包含，可整体拷贝到任意 Windows 机器）
-echo 部署: 拷贝 %OUT% 到目标机器，双击 start-local.bat，浏览器访问 http://^<IP^>:8080
+echo 压缩包  : %ZIP%
+echo 部署: 拷贝 %OUT% 或解压 %ZIP% 到目标机器，双击 start-local.bat，浏览器访问 http://^<IP^>:8080
+echo 注意: 打包不影响 %OUT%\data\bead-local.db（运行数据原样保留）
