@@ -75,12 +75,17 @@ async fn serve_static(uri: axum::http::Uri) -> Response {
             ([(header::CONTENT_TYPE, mime.as_ref())], content.data.into_owned()).into_response()
         }
         None => {
-            // SPA fallback for client-side routes — force text/html.
+            // SPA fallback for client-side routes — force text/html + no-cache
+            // so the browser always picks up freshly embedded frontend builds.
             match Assets::get("index.html") {
-                Some(content) => {
-                    ([(header::CONTENT_TYPE, "text/html; charset=utf-8")], content.data.into_owned())
-                        .into_response()
-                }
+                Some(content) => (
+                    [
+                        (header::CONTENT_TYPE, "text/html; charset=utf-8"),
+                        (header::CACHE_CONTROL, "no-cache"),
+                    ],
+                    content.data.into_owned(),
+                )
+                    .into_response(),
                 None => (StatusCode::NOT_FOUND, "not found").into_response(),
             }
         }

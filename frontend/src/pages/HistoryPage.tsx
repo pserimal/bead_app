@@ -261,6 +261,31 @@ export default function HistoryPage() {
                     >
                       重命名
                     </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // 单任务删除：选中该项并弹出确认框
+                        setSelected(new Set([job.id]));
+                        setConfirmDelete(true);
+                      }}
+                      style={{
+                        border: 'none',
+                        background: 'transparent',
+                        color: 'var(--color-text-muted)',
+                        fontSize: 'var(--text-xs)',
+                        cursor: 'pointer',
+                        padding: '4px 2px',
+                        textDecoration: 'underline',
+                        textUnderlineOffset: 3,
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-error)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+                      title="删除任务"
+                      aria-label={`删除 ${job.name ?? job.id.slice(0, 8)}`}
+                    >
+                      删除
+                    </button>
                     <div className="text-right shrink-0" style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
                       {new Date(job.createdAt).toLocaleString([], {
                         month: 'numeric',
