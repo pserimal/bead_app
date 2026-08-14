@@ -22,6 +22,39 @@ const eventLabel: Record<EventType, string> = {
   JOB_FAILED: '任务失败',
 };
 
+/** 事件 payload → 人类可读描述（使用者不是程序员，不展示 JSON） */
+function formatEventPayload(type: EventType, payload: Record<string, unknown>): string {
+  const row = typeof payload.row === 'number' ? (payload.row as number) + 1 : null;
+  const col = typeof payload.col === 'number' ? (payload.col as number) + 1 : null;
+  const pos = row != null && col != null ? `第 ${row} 行 第 ${col} 列` : '';
+  switch (type) {
+    case 'JOB_STARTED':
+      return `图纸 ${payload.rows ?? '?'} 行 × ${payload.cols ?? '?'} 列，共 ${(payload.rows ?? 0) * (payload.cols ?? 0)} 格`;
+    case 'CELL_PROCESSED': {
+      const code = typeof payload.code === 'string' ? payload.code : '';
+      if (code === 'BLANK') return `${pos}：空白格`;
+      if (code === 'UNMAPPED') return `${pos}：未能识别，等待校正`;
+      const conf = typeof payload.confidence === 'number' ? payload.confidence : null;
+      const confText = conf != null ? `（置信度 ${(conf * 100).toFixed(1)}%）` : '';
+      return `${pos}：识别为 ${code}${confText}`;
+    }
+    case 'CELL_FAILED':
+      return `${pos}：识别失败`;
+    case 'HEARTBEAT':
+      return `处理中，已识别 ${payload.processedCells ?? '?'} 格`;
+    case 'RETRY_SCHEDULED':
+      return `自动重试第 ${payload.nextAttempt ?? '?'} 次${payload.reason === 'stale_heartbeat' ? '（上次处理超时）' : ''}`;
+    case 'JOB_SUCCEEDED':
+      return `识别完成，共处理 ${payload.processedCells ?? payload.totalCells ?? '?'} 格`;
+    case 'JOB_FAILED': {
+      const msg = typeof payload.message === 'string' ? payload.message : '';
+      return msg ? `失败原因：${msg}` : '任务失败';
+    }
+    default:
+      return '';
+  }
+}
+
 // 012 决议：处理中/失败任务不展示半成品棋盘，追踪视图是替代呈现
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -151,7 +184,7 @@ export default function JobDetailPage() {
                     </span>
                     <span className="shrink-0 font-medium w-20">{eventLabel[ev.type]}</span>
                     <span className="flex-1 truncate" style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)' }}>
-                      {JSON.stringify(ev.payload)}
+                      {formatEventPayload(ev.type, ev.payload)}
                     </span>
                     <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)' }} className="shrink-0">
                       {new Date(ev.timestamp).toLocaleTimeString()}
