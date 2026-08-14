@@ -184,7 +184,7 @@ cd frontend && npm test                     # 175 tests
 
 - 前端 dev proxy：`/api` → `http://localhost:8080`（vite.config.ts）；生产同源（embed）
 - 上传限制：30MB（axum DefaultBodyLimit 32MB 兜底），JPEG/PNG
-- 基线模型：`crnn_color_mard_v8`（zip exact_match 0.9405，post-CTC-fix）；当前生产 `current` 指向 v8（bean-mard-v1 已发布待切换决策，见 memory 2026-08-14）
+- 基线模型：`crnn_color_mard_v8`（zip exact_match 0.9405，post-CTC-fix）；**当前生产 = v8**。bean-mard-v1（模糊图纸训练）实测真实识别更差，2026-08-15 已回退；模糊图纸生成器和 blank-cap 代码保留，待用户提供真实模糊标注后重训。
 - **模型验收门禁**：任何新 checkpoint 部署前必须跑 `eval_acceptance`（基准集与容差固定，不允许为过门禁增删）；Rust 端再跑 `bench_acceptance`
 - **模型命名**：mard 专属 = `crnn_color_mard_v<N>`；多品牌 = `crnn_mixed_*`
 - **真实样本**：丢进 `training/samples/标注数据/<新目录>/` 后跑 `build_color_dataset_v2 --name color_v<N>` 自动并入
