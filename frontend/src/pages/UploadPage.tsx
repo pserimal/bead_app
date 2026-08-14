@@ -255,6 +255,7 @@ export default function UploadPage() {
                 onChange={(e) => handleModelChange(e.target.value)}
                 disabled={!models.length || modelSwitching}
                 style={{
+                  width: 240,
                   height: 34,
                   padding: '0 8px',
                   border: '1px solid var(--color-border)',
@@ -269,7 +270,7 @@ export default function UploadPage() {
               >
                 {models.length === 0 && <option value="">（无可用模型）</option>}
                 {models.map((m) => (
-                  <option key={m.id} value={m.id}>{m.id.split('-')[0]}{m.id === currentModel ? '（当前）' : ''}</option>
+                  <option key={m.id} value={m.id}>{m.name || m.id}</option>
                 ))}
               </select>
               {modelSwitching && <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-warning)' }}>切换中…</span>}

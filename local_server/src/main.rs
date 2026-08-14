@@ -155,7 +155,6 @@ async fn main() -> anyhow::Result<()> {
         auto_ocr: true,
         frontend: bead_local_server::api::Frontend::resolve("dist"),
         models_dir: std::path::PathBuf::from(models_dir.clone()),
-        model_registry: bead_local_server::api::AppState::discover_models(std::path::Path::new(&models_dir)),
         model_current_file: current_file,
     });
 

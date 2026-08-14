@@ -2,6 +2,7 @@ import apiClient from './client';
 
 export interface ModelMeta {
   id: string;
+  name?: string | null;
   arch?: string | null;
   numClasses?: number | null;
 }

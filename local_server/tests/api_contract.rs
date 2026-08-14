@@ -42,7 +42,6 @@ fn test_app() -> (Router, Arc<AppState>) {
             dist_dir: std::path::PathBuf::from("tests/fixtures/dist"),
         },
         models_dir: std::env::temp_dir().join("bead-test-models"),
-        model_registry: Vec::new(),
         model_current_file: std::env::temp_dir().join("bead-test-model-current.txt"),
     });
     (router(state.clone()), state)

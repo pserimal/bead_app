@@ -10,7 +10,7 @@ Usage (repo root, bead-train env)::
 
     python local_server/tests/parity/gen_reference.py \
         --out .scratch/parity-fixtures \
-        --model artifacts/models/crnn_color_mard_v8-2026-08-09T04-30-00Z/model.onnx \
+        --model artifacts/models/bean-mard-v10-2026-08-09T04-30-00Z/model.onnx \
         --sets training/samples/标注数据/1_标注结果_2026-07-29 \
                training/samples/标注数据/5_标注结果_2026-08-08 \
         --max-cells 128
@@ -49,7 +49,7 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--out", type=Path, default=DEFAULT_OUT)
     p.add_argument("--model", type=Path,
-                   default=REPO_ROOT / "artifacts/models/crnn_color_mard_v8-2026-08-09T04-30-00Z/model.onnx")
+                   default=REPO_ROOT / "artifacts/models/bean-mard-v10-2026-08-09T04-30-00Z/model.onnx")
     p.add_argument("--sets", type=Path, nargs="+",
                    default=[REPO_ROOT / "training/samples/标注数据/1_标注结果_2026-07-29",
                             REPO_ROOT / "training/samples/标注数据/5_标注结果_2026-08-08"])

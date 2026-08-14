@@ -17,7 +17,7 @@ use bead_local_server::ocr::OnnxModel;
 use serde::Deserialize;
 
 const DEFAULT_ARTIFACT: &str =
-    "D:/projects/python/ai_dou/artifacts/models/bean-mard-v11-2026-08-14T00-00-00Z";
+    "D:/projects/python/ai_dou/artifacts/models/bean-mard-v10-2026-08-09T04-30-00Z";
 const DEFAULT_FIXTURES: &str = "D:/projects/python/ai_dou/.scratch/parity-fixtures";
 const REPO_ROOT: &str = "D:/projects/python/ai_dou";
 
@@ -79,6 +79,7 @@ fn parity_with_python_reference() {
     );
 
     let mut model = OnnxModel::load(&artifact_dir()).unwrap();
+    eprintln!("DBG loaded model: {}", model.artifact_id);
     let mard_codes = load_mard_codes();
     assert!(mard_codes.len() > 100, "mard codes unexpectedly small");
     // Same closed vocabulary as gen_reference.py: mard codes (alpha+digits) + BLANK.

@@ -68,9 +68,10 @@ pub struct AppState {
     /// where events are delivered manually through /internal/jobs/...).
     pub auto_ocr: bool,
     pub frontend: Frontend,
-    /// Discovered model artifacts (`artifacts/models/` dirs with model.onnx).
+    /// Model artifacts directory (`artifacts/models/` — scanned live on
+    /// every /api/v1/models request, so dropping files in/out takes effect
+    /// on the next page refresh, no restart).
     pub models_dir: std::path::PathBuf,
-    pub model_registry: Vec<ModelMeta>,
     /// Persisted active model id (data/model-current.txt).
     pub model_current_file: std::path::PathBuf,
 }
@@ -122,12 +123,12 @@ impl AppState {
 
     /// Activate a model by artifact id: load from disk, swap under the lock,
     /// persist the choice. In-flight jobs pick it up at their next batch.
+    /// The registry is scanned live, so a freshly dropped-in artifact works
+    /// immediately.
     pub fn activate_model(&self, id: &str) -> anyhow::Result<ModelMeta> {
-        let meta = self
-            .model_registry
-            .iter()
+        let meta = Self::discover_models(&self.models_dir)
+            .into_iter()
             .find(|m| m.id == id)
-            .cloned()
             .ok_or_else(|| anyhow::anyhow!(ApiException::not_found("MODEL_NOT_FOUND", format!("模型不存在: {id}"))))?;
         let dir = self.models_dir.join(id);
         let model = OnnxModel::load(&dir)?;
@@ -574,7 +575,8 @@ async fn list_models(State(state): State<Arc<AppState>>) -> Json<ModelsResponse>
         .unwrap()
         .as_ref()
         .map(|m| m.artifact_id.clone());
-    Json(ModelsResponse { items: state.model_registry.clone(), current })
+    // Live scan: replacing files under models_dir is picked up on refresh.
+    Json(ModelsResponse { items: AppState::discover_models(&state.models_dir), current })
 }
 
 async fn current_model(State(state): State<Arc<AppState>>) -> Json<ModelsResponse> {
@@ -584,7 +586,7 @@ async fn current_model(State(state): State<Arc<AppState>>) -> Json<ModelsRespons
         .unwrap()
         .as_ref()
         .map(|m| m.artifact_id.clone());
-    Json(ModelsResponse { items: state.model_registry.clone(), current })
+    Json(ModelsResponse { items: AppState::discover_models(&state.models_dir), current })
 }
 
 async fn activate_model(
