@@ -136,6 +136,7 @@ async fn main() -> anyhow::Result<()> {
         uploads_dir: std::path::PathBuf::from(uploads_dir),
         seed_version,
         auto_ocr: true,
+        frontend: bead_local_server::api::Frontend::resolve("dist"),
     });
 
     // Resume jobs interrupted by a previous shutdown (re-run OCR in-process).

@@ -17,12 +17,44 @@ use crate::models::*;
 use crate::ocr::OnnxModel;
 use crate::service::{ApiException, JobService};
 
-/// Frontend build output, embedded at compile time (`npm run build` must
-/// have produced `frontend/dist`). Served same-origin so the React app's
-/// relative `/api/v1` calls hit this server — zero frontend changes.
-#[derive(rust_embed::RustEmbed)]
-#[folder = "$CARGO_MANIFEST_DIR/../../frontend/dist"]
-struct Assets;
+/// Frontend build output served from disk (`dist/` next to the exe, or
+/// `frontend/dist` when developing). Decoupled from the binary on purpose:
+/// updating the frontend = replacing the dist directory, no recompile.
+#[derive(Clone)]
+pub struct Frontend {
+    pub dist_dir: std::path::PathBuf,
+}
+
+impl Frontend {
+    pub fn resolve(dist_dir: &str) -> Self {
+        // env → exe-dir candidates (release layout: dist/) → cwd candidates
+        if let Ok(v) = std::env::var("BEAD_DIST_DIR") {
+            if !v.is_empty() {
+                return Self { dist_dir: std::path::PathBuf::from(v) };
+            }
+        }
+        let exe_dir = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|d| d.to_path_buf()))
+            .unwrap_or_default();
+        for c in [dist_dir, "../frontend/dist"] {
+            let p = exe_dir.join(c);
+            if p.join("index.html").exists() {
+                return Self { dist_dir: p };
+            }
+        }
+        for c in [dist_dir, "frontend/dist"] {
+            if std::path::Path::new(c).join("index.html").exists() {
+                return Self { dist_dir: std::path::PathBuf::from(c) };
+            }
+        }
+        Self { dist_dir: std::path::PathBuf::from(dist_dir) }
+    }
+
+    fn index_html(&self) -> Option<Vec<u8>> {
+        std::fs::read(self.dist_dir.join("index.html")).ok()
+    }
+}
 
 pub struct AppState {
     pub service: JobService,
@@ -35,6 +67,7 @@ pub struct AppState {
     /// Spawn the in-process OCR worker on job creation (disabled in tests,
     /// where events are delivered manually through /internal/jobs/...).
     pub auto_ocr: bool,
+    pub frontend: Frontend,
 }
 
 pub fn router(state: Arc<AppState>) -> Router {
@@ -59,34 +92,46 @@ pub fn router(state: Arc<AppState>) -> Router {
         .with_state(state)
 }
 
-/// SPA static serving: exact files from the embedded dist, unknown non-API
+/// SPA static serving from the dist directory: exact files, unknown non-API
 /// paths fall back to index.html (react-router), unknown API paths get the
-/// standard JSON 404.
-async fn serve_static(uri: axum::http::Uri) -> Response {
+/// standard JSON 404. index.html is served no-cache so frontend updates are
+/// picked up immediately after replacing the dist directory.
+async fn serve_static(
+    State(state): State<Arc<AppState>>,
+    uri: axum::http::Uri,
+) -> Response {
     if uri.path().starts_with("/api/") || uri.path().starts_with("/internal/") {
         return ApiException::not_found("NOT_FOUND", format!("资源不存在: {}", uri.path())).into_response();
     }
     let path = uri.path().trim_start_matches('/');
     let path = if path.is_empty() { "index.html" } else { path };
-    let found = Assets::get(path);
-    match found {
-        Some(content) => {
-            let mime = mime_guess::from_path(path).first_or_octet_stream();
-            ([(header::CONTENT_TYPE, mime.as_ref())], content.data.into_owned()).into_response()
+    // Prevent path traversal outside the dist dir.
+    let rel = std::path::Path::new(path);
+    if rel.components().any(|c| matches!(c, std::path::Component::ParentDir | std::path::Component::RootDir | std::path::Component::Prefix(_))) {
+        return (StatusCode::BAD_REQUEST, "bad path").into_response();
+    }
+    let file = state.frontend.dist_dir.join(rel);
+    match std::fs::read(&file) {
+        Ok(bytes) => {
+            let mime = mime_guess::from_path(&file).first_or_octet_stream();
+            ([(header::CONTENT_TYPE, mime.as_ref())], bytes).into_response()
         }
-        None => {
-            // SPA fallback for client-side routes — force text/html + no-cache
-            // so the browser always picks up freshly embedded frontend builds.
-            match Assets::get("index.html") {
-                Some(content) => (
+        Err(_) => {
+            // SPA fallback for client-side routes — text/html + no-cache.
+            match state.frontend.index_html() {
+                Some(html) => (
                     [
                         (header::CONTENT_TYPE, "text/html; charset=utf-8"),
                         (header::CACHE_CONTROL, "no-cache"),
                     ],
-                    content.data.into_owned(),
+                    html,
                 )
                     .into_response(),
-                None => (StatusCode::NOT_FOUND, "not found").into_response(),
+                None => (
+                    StatusCode::NOT_FOUND,
+                    format!("index.html not found in {:?}", state.frontend.dist_dir),
+                )
+                    .into_response(),
             }
         }
     }
@@ -570,7 +615,7 @@ fn run_ocr_once(
     // vocabulary): emit UNMAPPED so JOB_SUCCEEDED's processed==total check
     // passes and the cell is surfaced for correction instead of failing the
     // whole job (cloud server fails the job; local mode is friendlier).
-    let mut present: std::collections::HashSet<(usize, usize)> =
+    let present: std::collections::HashSet<(usize, usize)> =
         results.iter().map(|(r, c, _, _)| (*r, *c)).collect();
     for (idx, (r, c, code, conf)) in results.iter().enumerate() {
         let ev = InboundEvent {

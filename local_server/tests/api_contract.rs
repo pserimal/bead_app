@@ -38,6 +38,9 @@ fn test_app() -> (Router, Arc<AppState>) {
         uploads_dir: std::env::temp_dir().join("bead-test-uploads"),
         seed_version: version.into(),
         auto_ocr: false,
+        frontend: bead_local_server::api::Frontend {
+            dist_dir: std::path::PathBuf::from("tests/fixtures/dist"),
+        },
     });
     (router(state.clone()), state)
 }

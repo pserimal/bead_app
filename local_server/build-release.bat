@@ -6,6 +6,14 @@ rem 前置：frontend/dist 已 build（cd ..\frontend && npm run build）
 setlocal
 cd /d %~dp0
 
+rem ── 停掉正在运行的实例（否则 exe 被占用，copy 会静默失败）──
+set "SRV_PORT=8080"
+if defined BEAD_PORT set "SRV_PORT=%BEAD_PORT%"
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr /R /C:":%SRV_PORT% .*LISTENING"') do (
+    echo [pack] stopping running instance PID %%p (port %SRV_PORT%)
+    taskkill /PID %%p /F >nul 2>&1
+)
+
 cargo build --release
 if errorlevel 1 exit /b 1
 
@@ -13,6 +21,12 @@ set "OUT=release"
 if not exist "%OUT%" mkdir "%OUT%"
 if not exist "%OUT%\data" mkdir "%OUT%\data"
 if not exist "%OUT%\models" mkdir "%OUT%\models"
+
+rem ── 前端（独立 dist/ 目录部署，不 embed——前端改版只替换 dist/，无需重编）──
+if not exist "%OUT%\dist" mkdir "%OUT%\dist"
+xcopy /e /i /y "..\frontend\dist\*" "%OUT%\dist\" >nul
+
+echo [ok] frontend dist copied (%OUT%\dist)
 
 copy /y target\release\bead-local-server.exe "%OUT%" >nul
 copy /y start-local.bat "%OUT%" >nul
