@@ -154,6 +154,9 @@ pub fn ocr_cells_from_crop(
     bbox: (usize, usize, usize, usize),
     mard_codes: &[String],
     valid_codes: Option<&[String]>,
+    // Optional progress callback invoked after each inference batch with
+    // the number of cells recognized so far (for live progress display).
+    progress: Option<&dyn Fn(usize)>,
 ) -> Result<Vec<CellResult>> {
     // Closed vocabulary: mard codes (alpha prefix + digit suffix) + BLANK,
     // intersected with the caller's valid_codes (never widened) — same as
@@ -210,6 +213,7 @@ pub fn ocr_cells_from_crop(
     }
 
     let mut merged: HashMap<(usize, usize), (String, f32)> = HashMap::new();
+    let mut done_cells = 0usize;
     for i in (0..cell_imgs.len()).step_by(BATCH_SIZE) {
         let batch = &cell_imgs[i..(i + BATCH_SIZE).min(cell_imgs.len())];
         // (B, 48, 48, 3) → (B, 3, 48, 48) and /255.
@@ -251,6 +255,10 @@ pub fn ocr_cells_from_crop(
             if prev.is_none() || norm_conf > prev.unwrap().1 {
                 merged.insert((r, cc), (code, norm_conf));
             }
+        }
+        done_cells = (i + batch.len()).min(rows * cols);
+        if let Some(f) = progress {
+            f(done_cells);
         }
     }
 

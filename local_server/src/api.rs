@@ -799,6 +799,10 @@ fn run_ocr_once(
             (crop_box.x as usize, crop_box.y as usize, crop_box.width as usize, crop_box.height as usize),
             mard_codes,
             valid_codes.as_deref(),
+            // Live progress: report recognized cells after each inference
+            // batch so the frontend sees the bar move during OCR.
+            // (touch_progress uses MAX() so progress never moves backwards.)
+            Some(&|done| svc.touch_progress(job_id, done as i64)),
         )
         .map_err(|e| format!("OCR_ERROR: {e}"))?
     };
@@ -827,9 +831,11 @@ fn run_ocr_once(
     // Batched writes: one transaction per CELL_BATCH events keeps concurrent
     // workers off the db lock (per-cell transactions serialized them).
     const CELL_BATCH: usize = 512;
+    let total = (rows * cols) as i64;
     for (i, chunk) in cells.chunks(CELL_BATCH).enumerate() {
         let base_seq = base + (i * CELL_BATCH) as i64;
-        svc.apply_cell_batch(job_id, attempt, base_seq, chunk)
+        let recognized_total = ((i * CELL_BATCH) as i64 + chunk.len() as i64).min(total);
+        svc.apply_cell_batch(job_id, attempt, base_seq, chunk, recognized_total)
             .map_err(|e| e.to_string())?;
     }
     let ev = InboundEvent {

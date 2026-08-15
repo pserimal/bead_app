@@ -407,17 +407,33 @@ impl JobService {
         self.touch_job(tx, job, JobStatus::Processing, Some(processed))
     }
 
+    /// Live progress: update processed_cells (cells recognized so far) and
+    /// heartbeat without touching status — the frontend polls this.
+    pub fn touch_progress(&self, job_id: Uuid, processed: i64) {
+        let conn = self.db.lock().unwrap();
+        // PENDING → PROCESSING as soon as OCR starts; processed_cells via MAX
+        // so progress never moves backwards.
+        let _ = conn.execute(
+            "UPDATE recognition_job SET status = CASE WHEN status = 'PENDING' THEN 'PROCESSING' ELSE status END,
+                processed_cells = MAX(processed_cells, ?2), heartbeat_at = ?3, updated_at = ?3 WHERE id = ?1",
+            params![job_id.to_string(), processed, crate::db::ts_to_sql(now())],
+        );
+    }
+
     /// Worker batch path: apply many CELL_PROCESSED events in ONE transaction
     /// (the per-cell single-transaction path serializes concurrent workers on
     /// the db lock). Idempotency is preserved per (job, attempt, sequence).
     /// `cells` rows are (row, col, code, confidence) in sequence order starting
-    /// at `base_sequence + 1`.
+    /// at `base_sequence + 1`. `recognized_total` is the live progress value
+    /// (cells recognized so far) — it wins over the cell-table count so the
+    /// progress bar never moves backwards.
     pub fn apply_cell_batch(
         &self,
         job_id: Uuid,
         attempt: i64,
         base_sequence: i64,
         cells: &[(i64, i64, String, f64)],
+        recognized_total: i64,
     ) -> Result<()> {
         let mut conn = self.db.lock().unwrap();
         let tx = conn.transaction()?;
@@ -438,12 +454,12 @@ impl JobService {
                 serde_json::json!({"row": row, "col": col, "code": code, "confidence": conf}))?;
             self.apply_cell_inner(&tx, &job, *row, *col, code, Some(*conf))?;
         }
-        let processed: i64 = tx.query_row(
+        let stored: i64 = tx.query_row(
             "SELECT COUNT(*) FROM recognition_job_cell WHERE job_id = ?1",
             [job_id.to_string()],
             |r| r.get(0),
         )?;
-        self.touch_job(&tx, &job, JobStatus::Processing, Some(processed))?;
+        self.touch_job(&tx, &job, JobStatus::Processing, Some(recognized_total.max(stored)))?;
         self.prune_cell_events(&tx, job_id)?;
         tx.commit()?;
         Ok(())
@@ -625,9 +641,12 @@ impl JobService {
 
     fn touch_job(&self, tx: &Connection, job: &Job, status: JobStatus, processed: Option<i64>) -> Result<()> {
         let processed = processed.unwrap_or(job.processed_cells);
+        // MAX() keeps progress monotonic — the live OCR progress callback may
+        // have already reported a higher recognized count than this writer's
+        // own batch offset.
         tx.execute(
-            "UPDATE recognition_job SET status = ?2, processed_cells = ?3, heartbeat_at = ?4,
-                updated_at = ?4 WHERE id = ?1",
+            "UPDATE recognition_job SET status = ?2, processed_cells = MAX(processed_cells, ?3),
+                heartbeat_at = ?4, updated_at = ?4 WHERE id = ?1",
             params![
                 job.id.to_string(),
                 serde_json::to_string(&status).unwrap().trim_matches('"'),
