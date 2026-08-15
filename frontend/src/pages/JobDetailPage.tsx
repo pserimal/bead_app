@@ -1,8 +1,8 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useJob, useJobEvents } from '../hooks/useJobs';
+import { useJob } from '../hooks/useJobs';
 import { staggerContainer, staggerItem } from '../lib/animations';
-import type { JobStatus, EventType } from '../types/api';
+import type { JobStatus } from '../types/api';
 
 const statusMeta: Record<JobStatus, { label: string; color: string; bg: string }> = {
   PENDING: { label: '排队中', color: 'var(--color-text-muted)', bg: 'var(--color-bg-secondary)' },
@@ -12,55 +12,11 @@ const statusMeta: Record<JobStatus, { label: string; color: string; bg: string }
   FAILED: { label: '失败', color: 'var(--color-error)', bg: 'var(--color-error-light)' },
 };
 
-const eventLabel: Record<EventType, string> = {
-  JOB_STARTED: '任务开始',
-  CELL_PROCESSED: '格子识别',
-  CELL_FAILED: '格子失败',
-  HEARTBEAT: '心跳',
-  RETRY_SCHEDULED: '重试调度',
-  JOB_SUCCEEDED: '任务完成',
-  JOB_FAILED: '任务失败',
-};
-
-/** 事件 payload → 人类可读描述（使用者不是程序员，不展示 JSON） */
-function formatEventPayload(type: EventType, payload: Record<string, unknown>): string {
-  const row = typeof payload.row === 'number' ? (payload.row as number) + 1 : null;
-  const col = typeof payload.col === 'number' ? (payload.col as number) + 1 : null;
-  const pos = row != null && col != null ? `第 ${row} 行 第 ${col} 列` : '';
-  switch (type) {
-    case 'JOB_STARTED':
-      return `图纸 ${payload.rows ?? '?'} 行 × ${payload.cols ?? '?'} 列，共 ${(payload.rows ?? 0) * (payload.cols ?? 0)} 格`;
-    case 'CELL_PROCESSED': {
-      const code = typeof payload.code === 'string' ? payload.code : '';
-      if (code === 'BLANK') return `${pos}：空白格`;
-      if (code === 'UNMAPPED') return `${pos}：未能识别，等待校正`;
-      const conf = typeof payload.confidence === 'number' ? payload.confidence : null;
-      const confText = conf != null ? `（置信度 ${(conf * 100).toFixed(1)}%）` : '';
-      return `${pos}：识别为 ${code}${confText}`;
-    }
-    case 'CELL_FAILED':
-      return `${pos}：识别失败`;
-    case 'HEARTBEAT':
-      return `处理中，已识别 ${payload.processedCells ?? '?'} 格`;
-    case 'RETRY_SCHEDULED':
-      return `自动重试第 ${payload.nextAttempt ?? '?'} 次${payload.reason === 'stale_heartbeat' ? '（上次处理超时）' : ''}`;
-    case 'JOB_SUCCEEDED':
-      return `识别完成，共处理 ${payload.processedCells ?? payload.totalCells ?? '?'} 格`;
-    case 'JOB_FAILED': {
-      const msg = typeof payload.message === 'string' ? payload.message : '';
-      return msg ? `失败原因：${msg}` : '任务失败';
-    }
-    default:
-      return '';
-  }
-}
-
 // 012 决议：处理中/失败任务不展示半成品棋盘，追踪视图是替代呈现
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: job, isLoading, error } = useJob(id ?? null);
-  const { data: events } = useJobEvents(id ?? null, job?.status);
 
   const processing = job?.status === 'PENDING' || job?.status === 'PROCESSING';
   const terminal = job?.status === 'SUCCEEDED' || job?.status === 'SUCCEEDED_WITH_WARNINGS' || job?.status === 'FAILED';
@@ -164,35 +120,6 @@ export default function JobDetailPage() {
                   )}
                 </div>
               )}
-            </motion.div>
-
-            {/* 事件时间线（只读） */}
-            <motion.div variants={staggerItem} className="p-5 rounded-xl" style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
-              <h2 style={{ fontWeight: 600, fontSize: 'var(--text-sm)', marginBottom: 12 }}>
-                事件时间线（{events?.total ?? 0} 条）
-              </h2>
-              {events && events.total > events.items.length && (
-                <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', marginBottom: 8 }}>
-                  仅显示最近 {events.items.length} 条
-                </p>
-              )}
-              <div className="space-y-2 max-h-80 overflow-y-auto">
-                {events?.items.map((ev) => (
-                  <div key={`${ev.attempt}-${ev.sequence}`} className="flex items-start gap-3 text-sm py-1.5 border-b" style={{ borderColor: 'var(--color-border)' }}>
-                    <span className="shrink-0 px-2 py-0.5 rounded text-xs" style={{ background: 'var(--color-surface)', color: 'var(--color-text-muted)' }}>
-                      #{ev.sequence}
-                    </span>
-                    <span className="shrink-0 font-medium w-20">{eventLabel[ev.type]}</span>
-                    <span className="flex-1 truncate" style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)' }}>
-                      {formatEventPayload(ev.type, ev.payload)}
-                    </span>
-                    <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)' }} className="shrink-0">
-                      {new Date(ev.timestamp).toLocaleTimeString()}
-                    </span>
-                  </div>
-                ))}
-                {events && events.items.length === 0 && <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>暂无事件</p>}
-              </div>
             </motion.div>
           </>
         )}
