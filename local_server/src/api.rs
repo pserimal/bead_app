@@ -58,9 +58,11 @@ impl Frontend {
 
 pub struct AppState {
     pub service: JobService,
-    /// None when OCR is disabled (contract tests); the worker only runs when
-    /// both `model` and `auto_ocr` are set.
-    pub model: Arc<Mutex<Option<OnnxModel>>>,
+    /// OCR model pool: up to MAX_CONCURRENT_JOBS slots, each an independent
+    /// onnxruntime session — parallel inference for concurrent jobs. None
+    /// when OCR is disabled (contract tests); workers only run when
+    /// `auto_ocr` is set.
+    pub model_pool: ModelPool,
     pub mard_codes: Vec<String>,
     pub uploads_dir: std::path::PathBuf,
     pub seed_version: String,
@@ -85,6 +87,86 @@ pub struct ModelMeta {
     pub name: String,
     pub arch: Option<String>,
     pub num_classes: Option<usize>,
+}
+
+/// Pool of OCR model slots. Each slot owns an onnxruntime session with a
+/// bounded thread count; jobs round-robin a slot for the whole task, so at
+/// most MAX_CONCURRENT_JOBS infer simultaneously (per-slot sessions keep
+/// total CPU usage near the core count instead of oversubscribing).
+///
+/// Concurrency and per-session threads are derived from the machine's CPU
+/// count (generic, not tuned for one box): max_concurrent = clamp(cores/4,
+/// 1, 4), threads_per_session = clamp(cores/max_concurrent, 1, 8). Both can
+/// be overridden via BEAD_MAX_CONCURRENT / BEAD_ORT_THREADS.
+#[derive(Clone)]
+pub struct ModelPool {
+    slots: Arc<Vec<Mutex<Option<OnnxModel>>>>,
+    active_id: Arc<Mutex<Option<String>>>,
+    models_dir: Arc<std::path::PathBuf>,
+    threads_per_session: usize,
+}
+
+impl ModelPool {
+    pub fn new(models_dir: std::path::PathBuf) -> Self {
+        let cores = std::thread::available_parallelism()
+            .map(|n| n.get())
+            .unwrap_or(4)
+            .max(1);
+        let max_concurrent = std::env::var("BEAD_MAX_CONCURRENT")
+            .ok()
+            .and_then(|v| v.parse::<usize>().ok())
+            .filter(|n| *n >= 1 && *n <= 8)
+            .unwrap_or_else(|| (cores / 8).clamp(1, 4));
+        let threads_per_session = std::env::var("BEAD_ORT_THREADS")
+            .ok()
+            .and_then(|v| v.parse::<usize>().ok())
+            .filter(|n| *n >= 1 && *n <= 64)
+            .unwrap_or_else(|| (cores / max_concurrent).clamp(1, 16));
+        let slots = (0..max_concurrent)
+            .map(|_| Mutex::new(None))
+            .collect::<Vec<_>>();
+        Self {
+            slots: Arc::new(slots),
+            active_id: Arc::new(Mutex::new(None)),
+            models_dir: Arc::new(models_dir),
+            threads_per_session,
+        }
+    }
+
+    pub fn concurrency(&self) -> usize {
+        self.slots.len()
+    }
+
+    pub fn active_id(&self) -> Option<String> {
+        self.active_id.lock().unwrap().clone()
+    }
+
+    /// Set the activated artifact id; affects new workers only (jobs already
+    /// running keep their slot's model).
+    pub fn set_active(&self, id: String) {
+        *self.active_id.lock().unwrap() = Some(id);
+    }
+
+    /// Round-robin acquire a slot, (re)loading the active model into it when
+    /// stale (model switched or first use). Blocks while all slots are busy —
+    /// this is the concurrency limiter.
+    pub fn acquire_worker(&self) -> anyhow::Result<std::sync::MutexGuard<'_, Option<OnnxModel>>> {
+        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let idx = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % self.slots.len();
+        let mut slot = self.slots[idx].lock().unwrap();
+        let active = self.active_id.lock().unwrap().clone();
+        let stale = match &*slot {
+            Some(m) => Some(m.artifact_id.clone()) != active,
+            None => true,
+        };
+        if stale {
+            if let Some(id) = active {
+                let dir = self.models_dir.join(id);
+                *slot = Some(OnnxModel::load_with_threads(&dir, self.threads_per_session)?);
+            }
+        }
+        Ok(slot)
+    }
 }
 
 impl AppState {
@@ -130,12 +212,11 @@ impl AppState {
             .into_iter()
             .find(|m| m.id == id)
             .ok_or_else(|| anyhow::anyhow!(ApiException::not_found("MODEL_NOT_FOUND", format!("模型不存在: {id}"))))?;
+        // Probe-load to validate the artifact, then switch the pool's active
+        // id — new jobs pick it up; in-flight jobs keep their slot's model.
         let dir = self.models_dir.join(id);
-        let model = OnnxModel::load(&dir)?;
-        {
-            let mut slot = self.model.lock().unwrap();
-            *slot = Some(model);
-        }
+        let _probe = OnnxModel::load(&dir)?;
+        self.model_pool.set_active(id.to_string());
         if let Some(parent) = self.model_current_file.parent() {
             let _ = std::fs::create_dir_all(parent);
         }
@@ -411,19 +492,19 @@ async fn create_job(
             parsed_codes.clone(),
             stored,
             state.seed_version.clone(),
-            "bean-mard-v11".to_string(),
+            "bean-mard-v12".to_string(),
             name,
         )
         .map_err(to_api)?;
 
     // Dispatch OCR in-process (replaces PythonTaskDispatcher + callbacks).
-    if state.auto_ocr && state.model.lock().unwrap().is_some() {
+    if state.auto_ocr && state.model_pool.active_id().is_some() {
         let svc = state.service.clone();
-        let model = state.model.clone();
+        let model_pool = state.model_pool.clone();
         let mard_codes = state.mard_codes.clone();
         let job_id = job.id;
         std::thread::spawn(move || {
-            run_ocr_worker(&svc, &model, &mard_codes, job_id, rows, cols, crop_box, parsed_codes, bytes);
+            run_ocr_worker(&svc, &model_pool, &mard_codes, job_id, rows, cols, crop_box, parsed_codes, bytes);
         });
     }
 
@@ -569,23 +650,13 @@ struct ModelsResponse {
 }
 
 async fn list_models(State(state): State<Arc<AppState>>) -> Json<ModelsResponse> {
-    let current = state
-        .model
-        .lock()
-        .unwrap()
-        .as_ref()
-        .map(|m| m.artifact_id.clone());
+    let current = state.model_pool.active_id();
     // Live scan: replacing files under models_dir is picked up on refresh.
     Json(ModelsResponse { items: AppState::discover_models(&state.models_dir), current })
 }
 
 async fn current_model(State(state): State<Arc<AppState>>) -> Json<ModelsResponse> {
-    let current = state
-        .model
-        .lock()
-        .unwrap()
-        .as_ref()
-        .map(|m| m.artifact_id.clone());
+    let current = state.model_pool.active_id();
     Json(ModelsResponse { items: AppState::discover_models(&state.models_dir), current })
 }
 
@@ -629,12 +700,12 @@ pub fn resume_interrupted(state: &Arc<AppState>) {
             continue;
         };
         let svc = state.service.clone();
-        let model = state.model.clone();
+        let model_pool = state.model_pool.clone();
         let mard_codes = state.mard_codes.clone();
         std::thread::spawn(move || {
             run_ocr_worker(
                 &svc,
-                &model,
+                &model_pool,
                 &mard_codes,
                 job.id,
                 job.rows,
@@ -650,7 +721,7 @@ pub fn resume_interrupted(state: &Arc<AppState>) {
 
 fn run_ocr_worker(
     svc: &JobService,
-    model: &Mutex<Option<OnnxModel>>,
+    model_pool: &ModelPool,
     mard_codes: &[String],
     job_id: Uuid,
     rows: i64,
@@ -661,7 +732,13 @@ fn run_ocr_worker(
 ) {
     let mut attempt = 0i64;
     loop {
-        let outcome = run_ocr_once(svc, model, mard_codes, job_id, rows, cols, &crop_box, valid_codes.clone(), &image_bytes);
+        // Acquire a pool slot for the whole attempt — blocks while all
+        // slots are busy (concurrency limiter); stale slots reload the
+        // currently activated model.
+        let outcome = match model_pool.acquire_worker() {
+            Ok(mut slot) => run_ocr_once(svc, &mut slot, mard_codes, job_id, rows, cols, &crop_box, valid_codes.clone(), &image_bytes),
+            Err(e) => Err(format!("MODEL_LOAD_FAILED: {e}")),
+        };
         match outcome {
             Ok(()) => {
                 svc.compact();
@@ -692,7 +769,7 @@ fn run_ocr_worker(
 
 fn run_ocr_once(
     svc: &JobService,
-    model: &Mutex<Option<OnnxModel>>,
+    slot: &mut std::sync::MutexGuard<'_, Option<OnnxModel>>,
     mard_codes: &[String],
     job_id: Uuid,
     rows: i64,
@@ -712,9 +789,8 @@ fn run_ocr_once(
         rgb[i * 3 + 2] = px[2] as f32;
     }
     let results = {
-        let mut m = model.lock().unwrap();
         crate::ocr::ocr_cells_from_crop(
-            m.as_mut().unwrap(),
+            slot.as_mut().unwrap(),
             &rgb,
             w,
             h,
@@ -726,6 +802,7 @@ fn run_ocr_once(
         )
         .map_err(|e| format!("OCR_ERROR: {e}"))?
     };
+    let attempt = current_attempt(svc, job_id);
     let base = sequence_base_for_attempt(svc, job_id);
     // Fill cells the OCR pipeline dropped (decode output outside the closed
     // vocabulary): emit UNMAPPED so JOB_SUCCEEDED's processed==total check
@@ -733,45 +810,32 @@ fn run_ocr_once(
     // whole job (cloud server fails the job; local mode is friendlier).
     let present: std::collections::HashSet<(usize, usize)> =
         results.iter().map(|(r, c, _, _)| (*r, *c)).collect();
-    for (idx, (r, c, code, conf)) in results.iter().enumerate() {
-        let ev = InboundEvent {
-            job_id,
-            attempt: current_attempt(svc, job_id),
-            sequence: base + idx as i64 + 1,
-            event_type: EventType::CellProcessed,
-            timestamp: None,
-            payload: serde_json::json!({
-                "row": r, "col": c,
-                "code": code.to_uppercase(),
-                "confidence": (conf * 10_000.0).round() / 10_000.0,
-            }),
-        };
-        svc.apply_event(&ev).map_err(|e| e.to_string())?;
-    }
-    let mut fill_seq = base + results.len() as i64 + 1;
+    let mut cells: Vec<(i64, i64, String, f64)> = results
+        .iter()
+        .map(|(r, c, code, conf)| {
+            (*r as i64, *c as i64, code.to_uppercase(), ((conf * 10_000.0).round() / 10_000.0) as f64)
+        })
+        .collect();
     for r in 0..rows {
         for c in 0..cols {
-            if present.contains(&(r as usize, c as usize)) {
-                continue;
+            if !present.contains(&(r as usize, c as usize)) {
+                cells.push((r, c, "UNMAPPED".to_string(), 0.0));
             }
-            let ev = InboundEvent {
-                job_id,
-                attempt: current_attempt(svc, job_id),
-                sequence: fill_seq,
-                event_type: EventType::CellProcessed,
-                timestamp: None,
-                payload: serde_json::json!({
-                    "row": r, "col": c, "code": "UNMAPPED", "confidence": 0.0,
-                }),
-            };
-            fill_seq += 1;
-            svc.apply_event(&ev).map_err(|e| e.to_string())?;
         }
+    }
+    cells.sort_by_key(|(r, c, _, _)| (*r, *c));
+    // Batched writes: one transaction per CELL_BATCH events keeps concurrent
+    // workers off the db lock (per-cell transactions serialized them).
+    const CELL_BATCH: usize = 512;
+    for (i, chunk) in cells.chunks(CELL_BATCH).enumerate() {
+        let base_seq = base + (i * CELL_BATCH) as i64;
+        svc.apply_cell_batch(job_id, attempt, base_seq, chunk)
+            .map_err(|e| e.to_string())?;
     }
     let ev = InboundEvent {
         job_id,
         attempt: current_attempt(svc, job_id),
-        sequence: fill_seq,
+        sequence: base + cells.len() as i64 + 1,
         event_type: EventType::JobSucceeded,
         timestamp: None,
         payload: serde_json::json!({"processedCells": (rows * cols) as usize, "totalCells": (rows * cols) as usize}),

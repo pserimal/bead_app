@@ -1,0 +1,34 @@
+{
+  "model_name": "bean-mard-v12",
+  "version": "2026-08-15T10-39-29Z",
+  "format_version": 1,
+  "model_arch": "crnn-v2-rgb",
+  "num_classes": 35,
+  "charset_hash": "6c8166975e62b54c5d26bf2f0655590333b1eca9368516cb646cd24978b065f6",
+  "code_dict_version": "sha256:b4c40f7af24bb0c49c1839bf29928c96d782a62e3548c9eca0d32d8efc3aeacb",
+  "created_at": "2026-08-15T10:21:33.348800+00:00",
+  "training": {
+    "seed": 0,
+    "epochs": 30,
+    "synth_n": 0,
+    "color": true
+  },
+  "runtime_format": "onnx",
+  "opset": 17,
+  "input_name": "images",
+  "output_name": "logits",
+  "input_size": [
+    48,
+    48
+  ],
+  "input_channels": 3,
+  "blank_index": 0,
+  "output_shape": [
+    11,
+    1,
+    35
+  ],
+  "source_checkpoint": "D:\\projects\\python\\ai_dou\\artifacts\\models\\bean-mard-v12-2026-08-15T10-39-29Z\\model.pt",
+  "model_sha256": "9ac7f4351833b028dd990c3c9d2fd4f1389ee719c7d7309424e0127c9a982998",
+  "onnx_created_at": "2026-08-15T10:39:37.440578+00:00"
+}

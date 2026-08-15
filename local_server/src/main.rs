@@ -129,7 +129,7 @@ async fn main() -> anyhow::Result<()> {
             persisted.map(|p| std::path::Path::new(&models_dir).join(p).to_string_lossy().to_string())
         })
         .unwrap_or_else(|| {
-            let d = std::path::Path::new(&models_dir).join("bean-mard-v11-2026-08-14T00-00-00Z");
+            let d = std::path::Path::new(&models_dir).join("bean-mard-v12-2026-08-15T10-39-29Z");
             d.to_string_lossy().to_string()
         });
 
@@ -146,9 +146,22 @@ async fn main() -> anyhow::Result<()> {
         mard_codes.len()
     );
 
+    let pool = bead_local_server::api::ModelPool::new(std::path::PathBuf::from(models_dir.clone()));
+    let active_id = std::path::Path::new(&artifact_dir)
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .to_string();
+    // Preload one slot with the active model (fail fast at startup) and
+    // register it as active for new workers.
+    {
+        let slot = pool.acquire_worker().expect("model preload failed");
+        debug_assert!(slot.is_some());
+    }
+    pool.set_active(active_id.clone());
     let state = Arc::new(AppState {
         service,
-        model: Arc::new(Mutex::new(Some(model))),
+        model_pool: pool,
         mard_codes,
         uploads_dir: std::path::PathBuf::from(uploads_dir),
         seed_version,
