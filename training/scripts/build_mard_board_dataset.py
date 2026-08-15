@@ -157,7 +157,7 @@ def _watermark(board: Image.Image, rng: random.Random) -> Image.Image:
     return Image.alpha_composite(board.convert("RGBA"), overlay).convert("RGB")
 
 
-def _apply_upload_quality(board: Image.Image, rng: random.Random) -> Image.Image:
+def _apply_upload_quality(board: Image.Image, rng: random.Random) -> tuple[Image.Image, str]:
     """Simulate real upload degradation at the whole-board level.
 
     Real users upload photos/downloaded diagrams of varying quality: mostly
@@ -170,6 +170,8 @@ def _apply_upload_quality(board: Image.Image, rng: random.Random) -> Image.Image
       - 30%%: slight defocus (Gaussian radius 0.8-1.5) + JPEG 80-90
       - 13%%: moderate blur (radius 2-3) + JPEG 65-80
       - 2%%:  heavy blur (radius 4-6) + strong JPEG 40-60
+
+    Returns ``(image, level)`` where level ∈ {clear, slight, moderate, heavy}.
     """
     import io
     from PIL import ImageFilter
@@ -177,15 +179,19 @@ def _apply_upload_quality(board: Image.Image, rng: random.Random) -> Image.Image
     if r < 0.55:
         blur_r = 0.0
         jpeg_q = rng.randint(80, 92)
+        level = "clear"
     elif r < 0.85:
         blur_r = rng.uniform(0.8, 1.5)
         jpeg_q = rng.randint(78, 90)
+        level = "slight"
     elif r < 0.98:
         blur_r = rng.uniform(2.0, 3.0)
         jpeg_q = rng.randint(62, 80)
+        level = "moderate"
     else:
         blur_r = rng.uniform(4.0, 6.0)
         jpeg_q = rng.randint(40, 60)
+        level = "heavy"
 
     if blur_r > 0:
         board = board.filter(ImageFilter.GaussianBlur(radius=blur_r))
@@ -195,7 +201,7 @@ def _apply_upload_quality(board: Image.Image, rng: random.Random) -> Image.Image
     board.save(buf, format="JPEG", quality=jpeg_q)
     buf.seek(0)
     board = Image.open(buf).convert("RGB")
-    return board
+    return board, level
 
 
 
@@ -290,7 +296,7 @@ def build(out_root: Path, boards: int = 24, rows: int = 32,
             board = _watermark(board, board_rng)
         # Simulate real upload degradation (blur + JPEG) at the board level
         # so every cropped cell inherits it, matching production.
-        board = _apply_upload_quality(board, board_rng)
+        board, blur_level = _apply_upload_quality(board, board_rng)
 
         bdir = board_root / f"board_{board_no:03d}"
         bdir.mkdir()
@@ -302,6 +308,7 @@ def build(out_root: Path, boards: int = 24, rows: int = 32,
                 "cell_size_px": CELL_SIZE,
                 "watermark": watermark_prob > 0,
                 "grid_interval": "random-4-10",
+                "blur_level": blur_level,
                 "seed": board_no + per_board_seed,
             },
             "cells": cells_meta,

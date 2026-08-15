@@ -96,6 +96,7 @@ REAL_SETS: dict[str, Path] = {
     "blank_clean": _REPO_ROOT / "training" / "samples" / "标注数据" / "5_标注结果_2026-08-08",
     "blank_polluted": _REPO_ROOT / "training" / "samples" / "标注数据" / "corrections-fdaa77a1-2026-08-09",
     "blank_polluted_ref": _REPO_ROOT / "training" / "samples" / "标注数据" / "4_标注结果_2026-08-08",
+    "blur_real": _REPO_ROOT / "training" / "samples" / "标注数据" / "corrections-b48348f1-2026-08-15-模糊图纸",
 }
 # Synthetic heldout: generated with an independent seed, never used in
 # training for v6/v7/v8. Re-generate with a fixed seed if the dir is missing.
