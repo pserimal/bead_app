@@ -184,7 +184,7 @@ export default function CorrectionPage() {
     });
   }, []);
 
-  /** Shift+点击：以锚点为对角顶点做矩形连选，追加到现有选区（不取消已有格） */
+  /** Shift+点击：以锚点为对角顶点做矩形连选。矩形内可见格已全部选中 → 取下（移除），否则追加。 */
   const shiftSelect = useCallback((key: string) => {
     const anchor = anchorRef.current;
     if (anchor == null) {
@@ -196,13 +196,21 @@ export default function CorrectionPage() {
     const [r1, c1] = key.split(':').map(Number);
     const rowMin = Math.min(r0, r1), rowMax = Math.max(r0, r1);
     const colMin = Math.min(c0, c1), colMax = Math.max(c0, c1);
+    const rectKeys: string[] = [];
+    for (let r = rowMin; r <= rowMax; r += 1) {
+      for (let c = colMin; c <= colMax; c += 1) {
+        const k = `${r}:${c}`;
+        if (visibleKeys.has(k)) rectKeys.push(k);
+      }
+    }
+    if (rectKeys.length === 0) return;
     setSelected((prev) => {
       const next = new Set(prev);
-      for (let r = rowMin; r <= rowMax; r += 1) {
-        for (let c = colMin; c <= colMax; c += 1) {
-          const k = `${r}:${c}`;
-          if (visibleKeys.has(k)) next.add(k);
-        }
+      // 矩形内可见格全部已选中 → 取下；否则 → 追加
+      if (rectKeys.every((k) => next.has(k))) {
+        for (const k of rectKeys) next.delete(k);
+      } else {
+        for (const k of rectKeys) next.add(k);
       }
       return next;
     });
@@ -463,7 +471,7 @@ export default function CorrectionPage() {
                   >
                     {codeCells.length > 0 && codeCells.every((c) => selected.has(`${c.row}:${c.col}`)) ? '取消全选' : '全选'}
                   </button>
-                  <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Shift+点击矩形连选</span>
+                  <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Shift+点击：连选矩形 / 再点同矩形取下</span>
                   {renderLimit < codeCells.length && (
                     <span className="ml-auto text-xs" style={{ color: 'var(--color-text-muted)' }}>
                       已加载 {renderLimit}/{codeCells.length} · 滚动继续加载
