@@ -90,3 +90,32 @@ export function computeBreakdown(
   }
   return [...map.entries()].map(([code, count]) => ({ code, count })).sort((a, b) => b.count - a.count);
 }
+
+/**
+ * Shift 连选：返回当前编码组列表（codeCells 顺序）中锚点 → 目标之间的连续 key 列表（含两端）。
+ * 锚点缺失或不在当前组（跨组）→ 返回 null（调用方应重置锚点、仅选目标格）。
+ */
+export function rangeKeys(
+  list: { row: number; col: number }[],
+  anchorKey: string | null,
+  targetKey: string,
+): string[] | null {
+  const targetIdx = list.findIndex((c) => `${c.row}:${c.col}` === targetKey);
+  if (targetIdx < 0) return null;
+  const anchorIdx = anchorKey == null ? -1 : list.findIndex((c) => `${c.row}:${c.col}` === anchorKey);
+  if (anchorIdx < 0) return null;
+  const lo = Math.min(anchorIdx, targetIdx);
+  const hi = Math.max(anchorIdx, targetIdx);
+  return list.slice(lo, hi + 1).map((c) => `${c.row}:${c.col}`);
+}
+
+/** 对一组 key 整体 toggle：全部已选 → 移除（取下）；否则 → 加入 */
+export function toggleKeys(prev: ReadonlySet<string>, keys: readonly string[]): Set<string> {
+  const next = new Set(prev);
+  if (keys.every((k) => next.has(k))) {
+    for (const k of keys) next.delete(k);
+  } else {
+    for (const k of keys) next.add(k);
+  }
+  return next;
+}
