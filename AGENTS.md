@@ -189,9 +189,9 @@ cd frontend && npm test                     # 175 tests
 
 - 前端 dev proxy：`/api` → `http://localhost:8080`（vite.config.ts）；生产同源（Rust 磁盘 serve `release/dist/`）
 - 上传限制：30MB（axum DefaultBodyLimit 32MB 兜底），JPEG/PNG
-- 基线模型：`bean-mard-v10`（原 crnn_color_mard_v8，zip exact_match 0.9405，post-CTC-fix）；**当前生产 = bean-mard-v11**（原 bean-mard-v1，2026-08-15 用户确认部署）。bean-mard-v11 = v10 配方 + 5 级模糊合成图纸 + 新标注（合成模糊 heldout +8.6pp）；模糊图纸生成器与 blank-cap 代码保留；若用户后续提供真实模糊标注可重训。
+- 基线模型：`bean-mard-v10`（原 crnn_color_mard_v8，zip exact_match 0.9405，post-CTC-fix）；**当前生产 = bean-mard-v12**（2026-08-15 部署）。bean-mard-v12 = v11 配方 + **修正 H18↔H12 标注噪声后重训**（用户修正 1_标注结果_07-29 的 46 个错标）；5 级模糊合成图纸 + 新标注保留；模糊图纸生成器与 blank-cap 代码保留。
 - **模型验收门禁**：任何新 checkpoint 部署前必须跑 `eval_acceptance`（基准集与容差固定，不允许为过门禁增删）；Rust 端再跑 `bench_acceptance`
-- **模型命名（2026-08-15 统一）**：所有模型统一为 `bean-mard-v<N>`，按事件时间顺序编号（旧=v1，新=vN）。artifacts/models/ 11 个目录 = v1..v11；training/checkpoints/ 45 个 .pt = v1..v45。`publish_checkpoint.py --name bean-mard-v<N>` 发布新模型。
+- **模型命名（2026-08-15 统一）**：所有模型统一为 `bean-mard-v<N>`，按事件时间顺序编号（旧=v1，新=vN）。artifacts/models/ 12 个目录 = v1..v12；training/checkpoints/ 45 个 .pt = v1..v45。`publish_checkpoint.py --name bean-mard-v<N>` 发布新模型。
 - **真实样本**：丢进 `training/samples/标注数据/<新目录>/` 后跑 `build_color_dataset_v2 --name color_v<N>` 自动并入
 - Legacy checkpoints（无 format_version）须先 `publish_checkpoint.py` 迁移
 - 颜色库：`artifacts/colors/library.json`（2993+ codes）；运行时种子 `data/default_colors.json`（mard 291）
