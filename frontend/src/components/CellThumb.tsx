@@ -16,6 +16,7 @@ export default function CellThumb({
   image,
   checked,
   onToggle,
+  onShiftToggle,
   onEdit,
 }: {
   cell: BlueprintCellDto;
@@ -25,6 +26,7 @@ export default function CellThumb({
   image: HTMLImageElement | null;
   checked: boolean;
   onToggle: () => void;
+  onShiftToggle: () => void;
   onEdit: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -92,8 +94,15 @@ export default function CellThumb({
         <label
           className="absolute flex items-center justify-center rounded cursor-pointer"
           style={{ top: -3, left: -3, width: 17, height: 17, background: checked ? 'var(--color-accent)' : 'rgba(255,255,255,0.9)', border: '1px solid var(--color-border)' }}
-          title="勾选（可跨组批量）"
-          onClick={(e) => e.stopPropagation()}
+          title="勾选；按住 Shift 点击可矩形连选"
+          onClick={(e) => {
+            e.stopPropagation();
+            // Shift+点击 → 矩形连选（拦截 checkbox，避免触发普通 toggle）
+            if (e.shiftKey) {
+              e.preventDefault();
+              onShiftToggle();
+            }
+          }}
         >
           <input type="checkbox" className="sr-only" checked={checked} onChange={onToggle} aria-label={`勾选格子 ${cell.row + 1},${cell.col + 1}`} />
           {checked && <span className="text-white text-[10px] leading-none">✓</span>}

@@ -165,7 +165,17 @@ export default function CorrectionPage() {
   const selectedKeys = useMemo(() => [...selected], [selected]);
   const selectedBreakdown = useMemo(() => computeBreakdown(selectedKeys, cellsByPos), [selectedKeys, cellsByPos]);
 
+  // Shift 连选锚点：最近一次普通点击的格子（Shift+点击以它为矩形起点）
+  const anchorRef = useRef<string | null>(null);
+  // 当前可见格子 key 集合：连选矩形只作用于可见格（避免误选被过滤/空白外的格子）
+  const visibleKeys = useMemo(() => {
+    const s = new Set<string>();
+    for (const c of visibleCells) s.add(`${c.row}:${c.col}`);
+    return s;
+  }, [visibleCells]);
+
   const toggleCell = useCallback((key: string) => {
+    anchorRef.current = key; // 普通点击 → 更新连选锚点
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(key)) next.delete(key);
@@ -173,6 +183,30 @@ export default function CorrectionPage() {
       return next;
     });
   }, []);
+
+  /** Shift+点击：以锚点为对角顶点做矩形连选，追加到现有选区（不取消已有格） */
+  const shiftSelect = useCallback((key: string) => {
+    const anchor = anchorRef.current;
+    if (anchor == null) {
+      setSelected(new Set([key]));
+      anchorRef.current = key;
+      return;
+    }
+    const [r0, c0] = anchor.split(':').map(Number);
+    const [r1, c1] = key.split(':').map(Number);
+    const rowMin = Math.min(r0, r1), rowMax = Math.max(r0, r1);
+    const colMin = Math.min(c0, c1), colMax = Math.max(c0, c1);
+    setSelected((prev) => {
+      const next = new Set(prev);
+      for (let r = rowMin; r <= rowMax; r += 1) {
+        for (let c = colMin; c <= colMax; c += 1) {
+          const k = `${r}:${c}`;
+          if (visibleKeys.has(k)) next.add(k);
+        }
+      }
+      return next;
+    });
+  }, [visibleKeys]);
 
   /** 全选/取消全选当前编码的全部格子 */
   const toggleCodeAll = useCallback(() => {
@@ -429,6 +463,7 @@ export default function CorrectionPage() {
                   >
                     {codeCells.length > 0 && codeCells.every((c) => selected.has(`${c.row}:${c.col}`)) ? '取消全选' : '全选'}
                   </button>
+                  <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Shift+点击矩形连选</span>
                   {renderLimit < codeCells.length && (
                     <span className="ml-auto text-xs" style={{ color: 'var(--color-text-muted)' }}>
                       已加载 {renderLimit}/{codeCells.length} · 滚动继续加载
@@ -447,6 +482,7 @@ export default function CorrectionPage() {
                         image={image}
                         checked={selected.has(`${cell.row}:${cell.col}`)}
                         onToggle={() => toggleCell(`${cell.row}:${cell.col}`)}
+                        onShiftToggle={() => shiftSelect(`${cell.row}:${cell.col}`)}
                         onEdit={() => openEditor([`${cell.row}:${cell.col}`])}
                       />
                     ))}
