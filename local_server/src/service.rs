@@ -359,8 +359,22 @@ impl JobService {
             .map(|s| s.to_uppercase())
             .ok_or_else(|| anyhow!(ApiException::bad_request("INVALID_EVENT", "CELL_PROCESSED 缺少 code")))?;
         let confidence = payload.get("confidence").and_then(|v| v.as_f64());
+        self.apply_cell_inner(tx, job, row, col, &code, confidence)
+    }
+
+    /// Shared cell-write logic used by both the single-event path and the
+    /// worker's batched path (one transaction per batch).
+    fn apply_cell_inner(
+        &self,
+        tx: &Connection,
+        job: &Job,
+        row: i64,
+        col: i64,
+        code: &str,
+        confidence: Option<f64>,
+    ) -> Result<()> {
         let is_blank = code == "BLANK";
-        let color = if is_blank { None } else { self.find_color(tx, &code) };
+        let color = if is_blank { None } else { self.find_color(tx, code) };
         let status = if is_blank {
             CellStatus::Blank
         } else if color.is_some() {
@@ -391,6 +405,48 @@ impl JobService {
             |r| r.get(0),
         )?;
         self.touch_job(tx, job, JobStatus::Processing, Some(processed))
+    }
+
+    /// Worker batch path: apply many CELL_PROCESSED events in ONE transaction
+    /// (the per-cell single-transaction path serializes concurrent workers on
+    /// the db lock). Idempotency is preserved per (job, attempt, sequence).
+    /// `cells` rows are (row, col, code, confidence) in sequence order starting
+    /// at `base_sequence + 1`.
+    pub fn apply_cell_batch(
+        &self,
+        job_id: Uuid,
+        attempt: i64,
+        base_sequence: i64,
+        cells: &[(i64, i64, String, f64)],
+    ) -> Result<()> {
+        let mut conn = self.db.lock().unwrap();
+        let tx = conn.transaction()?;
+        let job = self.get_job_conn(&tx, job_id)?;
+        for (i, (row, col, code, conf)) in cells.iter().enumerate() {
+            let seq = base_sequence + i as i64 + 1;
+            let exists: Option<i64> = tx
+                .query_row(
+                    "SELECT 1 FROM recognition_job_event WHERE job_id = ?1 AND attempt = ?2 AND sequence = ?3",
+                    params![job_id.to_string(), attempt, seq],
+                    |r| r.get(0),
+                )
+                .optional()?;
+            if exists.is_some() {
+                continue; // already applied (idempotent replay)
+            }
+            self.append_event_tx(&tx, job_id, attempt, seq, EventType::CellProcessed,
+                serde_json::json!({"row": row, "col": col, "code": code, "confidence": conf}))?;
+            self.apply_cell_inner(&tx, &job, *row, *col, code, Some(*conf))?;
+        }
+        let processed: i64 = tx.query_row(
+            "SELECT COUNT(*) FROM recognition_job_cell WHERE job_id = ?1",
+            [job_id.to_string()],
+            |r| r.get(0),
+        )?;
+        self.touch_job(&tx, &job, JobStatus::Processing, Some(processed))?;
+        self.prune_cell_events(&tx, job_id)?;
+        tx.commit()?;
+        Ok(())
     }
 
     /// 008: JOB_SUCCEEDED → verify processed == total, atomically create blueprint.

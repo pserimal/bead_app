@@ -78,6 +78,9 @@ fn parity_with_python_reference() {
         reference.len()
     );
 
+    // load() default = BEAD_ORT_THREADS/4, matching the fixture generator's
+    // explicit 4-thread onnxruntime session (thread count changes LSTM
+    // reduction order).
     let mut model = OnnxModel::load(&artifact_dir()).unwrap();
     eprintln!("DBG loaded model: {}", model.artifact_id);
     let mard_codes = load_mard_codes();

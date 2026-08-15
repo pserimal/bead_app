@@ -47,11 +47,28 @@ pub struct OnnxModel {
     pub artifact_id: String,
 }
 
+/// Default intra-op threads for a standalone session (BEAD_ORT_THREADS
+/// overrides; the worker pool computes its own per-slot value).
+fn ort_threads() -> usize {
+    std::env::var("BEAD_ORT_THREADS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .filter(|n| *n >= 1 && *n <= 64)
+        .unwrap_or(4)
+}
+
 impl OnnxModel {
-    /// Load from an artifact dir (`model.onnx` + `manifest.json` +
+/// Load from an artifact dir (`model.onnx` + `manifest.json` +
     /// `charset.json` + optional `code_dict.json`), as written by
     /// `training/scripts/export_onnx.py`.
     pub fn load(artifact_dir: &Path) -> Result<Self> {
+        Self::load_with_threads(artifact_dir, ort_threads())
+    }
+
+    /// Load with an explicit intra-op thread count per session (used by the
+    /// worker pool so parallel jobs share the machine's cores instead of
+    /// each oversubscribing).
+    pub fn load_with_threads(artifact_dir: &Path, threads: usize) -> Result<Self> {
         let model_path = artifact_dir.join("model.onnx");
         if !model_path.exists() {
             bail!("model.onnx not found in {artifact_dir:?} (run export_onnx.py first)");
@@ -80,6 +97,8 @@ impl OnnxModel {
             }
         };
         let session = ort::session::Session::builder()?
+            .with_intra_threads(threads.clamp(1, 64))
+            .map_err(|e| anyhow::anyhow!("ort builder: {e}"))?
             .commit_from_file(&model_path)
             .context("onnxruntime failed to load model.onnx")?;
         let artifact_id = artifact_dir

@@ -10,7 +10,7 @@ Usage (repo root, bead-train env)::
 
     python local_server/tests/parity/gen_reference.py \
         --out .scratch/parity-fixtures \
-        --model artifacts/models/bean-mard-v10-2026-08-09T04-30-00Z/model.onnx \
+        --model artifacts/models/bean-mard-v12-2026-08-15T10-39-29Z/model.onnx \
         --sets training/samples/标注数据/1_标注结果_2026-07-29 \
                training/samples/标注数据/5_标注结果_2026-08-08 \
         --max-cells 128
@@ -49,7 +49,7 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--out", type=Path, default=DEFAULT_OUT)
     p.add_argument("--model", type=Path,
-                   default=REPO_ROOT / "artifacts/models/bean-mard-v10-2026-08-09T04-30-00Z/model.onnx")
+                   default=REPO_ROOT / "artifacts/models/bean-mard-v12-2026-08-15T10-39-29Z/model.onnx")
     p.add_argument("--sets", type=Path, nargs="+",
                    default=[REPO_ROOT / "training/samples/标注数据/1_标注结果_2026-07-29",
                             REPO_ROOT / "training/samples/标注数据/5_标注结果_2026-08-08"])
@@ -58,7 +58,12 @@ def main() -> None:
 
     from training.scripts.eval_acceptance import load_dir
 
-    session = ort.InferenceSession(str(args.model), providers=["CPUExecutionProvider"])
+    sess_opts = ort.SessionOptions()
+    # Explicit 4 intra-op threads: matches the Rust parity load() default so
+    # both sides share the same LSTM reduction order.
+    sess_opts.intra_op_num_threads = 4
+    sess_opts.inter_op_num_threads = 4
+    session = ort.InferenceSession(str(args.model), sess_options=sess_opts, providers=["CPUExecutionProvider"])
     art_dir = args.model.parent
     chars = json.loads((art_dir / "charset.json").read_text(encoding="utf-8"))["chars"]
     char_to_idx = {ch: i for i, ch in enumerate(chars)}

@@ -121,7 +121,7 @@ impl ModelPool {
             .ok()
             .and_then(|v| v.parse::<usize>().ok())
             .filter(|n| *n >= 1 && *n <= 64)
-            .unwrap_or_else(|| (cores / max_concurrent).clamp(1, 16));
+            .unwrap_or_else(|| (cores / max_concurrent).clamp(1, 4));
         let slots = (0..max_concurrent)
             .map(|_| Mutex::new(None))
             .collect::<Vec<_>>();

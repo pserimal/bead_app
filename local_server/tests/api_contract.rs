@@ -33,7 +33,7 @@ fn test_app() -> (Router, Arc<AppState>) {
         .unwrap();
     let state = Arc::new(AppState {
         service,
-        model: Arc::new(Mutex::new(None)),
+        model_pool: bead_local_server::api::ModelPool::new(std::env::temp_dir().join("bead-test-models")),
         mard_codes: vec!["H1".into(), "H2".into(), "H3".into()],
         uploads_dir: std::env::temp_dir().join("bead-test-uploads"),
         seed_version: version.into(),

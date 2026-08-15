@@ -81,8 +81,11 @@ fn main() {
         PathBuf::from("D:/projects/python/ai_dou/training/samples/标注数据/5_标注结果_2026-08-08"),
         PathBuf::from("D:/projects/python/ai_dou/training/samples/标注数据/corrections-fdaa77a1-2026-08-09"),
         PathBuf::from("D:/projects/python/ai_dou/training/samples/标注数据/4_标注结果_2026-08-08"),
+        PathBuf::from("D:/projects/python/ai_dou/training/samples/标注数据/corrections-b48348f1-2026-08-15-模糊图纸"),
     ];
 
+    // Match the Python reference numerics: all cores (thread count
+    // changes LSTM reduction order; production pool limits threads).
     let mut model = OnnxModel::load(&artifact).expect("model load failed");
     let chars = model.chars.clone();
     let char_to_idx = model.char_to_idx.clone();
@@ -154,16 +157,19 @@ fn main() {
         let bconf = blank_conf_sum / n_blank.max(1) as f64;
         let cconf = code_conf_sum / n_code.max(1) as f64;
         let name = set.file_name().unwrap().to_str().unwrap();
+        let name = if name.contains("模糊图纸") { "blur_real" } else { name };
         println!(
             "[{name}] n={} blank={blank_acc:.4} code={code_acc:.4} overall={overall:.4} bconf={bconf:.3} cconf={cconf:.3}",
             items.len()
         );
-        // Reference numbers (Python/ONNX 1.23.2, 2026-08-13 gate run).
+        // Reference numbers (Python/ONNX 1.23.2 gate run, 2026-08-15 — the
+        // annotation sets were extended with new real labels + blur_real).
         let (ref_blank, ref_code, ref_overall) = match name {
-            "1_标注结果_2026-07-29" => (0.0, 0.9903, 0.9903),
+            "1_标注结果_2026-07-29" => (0.0, 0.9835, 0.9833),
             "5_标注结果_2026-08-08" => (1.0, 1.0, 1.0),
             "corrections-fdaa77a1-2026-08-09" => (0.9459, 0.9957, 0.9797),
-            "4_标注结果_2026-08-08" => (0.9756, 0.9846, 0.9825),
+            "4_标注结果_2026-08-08" => (1.0, 0.8110, 0.8246),
+            "blur_real" => (1.0, 0.7255, 0.8074),
             _ => continue,
         };
         for (metric, val, refv) in [
