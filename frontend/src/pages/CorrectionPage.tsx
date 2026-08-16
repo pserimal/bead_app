@@ -137,10 +137,8 @@ export default function CorrectionPage() {
       const min = Math.min(r, g, b);
       if (max === min) return -1;
       const d = max - min;
-      let h = 0;
-      if (max === r) h = ((g - b) / d) % 6;
-      else if (max === g) h = (b - r) / d + 2;
-      else h = (r - g) / d + 4;
+      // if/else 链全覆盖，直接 const 三元（消除冗余初始赋值）
+      const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
       return h * 60;
     };
     return [...list].sort((a, b) => hue(a.hex) - hue(b.hex));
@@ -176,8 +174,7 @@ export default function CorrectionPage() {
     return swatches.find((s) => s.code === activeCode)?.hex ?? codeCells[0]?.color?.hex ?? null;
   }, [activeCode, swatches, codeCells]);
   // 双向窗口化：只渲染视口内 ±2 屏的格子，滚出视口即卸载（深翻页不堆积 DOM，移动端流畅）
-  // 固定网格列宽（CellThumb 56px + gap 8px），行高按 CellThumb 实际高度 + gap 估算，略保守（多渲染不遗漏）
-  const CELL_W = 64;
+  // 固定网格列宽（CellThumb 56px + gap 8px，见 gridCols），行高按 CellThumb 实际高度 + gap 估算，略保守（多渲染不遗漏）
   const CELL_H = 96;
   const WINDOW_BUFFER_SCREENS = 2;
   const [viewport, setViewport] = useState({ w: 0, h: 0, scrollTop: 0 });
@@ -204,10 +201,11 @@ export default function CorrectionPage() {
     lastScrollUpdateRef.current = now;
     setViewport((v) => (v.scrollTop === el.scrollTop ? v : { ...v, scrollTop: el.scrollTop }));
   }, []);
-  // 切组：滚动位置归零
+  // 切组：滚动位置归零。viewport 的 scrollTop 由程序化 scrollTop=0 触发的 scroll 事件自然更新
+  // （lastScrollUpdateRef 归零 → 100ms 节流立即放行），无需在 effect 里 setState
   useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = 0;
-    setViewport((v) => (v.scrollTop === 0 ? v : { ...v, scrollTop: 0 }));
+    lastScrollUpdateRef.current = 0;
   }, [activeCode]);
   // 窗口内格子：按网格行列计算可见区间（含上下各 2 屏缓冲）
   const renderedCells = useMemo(() => {

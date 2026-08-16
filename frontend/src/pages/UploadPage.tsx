@@ -65,10 +65,30 @@ export default function UploadPage() {
       .finally(() => setModelSwitching(false));
   }, [currentModel, toast]);
 
-  // 019：任务名称（必填，不允许留空提交）
-  const [jobName, setJobName] = useState('');
+  // 019：任务名称（必填，不允许留空提交）。裁剪页往返是全页导航，名称经 sessionStorage 持久化，
+  // 挂载时懒初始化恢复（与 pendingCrop 同模式）
+  const [jobName, setJobName] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('pendingJobName');
+      if (saved) {
+        sessionStorage.removeItem('pendingJobName');
+        return saved;
+      }
+    } catch {
+      /* ignore */
+    }
+    return '';
+  });
 
   const codeError = useMemoCodeError(codes);
+
+  function applyCropResult(c: CropRect, url: string, w?: number, h?: number, nextRows?: number, nextCols?: number) {
+    setCrop(c);
+    if (url !== imageUrl) setImageUrl(url);
+    if (w && h) setImageSize({ w, h });
+    if (nextRows != null && Number.isFinite(nextRows)) setRows(Math.max(1, Math.min(500, Math.round(nextRows))));
+    if (nextCols != null && Number.isFinite(nextCols)) setCols(Math.max(1, Math.min(500, Math.round(nextCols))));
+  }
 
   /* 从裁剪页返回：读取裁剪结果（location.state + sessionStorage 兜底） */
   useEffect(() => {
@@ -81,19 +101,12 @@ export default function UploadPage() {
       cols?: number;
     } | null;
     if (s?.crop && s.imageUrl) {
+      // 路由导航返回 → 恢复裁剪状态：响应外部系统（路由）变化的合法 effect 用途
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       applyCropResult(s.crop, s.imageUrl, s.imageW, s.imageH, s.rows, s.cols);
       return;
     }
     // sessionStorage 兜底（AnimatePresence 竞态时 state 可能未触发组件更新）
-    try {
-      const savedName = sessionStorage.getItem('pendingJobName');
-      if (savedName) {
-        setJobName(savedName);
-        sessionStorage.removeItem('pendingJobName');
-      }
-    } catch {
-      /* ignore */
-    }
     try {
       const raw = sessionStorage.getItem('pendingCrop');
       if (raw) {
@@ -110,7 +123,7 @@ export default function UploadPage() {
           sessionStorage.removeItem('pendingCrop');
         }
       }
-    } catch (e) { /* ignore */ }
+    } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
 
@@ -141,7 +154,7 @@ export default function UploadPage() {
       setImageUrl(URL.createObjectURL(file));
     });
     return () => { active = false; };
-  }, [imageFile, imageUrl]);
+  }, [imageFile, imageUrl, toast]);
 
   function onFileSelected(file: File) {
     if (file.size > MAX_UPLOAD_BYTES) {

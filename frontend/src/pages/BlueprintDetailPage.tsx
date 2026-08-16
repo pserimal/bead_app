@@ -135,10 +135,8 @@ export default function BlueprintDetailPage() {
       const min = Math.min(r, g, b);
       if (max === min) return -1;
       const d = max - min;
-      let h = 0;
-      if (max === r) h = ((g - b) / d) % 6;
-      else if (max === g) h = (b - r) / d + 2;
-      else h = (r - g) / d + 4;
+      // if/else 链全覆盖，直接 const 三元（消除冗余初始赋值）
+      const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
       return h * 60;
     };
     return validCodeList
