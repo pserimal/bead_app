@@ -86,6 +86,15 @@ export default function UploadPage() {
     }
     // sessionStorage 兜底（AnimatePresence 竞态时 state 可能未触发组件更新）
     try {
+      const savedName = sessionStorage.getItem('pendingJobName');
+      if (savedName) {
+        setJobName(savedName);
+        sessionStorage.removeItem('pendingJobName');
+      }
+    } catch {
+      /* ignore */
+    }
+    try {
       const raw = sessionStorage.getItem('pendingCrop');
       if (raw) {
         const stored = JSON.parse(raw) as {
@@ -152,6 +161,8 @@ export default function UploadPage() {
       setImageSize({ w, h });
       setCrop(null); // 新图 → 去裁剪页重新框选
       // 跳到裁剪页
+      // 全导航会卸载本页：先持久化任务名称，回来时恢复（与 pendingCrop 同模式）
+      sessionStorage.setItem('pendingJobName', jobName.trim());
       navigate('/crop', {
         state: { imageUrl: url, imageW: w, imageH: h },
       });
@@ -162,6 +173,8 @@ export default function UploadPage() {
   /* 再次调整 → 带当前裁剪结果进入裁剪页 */
   function handleRecrop() {
     if (!imageUrl || !imageSize) return;
+    // 全导航会卸载本页：先持久化任务名称，回来时恢复
+    sessionStorage.setItem('pendingJobName', jobName.trim());
     navigate('/crop', {
       state: {
         imageUrl,
