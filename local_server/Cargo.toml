@@ -1,6 +1,6 @@
 [package]
 name = "bead-local-server"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "ai_dou local LAN server — axum API + SQLite + ONNX CRNN OCR (Rust runtime, mirrors the Kotlin cloud server contract)"
 
