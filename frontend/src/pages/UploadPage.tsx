@@ -127,14 +127,6 @@ export default function UploadPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
 
-  function applyCropResult(c: CropRect, url: string, w?: number, h?: number, nextRows?: number, nextCols?: number) {
-    setCrop(c);
-    if (url !== imageUrl) setImageUrl(url);
-    if (w && h) setImageSize({ w, h });
-    if (nextRows != null && Number.isFinite(nextRows)) setRows(Math.max(1, Math.min(500, Math.round(nextRows))));
-    if (nextCols != null && Number.isFinite(nextCols)) setCols(Math.max(1, Math.min(500, Math.round(nextCols))));
-  }
-
   /* The crop page intentionally performs a full navigation. Restore the File
      from IndexedDB after that navigation; blob URLs alone are not enough for
      the multipart recognition request. */
