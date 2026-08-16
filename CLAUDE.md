@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-拼豆助手 (ai_dou) — Perler bead pattern recognition app. Users upload a photo of a bead board, crop the grid region, set rows/cols; the system OCRs the alphanumeric bead codes printed in each cell, looks them up in a bead color library, and produces a read-only bead blueprint.
+AI拼豆助手 (ai_dou) — Perler bead pattern recognition app. Users upload a photo of a bead board, crop the grid region, set rows/cols; the system OCRs the alphanumeric bead codes printed in each cell, looks them up in a bead color library, and produces a read-only bead blueprint.
 
 **2026-08-15: the Kotlin cloud backend (`server/` Spring Boot + `image_service/` Python FastAPI) was removed. The runtime is now a single Rust binary.**
 

@@ -1,4 +1,4 @@
-# Project Context — ai_dou (拼豆助手)
+# Project Context — ai_dou (AI拼豆助手)
 
 > Domain glossary. Implementation details live elsewhere (AGENTS.md, training/docs/PLAN.md).
 > This file only defines **terms** and **ubiquitous language** that the team uses.

@@ -5,7 +5,7 @@
 
 ## OVERVIEW
 
-拼豆助手 (ai_dou) — Perler bead pattern recognition app. Users upload images of bead boards, crop the grid region, set rows/cols; the system OCRs alphanumeric bead codes per cell and generates read-only bead blueprints with color lookup from an official multi-brand bead color library.
+AI拼豆助手 (ai_dou) — Perler bead pattern recognition app. Users upload images of bead boards, crop the grid region, set rows/cols; the system OCRs alphanumeric bead codes per cell and generates read-only bead blueprints with color lookup from an official multi-brand bead color library.
 
 **2026-08-15 架构决策：Kotlin 后端已删除，仅保留 Rust 运行时。** 原 `server/`（Spring Boot + Kotlin，云端 PostgreSQL + Python image_service 事件协议）已整体移除；本地运行与部署统一由 `local_server/`（Rust 单二进制：axum API + SQLite + ONNX CRNN 推理；前端以独立 `dist/` 目录磁盘托管，替换即生效，无需重编）承担。训练管线（Python）保留，仅用于开发期训练/评估/导出。
 
