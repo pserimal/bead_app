@@ -31,6 +31,7 @@ ai_dou/
 │   ├── src/bin/bench_acceptance.rs  # Rust 端验收门禁（4 真实集参照值硬编码）
 │   ├── resources/default_colors.json  # mard 291 色运行时种子（committed）
 │   ├── build-release.bat   # 本地打包：构建 + 自包含 release/ + 打 zip（不含模型，含 README/VERSION）
+│   ├── preflight-release.bat  # 发布前检查：前端 build+test + Rust build+test（全绿才能打 tag）
 │   ├── start-local.bat     # 一键启动：后台无窗口 + 自动开浏览器 + 日志落盘
 │   └── stop-local.bat      # 按端口杀进程
 ├── .github/workflows/release.yml  # 发布流水线：tag（v*）触发 → 构建 zip → GitHub Release
@@ -146,6 +147,9 @@ cp -r dist/* ../local_server/release/dist/   # 可选：或直接跑下面的 bu
 # 本地一条命令出包：重编 exe + 同步 dist + 自包含 release/ + 打 zip（不含模型，含 README/VERSION）
 cd local_server && cmd //c build-release.bat
 # 产物：local_server/bead-local-server-v0.1.0.zip（解压任意目录 → 按 README 装模型 → 双击 start-local.bat）
+
+# 发布前检查（必须全绿才能打 tag——前端构建+测试 + Rust release 构建+测试）：
+cd local_server && cmd //c preflight-release.bat
 
 # GitHub 发布（推荐）：打 tag 即发布，流水线自动出包 + GitHub Release
 # tag 即版本（如 v0.1.0）；产物在 Release 页 / Actions artifact（zip 不含模型，见 README 安装说明）
