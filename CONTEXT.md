@@ -33,14 +33,33 @@ _Avoid_: assuming codes are limited to any prefix set (the library spans 16+ bra
 The bead code as printed inside a diagram cell — the library code with any brand-prefix stripped (`H07`, not `COCO-H07`). The library keeps prefixed codes for uniqueness (DB PK); `-` is outside the OCR charset.
 
 **cell**:
-One square region of a board grid, containing zero or one bead code. After OCR, a cell carries one of three statuses: **Mapped** (code recognized and found in the runtime seed), **Unmapped** (recognized, not in the seed), **Blank** (no bead).
+One square region of a board grid, containing zero or one bead code, corresponding to one bead position on a pegboard. After OCR, a cell carries one of three statuses: **Mapped** (code recognized and found in the runtime seed), **Unmapped** (recognized, not in the seed), **Blank** (no bead).
 
-**board** *(aka 拼豆板)*:
-The physical Perler bead board the user photographs, or the photo of it. Not the digital pattern — see *pattern*.
-_Avoid_: using "board" for the digital diagram (that is a pattern)
+**board** *(aka 拼豆图纸, bead board diagram)*:
+The bead pattern the user uploads — a grid of cells, each printing a bead code. May be a digitally-generated image or a photo of a printed pattern. Training-side *synthetic boards* are the digital form of this. **Not** a pegboard (实物拼豆板) — see *pegboard*.
+_Avoid_: conflating board with pegboard (拼豆板): in craft jargon 拼豆板 is the plastic pegboard, in this project board is the pattern image.
 
-**pattern** *(aka 图纸, bead board diagram)*:
-The digitally-rendered Perler pattern: a pixel-aligned grid of cells, each showing a render_code. Always synthetic in training (never a photograph); in the app, the blueprint canvas is the pattern. (CONTEXT.md previously called this "board" — renamed so the physical object and the digital diagram are distinct terms.)
+**pattern** *(aka 图纸, fuse-bead pattern)*:
+The pixel-grid pattern of a bead project — every cell corresponds to one bead position. In craft jargon a pattern is the printable per-bead grid (usually with color codes); in this app the blueprint canvas is a pattern. Training-side it is always synthetic (never a photograph); user uploads are photos of printed patterns or digital images.
+
+## Craft Vocabulary (拼豆手工领域, user-side language)
+
+**bead** *(豆)*:
+A single plastic cylinder (5mm Midi or 2.6mm Mini) placed on a pegboard peg and fused by ironing. One bead occupies exactly one cell on a pattern — the cell is the bead's position.
+_Avoid_: using "bead" for a pattern cell (that is a *cell*); the OCR recognizes cells, not beads.
+
+**pegboard** *(拼豆板 / 底板)*:
+The plastic board with regularly spaced pegs on which beads are placed before ironing; 29×29 squares can be joined into larger boards. In craft jargon this is "拼豆板" — do **not** use it to mean this project's *board* (the pattern image).
+
+**color card** *(色卡)*:
+A brand's official bead color table (brand + code + color value). The color library is a machine-readable snapshot of color cards.
+_Avoid_: color card (the brand's published table) vs color library (our data) — different things.
+
+**bead list** *(材料清单 / 用豆清单)*:
+Per-code bead count for a pattern (e.g. H7 × 5,240 beads) — what a maker buys and prepares. A blueprint's cells carry exactly the data to derive one.
+
+**fusing** *(熨烫 / 烫豆)*:
+The step that fuses arranged beads into a finished piece: cover with baking paper, iron, cool, peel off the pegboard. The craft as a whole is fuse-bead art (拼豆); this project only handles the pattern, not the physical beads.
 
 ## Color Library
 
