@@ -84,7 +84,7 @@ build/
 
 # ── 新架构（2026-08 Rust 重写）──
 
-# 模型 artifact：权重不入库（library.json 快照提交，model.pt/onnx 由发布脚本生成）
+# 模型 artifact：权重不入库（library.json 快照提交；model.pt/onnx 由用户按 README 从网盘分发）
 artifacts/models/**/model.pt
 artifacts/models/**/model.onnx
 artifacts/models/current
