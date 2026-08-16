@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { BlueprintDetail } from '../types/api';
-import { AXIS_GUTTER } from '../lib/boardCanvas';
 import type { HoverCell } from '../lib/boardCanvas';
 import { useBoardViewer } from '../hooks/useBoardViewer';
 

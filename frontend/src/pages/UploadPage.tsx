@@ -59,9 +59,9 @@ export default function UploadPage() {
     activateModel(id)
       .then((r) => {
         setCurrentModel(r.current);
-        toast?.show?.('识别模型已切换');
+        toast('识别模型已切换');
       })
-      .catch(() => toast?.show?.('模型切换失败'))
+      .catch(() => toast('模型切换失败'))
       .finally(() => setModelSwitching(false));
   }, [currentModel, toast]);
 

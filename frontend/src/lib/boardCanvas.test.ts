@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { AXIS_GUTTER, drawBoard, drawBoardViewport } from './boardCanvas';
+import { drawBoard, drawBoardViewport } from './boardCanvas';
 import type { BlueprintCellDto } from '../types/api';
 
 /**
@@ -52,7 +52,7 @@ function installFakeGetContext(): WeakMap<HTMLCanvasElement, FakeCtx> {
   const ctxFor = new WeakMap<HTMLCanvasElement, FakeCtx>();
   HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement) {
     let ctx = ctxFor.get(this);
-    if (ctx) return ctx;
+    if (ctx) return ctx as unknown as CanvasRenderingContext2D;
     ctx = {
       ops: [],
       fillStyle: '',
@@ -75,8 +75,8 @@ function installFakeGetContext(): WeakMap<HTMLCanvasElement, FakeCtx> {
     }
     ctx.measureText = (text: string) => ({ width: text.length * 6 });
     ctxFor.set(this, ctx);
-    return ctx;
-  };
+    return ctx as unknown as CanvasRenderingContext2D;
+  } as unknown as typeof HTMLCanvasElement.prototype.getContext;
   return ctxFor;
 }
 

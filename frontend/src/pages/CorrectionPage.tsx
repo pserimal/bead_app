@@ -19,7 +19,7 @@ import {
   rangeKeys,
   toggleKeys,
 } from '../lib/correctionModel';
-import type { BlueprintCellDto, CellCorrectionUpdate, ColorDto, CropBoxDto } from '../types/api';
+import type { BlueprintCellDto, CellCorrectionUpdate, ColorDto } from '../types/api';
 
 // 置信度档位：标记 conf < 档位的 MAPPED/BLANK 格（UNMAPPED 无条件进列表）
 const THRESHOLDS = [0.9, 0.8, 0.7] as const;
