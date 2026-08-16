@@ -23,14 +23,6 @@ if not defined BEAD_COLORS_PATH set "BEAD_COLORS_PATH=%ROOT%data\default_colors.
 if not defined BEAD_LIBRARY_PATH set "BEAD_LIBRARY_PATH=%ROOT%data\library.json"
 if not defined BEAD_ARTIFACT_DIR set "BEAD_ARTIFACT_DIR=%ROOT%models\bean-mard-v12-2026-08-15T10-39-29Z"
 
-rem ── 防火墙放行（局域网访问必需；非管理员会失败，忽略并提示）──
-netsh advfirewall firewall delete rule name="bead-local-server" >nul 2>&1
-netsh advfirewall firewall add rule name="bead-local-server" dir=in action=allow protocol=TCP localport=%BEAD_PORT% >nul 2>&1
-if errorlevel 1 (
-    echo [start] 提示：未能自动放行防火墙（%BEAD_PORT%），局域网其他设备可能无法访问。
-    echo [start] 可手动运行（管理员）：netsh advfirewall firewall add rule name="bead-local-server" dir=in action=allow protocol=TCP localport=%BEAD_PORT%
-)
-
 echo [start] 正在后台启动 bead-local-server（绑定 0.0.0.0，端口 %BEAD_PORT%）...
 
 rem ── 后台无窗口启动（日志落盘，窗口不驻留）──

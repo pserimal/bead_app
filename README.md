@@ -71,7 +71,7 @@
 | 双击后浏览器打不开页面 | 看 `data\server.err.log` 的报错；最常见原因是**模型没装好**（回到安装第 2 步检查目录结构） |
 | 识别结果大量是 UNMAPPED（灰色斜线格） | 图纸照片不够清晰/反光/拍歪，换更清晰的图重试；少量格子可在校正页手动改 |
 | 想换一个模型版本 | `models` 目录可以同时放多个版本；改 `models\model-current.txt` 里的目录名，重启即可 |
-| 手机访问不了 | 确认手机与电脑在同一局域网（同一 WiFi）；如仍不行检查系统防火墙是否放行 5173 端口（启动脚本已尝试自动放行） |
+| 手机访问不了 | 确认手机与电脑在同一局域网（同一 WiFi）；如仍不行，可能是**系统防火墙拦截**了 5173 端口——需要你自行决定是否放行（以**管理员身份**打开命令行运行：`netsh advfirewall firewall add rule name="bead-local-server" dir=in action=allow protocol=TCP localport=5173`；不再需要时可运行 delete rule 删除） |
 | 数据存在哪里 | 全部在本机：数据库 `data\bead-local.db`、上传图片 `uploads\`，不联网、不传云端 |
 
 ---
