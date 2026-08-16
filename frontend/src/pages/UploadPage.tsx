@@ -309,7 +309,14 @@ export default function UploadPage() {
             <div
               className="flex flex-col items-center justify-center py-16 cursor-pointer rounded-lg"
               style={{ border: '2px dashed var(--color-border)' }}
-              onClick={() => fileRef.current?.click()}
+              onClick={() => {
+                // 任务名称必填：未填写不允许选图/上传
+                if (!jobName.trim()) {
+                  toast('请先填写任务名称，再选择图片', 'error');
+                  return;
+                }
+                fileRef.current?.click();
+              }}
             >
               <div style={{ fontSize: 40 }}>🖼️</div>
               <p style={{ marginTop: 12, fontWeight: 500 }}>点击选择图片（JPEG/PNG，≤30MB）</p>
