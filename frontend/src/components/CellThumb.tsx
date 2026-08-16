@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import type { BlueprintCellDto, CropBoxDto } from '../types/api';
 import { cellCropRect } from '../lib/correctionModel';
 
@@ -17,6 +18,7 @@ export default function CellThumb({
   checked,
   onToggle,
   onShiftToggle,
+  onContextMenu,
   onEdit,
 }: {
   cell: BlueprintCellDto;
@@ -27,6 +29,7 @@ export default function CellThumb({
   checked: boolean;
   onToggle: () => void;
   onShiftToggle: () => void;
+  onContextMenu: (e: ReactMouseEvent) => void;
   onEdit: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -71,7 +74,7 @@ export default function CellThumb({
 
   return (
     <div className="flex flex-col items-center gap-0.5 select-none" title={`行 ${cell.row + 1} · 列 ${cell.col + 1} · 识别 ${cell.code}${corrected ? ` → 修正 ${cell.correctedCode}` : ''}`}>
-      <div className="relative block cursor-pointer" onClick={onEdit} role="button" aria-label={`修改格子 ${cell.row + 1},${cell.col + 1}`}>
+      <div className="relative block cursor-pointer" onClick={onEdit} onContextMenu={onContextMenu} role="button" aria-label={`修改格子 ${cell.row + 1},${cell.col + 1}`}>
           <span
             className="block rounded border overflow-hidden transition-shadow hover:shadow-[var(--shadow-sm)]"
             style={{

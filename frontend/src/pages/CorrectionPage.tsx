@@ -39,6 +39,8 @@ export default function CorrectionPage() {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editor, setEditor] = useState<{ keys: string[] } | null>(null);
+  // 右键菜单：{ 屏幕坐标, 菜单操作的格子 keys }
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; keys: string[] } | null>(null);
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [imageError, setImageError] = useState(false);
   // 两栏布局：左栏选中编码 + 右栏该编码的全部格子（不分页，缩略图懒裁剪）
@@ -235,6 +237,31 @@ export default function CorrectionPage() {
     if (keys.length === 0) return;
     setEditor({ keys });
   }, []);
+
+  /** 右键格子：已选中 → 菜单操作整个选中集；未选中 → 先只选该格 */
+  const handleCellContextMenu = useCallback((e: React.MouseEvent, key: string) => {
+    e.preventDefault();
+    const inSelection = selected.has(key);
+    const keys = inSelection ? [...selected] : [key];
+    if (!inSelection) setSelected(new Set([key]));
+    const MENU_W = 160;
+    const MENU_H = 132;
+    setCtxMenu({
+      x: Math.max(4, Math.min(e.clientX, window.innerWidth - MENU_W - 8)),
+      y: Math.max(4, Math.min(e.clientY, window.innerHeight - MENU_H - 8)),
+      keys,
+    });
+  }, [selected]);
+
+  // 右键菜单 Esc 关闭
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCtxMenu(null);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [ctxMenu]);
 
   const confirmSet = useCallback(
     async (code: string) => {
@@ -469,6 +496,7 @@ export default function CorrectionPage() {
                         checked={selected.has(`${cell.row}:${cell.col}`)}
                         onToggle={() => toggleCell(`${cell.row}:${cell.col}`)}
                         onShiftToggle={() => shiftSelect(`${cell.row}:${cell.col}`)}
+                        onContextMenu={(e) => handleCellContextMenu(e, `${cell.row}:${cell.col}`)}
                         onEdit={() => openEditor([`${cell.row}:${cell.col}`])}
                       />
                     ))}
@@ -495,6 +523,62 @@ export default function CorrectionPage() {
           <button type="button" onClick={() => openEditor(selectedKeys)} style={actionBtn('var(--color-success)')}>恢复原码</button>
           <button type="button" onClick={() => setSelected(new Set())} style={actionBtn('var(--color-text-muted)')}>清除全部</button>
         </div>
+      )}
+
+      {/* 右键菜单（选中格子上右键：设为编码/恢复原码/清除选择） */}
+      {ctxMenu && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setCtxMenu(null)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setCtxMenu(null);
+            }}
+          />
+          <div
+            className="fixed z-50 rounded-lg overflow-hidden shadow-[var(--shadow-xl)]"
+            style={{ left: ctxMenu.x, top: ctxMenu.y, minWidth: 150, background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}
+            onContextMenu={(e) => e.preventDefault()}
+          >
+            <p className="px-4 pt-2 pb-1 text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              已选 <b style={{ color: 'var(--color-text)' }}>{ctxMenu.keys.length}</b> 格
+            </p>
+            <button
+              type="button"
+              className="block w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-surface-hover)]"
+              style={{ color: 'var(--color-text)' }}
+              onClick={() => {
+                openEditor(ctxMenu.keys);
+                setCtxMenu(null);
+              }}
+            >
+              设为编码…
+            </button>
+            <button
+              type="button"
+              className="block w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-surface-hover)]"
+              style={{ color: 'var(--color-text)' }}
+              onClick={() => {
+                openEditor(ctxMenu.keys);
+                setCtxMenu(null);
+              }}
+            >
+              恢复原码
+            </button>
+            <button
+              type="button"
+              className="block w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-surface-hover)]"
+              style={{ color: 'var(--color-text-muted)' }}
+              onClick={() => {
+                setSelected(new Set());
+                setCtxMenu(null);
+              }}
+            >
+              清除选择
+            </button>
+          </div>
+        </>
       )}
 
       {/* 编辑弹窗 */}

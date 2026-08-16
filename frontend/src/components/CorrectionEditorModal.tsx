@@ -99,9 +99,15 @@ export default function CorrectionEditorModal({
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  // 挂载后确保输入框不聚焦（移动端：打开弹窗不自动呼出输入法）
+  // 挂载后聚焦输入框：桌面（细指针）打开即可直接输入；触屏（粗指针）不自动聚焦（避免呼出输入法）
   useEffect(() => {
-    inputRef.current?.blur();
+    const input = inputRef.current;
+    if (!input) return;
+    if (window.matchMedia?.('(pointer: coarse)').matches) {
+      input.blur();
+    } else {
+      input.focus();
+    }
   }, []);
 
   // 输入法弹出（visualViewport 变小）时压缩弹窗高度：内容不超出 → 无内部滚动条
