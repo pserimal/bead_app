@@ -58,6 +58,31 @@ const REDRAW_DEBOUNCE_MS = 150;
 const FULL_BOARD_MAX_DIM = 4096;
 const FULL_BOARD_MAX_MP = 24;
 
+/**
+ * pan 边界约束：板子与视口始终有交集——大板（bw>vw）贴边不能拖出，小板（bw≤vw）完全可见滑移。
+ * 公式：板子左缘 canvasLeft = vw/2 + panX − bw/2，交集约束 canvasLeft ∈ [min(0,vw−bw), max(0,vw−bw)]。
+ */
+export function clampPan(
+  panX: number,
+  panY: number,
+  viewportW: number,
+  viewportH: number,
+  boardW: number,
+  boardH: number,
+  scale: number,
+): { panX: number; panY: number } {
+  const bw = boardW * scale;
+  const bh = boardH * scale;
+  const loX = Math.min(0, viewportW - bw) - (viewportW - bw) / 2;
+  const hiX = Math.max(0, viewportW - bw) - (viewportW - bw) / 2;
+  const loY = Math.min(0, viewportH - bh) - (viewportH - bh) / 2;
+  const hiY = Math.max(0, viewportH - bh) - (viewportH - bh) / 2;
+  return {
+    panX: Math.min(hiX, Math.max(loX, panX)),
+    panY: Math.min(hiY, Math.max(loY, panY)),
+  };
+}
+
 interface PointerDrag {
   pointerId: number;
   startX: number;
@@ -188,24 +213,42 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
     const anchorLocalX = anchorX - rect.left - rect.width / 2;
     const anchorLocalY = anchorY - rect.top - rect.height / 2;
     const ratio = scale / current.scale;
+    const bounded = clampPan(
+      anchorLocalX - (anchorLocalX - current.panX) * ratio,
+      anchorLocalY - (anchorLocalY - current.panY) * ratio,
+      rect.width,
+      rect.height,
+      boardWidth,
+      boardHeight,
+      scale,
+    );
     const next = {
       scale,
-      panX: anchorLocalX - (anchorLocalX - current.panX) * ratio,
-      panY: anchorLocalY - (anchorLocalY - current.panY) * ratio,
+      panX: bounded.panX,
+      panY: bounded.panY,
     };
     viewRef.current = next;
     setView(next);
-  }, []);
+  }, [boardHeight, boardWidth]);
 
   const zoomBy = useCallback((factor: number) => {
     setView((previous) => {
       const scale = clampZoom(previous.scale * factor);
       const ratio = scale / previous.scale;
-      const next = { scale, panX: previous.panX * ratio, panY: previous.panY * ratio };
+      const bounded = clampPan(
+        previous.panX * ratio,
+        previous.panY * ratio,
+        viewportSize.width,
+        viewportSize.height,
+        boardWidth,
+        boardHeight,
+        scale,
+      );
+      const next = { scale, panX: bounded.panX, panY: bounded.panY };
       viewRef.current = next;
       return next;
     });
-  }, []);
+  }, [boardHeight, boardWidth, viewportSize.height, viewportSize.width]);
 
   /** 100%：scale 归 1、pan 归零 */
   const resetView = useCallback(() => {
@@ -369,10 +412,19 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
           const ratio = scale / current.scale;
           const midX = (a.x + b.x) / 2 - rect.left - rect.width / 2;
           const midY = (a.y + b.y) / 2 - rect.top - rect.height / 2;
+          const bounded = clampPan(
+            midX - (midX - current.panX) * ratio,
+            midY - (midY - current.panY) * ratio,
+            rect.width,
+            rect.height,
+            boardWidth,
+            boardHeight,
+            scale,
+          );
           const next = {
             scale,
-            panX: midX - (midX - current.panX) * ratio,
-            panY: midY - (midY - current.panY) * ratio,
+            panX: bounded.panX,
+            panY: bounded.panY,
           };
           viewRef.current = next;
           applyTransform(next.panX, next.panY, next.scale);
@@ -387,11 +439,25 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
       if (drag && drag.pointerId === event.pointerId) {
         const moved = Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY);
         if (moved < TAP_SLOP) return;
+        const scale = viewRef.current.scale;
+        const rect = viewport.getBoundingClientRect();
+        const bounded = clampPan(
+          drag.startPanX + event.clientX - drag.startX,
+          drag.startPanY + event.clientY - drag.startY,
+          rect.width,
+          rect.height,
+          boardWidth,
+          boardHeight,
+          scale,
+        );
         const next = {
-          scale: viewRef.current.scale,
-          panX: drag.startPanX + event.clientX - drag.startX,
-          panY: drag.startPanY + event.clientY - drag.startY,
+          scale,
+          panX: bounded.panX,
+          panY: bounded.panY,
         };
+        // 已到边界：不再更新 transform / 重绘
+        const current = viewRef.current;
+        if (next.panX === current.panX && next.panY === current.panY && next.scale === current.scale) return;
         viewRef.current = next;
         applyTransform(next.panX, next.panY, next.scale);
         if (viewportModeRef.current) scheduleViewportRedraw();
@@ -471,7 +537,7 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
       viewport.removeEventListener('wheel', onWheel);
       viewport.removeEventListener('dblclick', onDoubleClick);
     };
-  }, [applyTransform, cellAt, scheduleViewportRedraw, zoomAt]);
+  }, [applyTransform, boardHeight, boardWidth, cellAt, scheduleViewportRedraw, zoomAt]);
 
   return useMemo(
     () => ({
