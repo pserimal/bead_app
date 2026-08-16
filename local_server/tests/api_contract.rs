@@ -3,7 +3,7 @@
 //! and the OCR worker disabled (events are delivered manually, exactly like
 //! the Kotlin tests drive the internal callback endpoint).
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use axum::body::Body;
 use axum::http::{header, Method, Request, StatusCode};
@@ -55,11 +55,11 @@ async fn send(app: &Router, req: Request<Body>) -> (StatusCode, Value) {
     (status, json)
 }
 
-fn get(app: &Router, path: &str) -> Request<Body> {
+fn get(_app: &Router, path: &str) -> Request<Body> {
     Request::builder().uri(path).body(Body::empty()).unwrap()
 }
 
-fn patch_json(app: &Router, path: &str, body: &str) -> Request<Body> {
+fn patch_json(_app: &Router, path: &str, body: &str) -> Request<Body> {
     Request::builder()
         .method(Method::PATCH)
         .uri(path)
@@ -68,7 +68,7 @@ fn patch_json(app: &Router, path: &str, body: &str) -> Request<Body> {
         .unwrap()
 }
 
-fn post_json(app: &Router, path: &str, body: &str) -> Request<Body> {
+fn post_json(_app: &Router, path: &str, body: &str) -> Request<Body> {
     Request::builder()
         .method(Method::POST)
         .uri(path)
@@ -117,34 +117,32 @@ async fn create_job(app: &Router) -> Uuid {
     Uuid::parse_str(body["id"].as_str().unwrap()).unwrap()
 }
 
-async fn post_cell(app: &Router, id: Uuid, seq: i64, row: i64, col: i64, code: &str, conf: Option<f64>) {
-    let mut payload = format!(r#"{{"row":{row},"col":{col},"code":"{code}""#);
-    if let Some(c) = conf {
-        payload.push_str(&format!(r#","confidence":{c}"#));
-    }
-    payload.push('}');
-    let ev = format!(
-        r#"{{"jobId":"{id}","attempt":0,"sequence":{seq},"type":"CELL_PROCESSED","payload":{payload}}}"#
-    );
-    let (status, _) = send(app, post_json(app, &format!("/internal/jobs/{id}/events"), &ev)).await;
-    assert_eq!(status, StatusCode::OK);
+/// Feed cells directly through the service (the /internal event endpoint is
+/// gone; workers use the same batched path).
+fn feed_cells(state: &Arc<AppState>, id: Uuid, cells: &[(i64, i64, &str, Option<f64>)]) {
+    let mapped: Vec<(i64, i64, String, f64)> = cells
+        .iter()
+        .map(|(r, c, code, conf)| (*r, *c, code.to_string(), conf.unwrap_or(0.5)))
+        .collect();
+    state
+        .service
+        .apply_cell_batch(id, &mapped, mapped.len() as i64)
+        .unwrap();
 }
 
-async fn succeed_job(app: &Router, id: Uuid) {
-    let ev = format!(
-        r#"{{"jobId":"{id}","attempt":0,"sequence":99,"type":"JOB_SUCCEEDED","payload":{{"processedCells":4}}}}"#
-    );
-    let (status, _) = send(app, post_json(app, &format!("/internal/jobs/{id}/events"), &ev)).await;
-    assert_eq!(status, StatusCode::OK);
+fn succeed_job(state: &Arc<AppState>, id: Uuid) {
+    state.service.complete_job(id).unwrap();
 }
 
-async fn complete_blueprint(app: &Router) -> Uuid {
+async fn complete_blueprint(app: &Router, state: &Arc<AppState>) -> Uuid {
     let id = create_job(app).await;
-    post_cell(app, id, 2, 0, 0, "H1", Some(0.87)).await;
-    post_cell(app, id, 3, 0, 1, "H2", Some(0.99)).await;
-    post_cell(app, id, 4, 1, 0, "Z99", Some(0.31)).await; // UNMAPPED
-    post_cell(app, id, 5, 1, 1, "H1", Some(0.95)).await;
-    succeed_job(app, id).await;
+    feed_cells(state, id, &[
+        (0, 0, "H1", Some(0.87)),
+        (0, 1, "H2", Some(0.99)),
+        (1, 0, "Z99", Some(0.31)), // UNMAPPED
+        (1, 1, "H1", Some(0.95)),
+    ]);
+    succeed_job(state, id);
     let (_, body) = send(app, get(app, &format!("/api/v1/jobs/{id}"))).await;
     Uuid::parse_str(body["blueprintId"].as_str().unwrap()).unwrap()
 }
@@ -184,42 +182,16 @@ async fn job_list_pagination_and_status_filter() {
 }
 
 #[tokio::test]
-async fn event_stream_ordered_subresource() {
-    let (app, _) = test_app();
-    let id = create_job(&app).await;
-    let (status, body) = send(&app, get(&app, &format!("/api/v1/jobs/{id}/events"))).await;
-    assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["items"].as_array().unwrap().len(), 1);
-    assert_eq!(body["items"][0]["type"], "JOB_STARTED");
-    assert_eq!(body["items"][0]["sequence"], 0);
-}
-
-#[tokio::test]
-async fn cell_event_idempotent_and_drives_progress() {
-    let (app, _) = test_app();
-    let id = create_job(&app).await;
-    let ev = r#"{"jobId":"%ID%","attempt":0,"sequence":2,"type":"CELL_PROCESSED","payload":{"row":0,"col":0,"code":"H1"}}"#.replace("%ID%", &id.to_string());
-    let (status, body) = send(&app, post_json(&app, &format!("/internal/jobs/{id}/events"), &ev)).await;
-    assert_eq!(status, StatusCode::OK);
-    assert_eq!(body["applied"], true);
-
-    let (_, body) = send(&app, post_json(&app, &format!("/internal/jobs/{id}/events"), &ev)).await;
-    assert_eq!(body["applied"], false);
-
-    let (_, body) = send(&app, get(&app, &format!("/api/v1/jobs/{id}"))).await;
-    assert_eq!(body["processedCells"], 1);
-    assert_eq!(body["status"], "PROCESSING");
-}
-
-#[tokio::test]
 async fn succeeded_creates_blueprint_atomically() {
-    let (app, _) = test_app();
+    let (app, state) = test_app();
     let id = create_job(&app).await;
-    post_cell(&app, id, 2, 0, 0, "H1", None).await;
-    post_cell(&app, id, 3, 0, 1, "H2", None).await;
-    post_cell(&app, id, 4, 1, 0, "Z99", None).await; // UNMAPPED
-    post_cell(&app, id, 5, 1, 1, "H3", None).await;
-    succeed_job(&app, id).await;
+    feed_cells(&state, id, &[
+        (0, 0, "H1", None),
+        (0, 1, "H2", None),
+        (1, 0, "Z99", None), // UNMAPPED
+        (1, 1, "H3", None),
+    ]);
+    succeed_job(&state, id);
 
     let (_, body) = send(&app, get(&app, &format!("/api/v1/jobs/{id}"))).await;
     assert_eq!(body["status"], "SUCCEEDED");
@@ -235,13 +207,15 @@ async fn succeeded_creates_blueprint_atomically() {
 
 #[tokio::test]
 async fn blank_cell_is_recognized_empty_state() {
-    let (app, _) = test_app();
+    let (app, state) = test_app();
     let id = create_job(&app).await;
-    post_cell(&app, id, 2, 0, 0, "H1", None).await;
-    post_cell(&app, id, 3, 0, 1, "BLANK", None).await;
-    post_cell(&app, id, 4, 1, 0, "H2", None).await;
-    post_cell(&app, id, 5, 1, 1, "H1", None).await;
-    succeed_job(&app, id).await;
+    feed_cells(&state, id, &[
+        (0, 0, "H1", None),
+        (0, 1, "BLANK", None),
+        (1, 0, "H2", None),
+        (1, 1, "H1", None),
+    ]);
+    succeed_job(&state, id);
     let (_, body) = send(&app, get(&app, &format!("/api/v1/jobs/{id}"))).await;
     assert_eq!(body["status"], "SUCCEEDED");
     let bp_id = body["blueprintId"].as_str().unwrap().to_string();
@@ -253,8 +227,8 @@ async fn blank_cell_is_recognized_empty_state() {
 
 #[tokio::test]
 async fn confidence_persisted_and_crop_box_present() {
-    let (app, _) = test_app();
-    let bp_id = complete_blueprint(&app).await;
+    let (app, state) = test_app();
+    let bp_id = complete_blueprint(&app, &state).await;
     let (_, bp) = send(&app, get(&app, &format!("/api/v1/blueprints/{bp_id}"))).await;
     assert_eq!(bp["cells"][0]["confidence"], 0.87);
     assert_eq!(bp["cells"][2]["confidence"], 0.31);
@@ -265,8 +239,8 @@ async fn confidence_persisted_and_crop_box_present() {
 
 #[tokio::test]
 async fn patch_cells_batch_correct_and_revert() {
-    let (app, _) = test_app();
-    let bp_id = complete_blueprint(&app).await;
+    let (app, state) = test_app();
+    let bp_id = complete_blueprint(&app, &state).await;
     let req = r#"{"updates":[{"row":0,"col":0,"code":"H2"},{"row":1,"col":0,"code":"H1"}]}"#;
     let (status, body) = send(
         &app,
@@ -297,8 +271,8 @@ async fn patch_cells_batch_correct_and_revert() {
 
 #[tokio::test]
 async fn patch_rejects_out_of_library_and_out_of_bounds() {
-    let (app, _) = test_app();
-    let bp_id = complete_blueprint(&app).await;
+    let (app, state) = test_app();
+    let bp_id = complete_blueprint(&app, &state).await;
     let (status, body) = send(
         &app,
         patch_json(&app, &format!("/api/v1/blueprints/{bp_id}/cells"), r#"{"updates":[{"row":0,"col":0,"code":"X99"}]}"#),
@@ -330,8 +304,8 @@ async fn patch_unknown_blueprint_404() {
 
 #[tokio::test]
 async fn export_corrections_zip_with_manifest() {
-    let (app, _) = test_app();
-    let bp_id = complete_blueprint(&app).await;
+    let (app, state) = test_app();
+    let bp_id = complete_blueprint(&app, &state).await;
     let req = r#"{"updates":[{"row":0,"col":0,"code":"H2"}]}"#;
     let (status, _) = send(&app, patch_json(&app, &format!("/api/v1/blueprints/{bp_id}/cells"), req)).await;
     assert_eq!(status, StatusCode::OK);
@@ -356,35 +330,11 @@ async fn export_corrections_zip_with_manifest() {
 
 #[tokio::test]
 async fn export_no_corrections_400() {
-    let (app, _) = test_app();
-    let bp_id = complete_blueprint(&app).await;
+    let (app, state) = test_app();
+    let bp_id = complete_blueprint(&app, &state).await;
     let (status, body) = send(&app, get(&app, &format!("/api/v1/blueprints/{bp_id}/cells/export-corrections"))).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(body["code"], "NO_CORRECTIONS");
-}
-
-#[tokio::test]
-async fn terminal_state_rejects_new_events_409() {
-    let (app, _) = test_app();
-    let id = create_job(&app).await;
-    for (attempt, seq) in [(0i64, 2i64), (1, 3), (2, 4)] {
-        let ev = format!(
-            r#"{{"jobId":"{id}","attempt":{attempt},"sequence":{seq},"type":"JOB_FAILED","payload":{{"code":"X","message":"y"}}}}"#
-        );
-        let (status, _) = send(&app, post_json(&app, &format!("/internal/jobs/{id}/events"), &ev)).await;
-        assert_eq!(status, StatusCode::OK);
-    }
-    let (status, body) = send(
-        &app,
-        post_json(
-            &app,
-            &format!("/internal/jobs/{id}/events"),
-            &format!(r#"{{"jobId":"{id}","attempt":2,"sequence":5,"type":"CELL_PROCESSED","payload":{{"row":0,"col":0,"code":"H1"}}}}"#),
-        ),
-    )
-    .await;
-    assert_eq!(status, StatusCode::CONFLICT);
-    assert_eq!(body["code"], "JOB_ALREADY_TERMINAL");
 }
 
 #[tokio::test]
@@ -429,26 +379,6 @@ async fn delete_jobs_batch_removes_job_and_blueprint() {
     .await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert_eq!(body["code"], "EMPTY_IDS");
-}
-
-#[tokio::test]
-async fn events_are_dropped_after_terminal_state() {
-    let (app, _) = test_app();
-    let id = create_job(&app).await;
-    post_cell(&app, id, 2, 0, 0, "H1", None).await;
-    post_cell(&app, id, 3, 0, 1, "H2", None).await;
-    post_cell(&app, id, 4, 1, 0, "H3", None).await;
-    post_cell(&app, id, 5, 1, 1, "H1", None).await;
-    // in-flight: events still present (JOB_STARTED + 4 cells)
-    let (_, body) = send(&app, get(&app, &format!("/api/v1/jobs/{id}/events"))).await;
-    assert_eq!(body["items"].as_array().unwrap().len(), 5);
-    succeed_job(&app, id).await;
-    // terminal: all events dropped (tracking data, blueprint holds results)
-    let (_, body) = send(&app, get(&app, &format!("/api/v1/jobs/{id}/events"))).await;
-    assert_eq!(body["total"], 0);
-    let (_, body) = send(&app, get(&app, &format!("/api/v1/jobs/{id}"))).await;
-    assert_eq!(body["status"], "SUCCEEDED");
-    assert!(body["blueprintId"].as_str().is_some_and(|s| !s.is_empty()));
 }
 
 #[tokio::test]

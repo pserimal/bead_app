@@ -20,6 +20,8 @@ pub fn open(db_path: &Path) -> Result<Db> {
 }
 
 pub fn init_schema(conn: &Connection) -> Result<()> {
+    // 2026-08-15: event timeline removed — drop the old table on upgrade.
+    conn.execute_batch("DROP TABLE IF EXISTS recognition_job_event;")?;
     conn.execute_batch(
         r#"
 CREATE TABLE IF NOT EXISTS recognition_job (
@@ -45,17 +47,6 @@ CREATE TABLE IF NOT EXISTS recognition_job (
     blueprint_id        TEXT UNIQUE,
     created_at          TEXT NOT NULL,
     updated_at          TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS recognition_job_event (
-    id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    job_id      TEXT NOT NULL REFERENCES recognition_job(id),
-    attempt     INTEGER NOT NULL,
-    sequence    INTEGER NOT NULL,
-    type        TEXT NOT NULL,
-    payload     TEXT NOT NULL,
-    created_at  TEXT NOT NULL,
-    CONSTRAINT uq_job_event UNIQUE (job_id, attempt, sequence)
 );
 
 CREATE TABLE IF NOT EXISTS recognition_job_cell (
@@ -106,7 +97,6 @@ CREATE TABLE IF NOT EXISTS color_library (
 
 CREATE INDEX IF NOT EXISTS idx_job_status ON recognition_job(status);
 CREATE INDEX IF NOT EXISTS idx_job_heartbeat ON recognition_job(status, heartbeat_at);
-CREATE INDEX IF NOT EXISTS idx_event_job ON recognition_job_event(job_id, attempt, sequence);
 CREATE INDEX IF NOT EXISTS idx_bp_cells ON blueprint_cell(blueprint_id);
 "#,
     )?;

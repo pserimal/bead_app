@@ -10,7 +10,7 @@ use axum::http::{header, StatusCode};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, patch, post};
 use axum::{Json, Router};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::models::*;
@@ -233,7 +233,6 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/api/v1/jobs", post(create_job).get(list_jobs))
         .route("/api/v1/jobs/{id}", get(job_detail).patch(rename_job))
         .route("/api/v1/jobs", delete(delete_jobs))
-        .route("/api/v1/jobs/{id}/events", get(job_events))
         .route("/api/v1/blueprints", get(list_blueprints))
         .route("/api/v1/blueprints/{id}", get(blueprint_detail))
         .route("/api/v1/blueprints/{id}/cells", patch(update_blueprint_cells))
@@ -244,7 +243,6 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/api/v1/models", get(list_models))
         .route("/api/v1/models/current", get(current_model))
         .route("/api/v1/models/{id}/activate", post(activate_model))
-        .route("/internal/jobs/{id}/events", post(internal_event))
         .route_layer(body_limit)
         .fallback(serve_static)
         .with_state(state)
@@ -595,51 +593,6 @@ async fn job_detail(
     Ok(Json(job_to_detail(&job)))
 }
 
-async fn job_events(
-    State(state): State<Arc<AppState>>,
-    AxumPath(id): AxumPath<Uuid>,
-    Query(params): Query<PageParams>,
-) -> Result<Json<PageResponse<JobEventDto>>, ApiException> {
-    let (page, page_size) = page_params(&params, 20);
-    let sort_dir = params.sort_dir.clone().unwrap_or_else(|| "asc".into());
-    let (events, total) = state
-        .service
-        .list_events(id, page, page_size, &sort_dir)
-        .map_err(to_api)?;
-    Ok(Json(paged(
-        events
-            .iter()
-            .map(|e| JobEventDto {
-                attempt: e.attempt,
-                sequence: e.sequence,
-                event_type: e.event_type,
-                timestamp: e.created_at,
-                payload: e.payload.clone(),
-            })
-            .collect(),
-        page,
-        page_size,
-        total,
-    )))
-}
-
-// ── Internal events (in-process OCR delivery; also HTTP for contract tests) ──
-
-#[derive(Serialize, Deserialize)]
-struct InternalEventResponse {
-    applied: bool,
-}
-
-async fn internal_event(
-    State(state): State<Arc<AppState>>,
-    AxumPath(id): AxumPath<Uuid>,
-    Json(mut ev): Json<InboundEvent>,
-) -> Result<Json<InternalEventResponse>, ApiException> {
-    ev.job_id = id; // path is authoritative
-    let applied = state.service.apply_event(&ev).map_err(to_api)?;
-    Ok(Json(InternalEventResponse { applied }))
-}
-
 // ── Models (dynamic switching) ────────────────────────────────────────
 
 #[derive(serde::Serialize)]
@@ -677,18 +630,7 @@ async fn activate_model(
 pub fn resume_interrupted(state: &Arc<AppState>) {
     let jobs = state.service.processing_jobs();
     for job in jobs {
-        let ev = InboundEvent {
-            job_id: job.id,
-            attempt: job.attempt,
-            sequence: job.attempt * 10_000 + 1000,
-            event_type: EventType::JobFailed,
-            timestamp: None,
-            payload: serde_json::json!({
-                "code": "STALE_RESTART",
-                "message": "服务重启，任务恢复重试",
-            }),
-        };
-        let _ = state.service.apply_event(&ev);
+        let _ = state.service.fail_job(job.id, "STALE_RESTART", "服务重启，任务恢复重试");
         let Ok(job) = state.service.get_job(job.id) else { continue };
         if job.status != JobStatus::Processing {
             continue; // retries exhausted → FAILED
@@ -730,7 +672,6 @@ fn run_ocr_worker(
     valid_codes: Option<Vec<String>>,
     image_bytes: Bytes,
 ) {
-    let mut attempt = 0i64;
     loop {
         // Acquire a pool slot for the whole attempt — blocks while all
         // slots are busy (concurrency limiter); stale slots reload the
@@ -745,19 +686,8 @@ fn run_ocr_worker(
                 return;
             }
             Err(msg) => {
-                let payload = serde_json::json!({
-                    "code": "OCR_ERROR",
-                    "message": msg.chars().take(500).collect::<String>(),
-                });
-                let _ = svc.apply_event(&InboundEvent {
-                    job_id,
-                    attempt,
-                    sequence: attempt * 10_000 + 1000,
-                    event_type: EventType::JobFailed,
-                    timestamp: None,
-                    payload,
-                });
-                attempt += 1;
+                let _ = svc.fail_job(job_id, "OCR_ERROR", &msg.chars().take(500).collect::<String>());
+                // Retry until the service flips the job to FAILED (attempt bumped).
                 match svc.get_job(job_id).map(|j| j.status) {
                     Ok(JobStatus::Failed) | Err(_) => return,
                     _ => continue,
@@ -806,8 +736,6 @@ fn run_ocr_once(
         )
         .map_err(|e| format!("OCR_ERROR: {e}"))?
     };
-    let attempt = current_attempt(svc, job_id);
-    let base = sequence_base_for_attempt(svc, job_id);
     // Fill cells the OCR pipeline dropped (decode output outside the closed
     // vocabulary): emit UNMAPPED so JOB_SUCCEEDED's processed==total check
     // passes and the cell is surfaced for correction instead of failing the
@@ -828,36 +756,18 @@ fn run_ocr_once(
         }
     }
     cells.sort_by_key(|(r, c, _, _)| (*r, *c));
-    // Batched writes: one transaction per CELL_BATCH events keeps concurrent
+    // Batched writes: one transaction per CELL_BATCH cells keeps concurrent
     // workers off the db lock (per-cell transactions serialized them).
     const CELL_BATCH: usize = 512;
     let total = (rows * cols) as i64;
-    for (i, chunk) in cells.chunks(CELL_BATCH).enumerate() {
-        let base_seq = base + (i * CELL_BATCH) as i64;
-        let recognized_total = ((i * CELL_BATCH) as i64 + chunk.len() as i64).min(total);
-        svc.apply_cell_batch(job_id, attempt, base_seq, chunk, recognized_total)
+    let mut recognized_total = 0i64;
+    for chunk in cells.chunks(CELL_BATCH) {
+        recognized_total = (recognized_total + chunk.len() as i64).min(total);
+        svc.apply_cell_batch(job_id, chunk, recognized_total)
             .map_err(|e| e.to_string())?;
     }
-    let ev = InboundEvent {
-        job_id,
-        attempt: current_attempt(svc, job_id),
-        sequence: base + cells.len() as i64 + 1,
-        event_type: EventType::JobSucceeded,
-        timestamp: None,
-        payload: serde_json::json!({"processedCells": (rows * cols) as usize, "totalCells": (rows * cols) as usize}),
-    };
-    svc.apply_event(&ev).map_err(|e| e.to_string())?;
+    svc.complete_job(job_id).map_err(|e| e.to_string())?;
     Ok(())
-}
-
-fn current_attempt(svc: &JobService, job_id: Uuid) -> i64 {
-    svc.get_job(job_id).map(|j| j.attempt).unwrap_or(0)
-}
-
-/// Events for one OCR pass must not collide with JOB_STARTED(0) or
-/// RETRY_SCHEDULED (which uses next-free in attempt). Offset per attempt.
-fn sequence_base_for_attempt(svc: &JobService, job_id: Uuid) -> i64 {
-    current_attempt(svc, job_id) * 10_000
 }
 
 // ── Blueprints ───────────────────────────────────────────────────────

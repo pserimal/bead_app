@@ -33,18 +33,6 @@ pub enum CellStatus {
     Blank,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
-pub enum EventType {
-    JobStarted,
-    CellProcessed,
-    CellFailed,
-    Heartbeat,
-    RetryScheduled,
-    JobSucceeded,
-    JobFailed,
-}
-
 // ── Entities (align with server/model/*.kt + V1__initial_schema.sql) ─
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -79,16 +67,6 @@ pub struct Job {
     pub blueprint_id: Option<Uuid>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-}
-
-#[derive(Clone, Debug)]
-pub struct JobEvent {
-    pub job_id: Uuid,
-    pub attempt: i64,
-    pub sequence: i64,
-    pub event_type: EventType,
-    pub payload: serde_json::Value,
-    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Clone, Debug)]
@@ -228,17 +206,6 @@ pub struct RenameJobRequest {
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct JobEventDto {
-    pub attempt: i64,
-    pub sequence: i64,
-    #[serde(rename = "type")]
-    pub event_type: EventType,
-    pub timestamp: DateTime<Utc>,
-    pub payload: serde_json::Value,
-}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
 pub struct BlueprintSummary {
     pub id: Uuid,
     pub job_id: Uuid,
@@ -293,16 +260,3 @@ pub struct CellCorrectionResponse {
     pub reverted_count: i64,
 }
 
-/// 008 决议：内部回调入站事件（本地模式由 OCR 线程进程内投递）。
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct InboundEvent {
-    pub job_id: Uuid,
-    pub attempt: i64,
-    pub sequence: i64,
-    #[serde(rename = "type")]
-    pub event_type: EventType,
-    pub timestamp: Option<DateTime<Utc>>,
-    #[serde(default)]
-    pub payload: serde_json::Value,
-}

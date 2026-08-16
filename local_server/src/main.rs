@@ -10,7 +10,7 @@
 //! BEAD_UPLOADS_DIR (default uploads/), BEAD_COLORS_PATH (seed JSON),
 //! ORT_DYLIB_PATH (onnxruntime.dll).
 
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use bead_local_server::api::{router, AppState};
 use bead_local_server::db;

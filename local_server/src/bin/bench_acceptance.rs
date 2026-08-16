@@ -130,7 +130,7 @@ fn main() {
             let t = logits.len() / (batch.len() * n_classes);
             let log_probs = log_softmax(&logits, t, batch.len(), n_classes);
             let decoded = constrained_decode(&log_probs, t, batch.len(), n_classes, &trie, &char_to_idx, 0, 0.0);
-            let (greedy_codes, greedy_confs) = greedy_conf(&log_probs, t, batch.len(), n_classes, &chars);
+            let (_, greedy_confs) = greedy_conf(&log_probs, t, batch.len(), n_classes, &chars);
 
             for j in 0..batch.len() {
                 let (_, label) = &items[i + j];

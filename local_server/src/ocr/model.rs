@@ -213,7 +213,6 @@ pub fn ocr_cells_from_crop(
     }
 
     let mut merged: HashMap<(usize, usize), (String, f32)> = HashMap::new();
-    let mut done_cells = 0usize;
     for i in (0..cell_imgs.len()).step_by(BATCH_SIZE) {
         let batch = &cell_imgs[i..(i + BATCH_SIZE).min(cell_imgs.len())];
         // (B, 48, 48, 3) → (B, 3, 48, 48) and /255.
@@ -256,9 +255,8 @@ pub fn ocr_cells_from_crop(
                 merged.insert((r, cc), (code, norm_conf));
             }
         }
-        done_cells = (i + batch.len()).min(rows * cols);
         if let Some(f) = progress {
-            f(done_cells);
+            f((i + batch.len()).min(rows * cols));
         }
     }
 

@@ -90,18 +90,6 @@ fn job_from_row(row: &rusqlite::Row) -> rusqlite::Result<Job> {
     })
 }
 
-fn event_from_row(row: &rusqlite::Row) -> rusqlite::Result<JobEvent> {
-    let payload: String = row.get("payload")?;
-    Ok(JobEvent {
-        job_id: Uuid::parse_str(&row.get::<_, String>("job_id")?).unwrap(),
-        attempt: row.get("attempt")?,
-        sequence: row.get("sequence")?,
-        event_type: serde_json::from_str(&format!("\"{}\"", row.get::<_, String>("type")?)).unwrap(),
-        payload: serde_json::from_str(&payload).unwrap_or(serde_json::Value::Null),
-        created_at: crate::db::ts_from_sql(&row.get::<_, String>("created_at")?),
-    })
-}
-
 fn bp_cell_from_row(row: &rusqlite::Row) -> rusqlite::Result<BlueprintCell> {
     Ok(BlueprintCell {
         blueprint_id: Uuid::parse_str(&row.get::<_, String>("blueprint_id")?).unwrap(),
@@ -234,14 +222,6 @@ impl JobService {
                 crate::db::ts_to_sql(job.created_at),
             ],
         )?;
-        drop(conn);
-        self.append_event(
-            job.id,
-            job.attempt,
-            0,
-            EventType::JobStarted,
-            serde_json::json!({"rows": rows, "cols": cols}),
-        )?;
         Ok(job)
     }
 
@@ -278,88 +258,9 @@ impl JobService {
                 conn.execute("DELETE FROM blueprint WHERE id = ?1", [&bp_id])?;
             }
             conn.execute("DELETE FROM recognition_job_cell WHERE job_id = ?1", [&id_s])?;
-            conn.execute("DELETE FROM recognition_job_event WHERE job_id = ?1", [&id_s])?;
             deleted += conn.execute("DELETE FROM recognition_job WHERE id = ?1", [&id_s])?;
         }
         Ok(deleted)
-    }
-
-    /// 008: idempotently apply an inbound event. Returns whether it was new.
-    pub fn apply_event(&self, e: &InboundEvent) -> Result<bool> {
-        let mut conn = self.db.lock().unwrap();
-        let tx = conn.transaction()?;
-        let job = self.get_job_conn(&tx, e.job_id)?;
-        // Stale attempt: no-op (008).
-        if e.attempt < job.attempt {
-            return Ok(false);
-        }
-        let exists: Option<i64> = tx
-            .query_row(
-                "SELECT 1 FROM recognition_job_event WHERE job_id = ?1 AND attempt = ?2 AND sequence = ?3",
-                params![e.job_id.to_string(), e.attempt, e.sequence],
-                |r| r.get(0),
-            )
-            .optional()?;
-        if exists.is_some() {
-            return Ok(false); // already applied (idempotent)
-        }
-        let terminal = matches!(job.status, JobStatus::Succeeded | JobStatus::SucceededWithWarnings | JobStatus::Failed);
-        if terminal {
-            return Err(anyhow!(ApiException::conflict(
-                "JOB_ALREADY_TERMINAL",
-                "任务已处于终态"
-            )));
-        }
-        self.append_event_tx(&tx, e.job_id, e.attempt, e.sequence, e.event_type, e.payload.clone())?;
-        match e.event_type {
-            EventType::CellProcessed => self.apply_cell_processed(&tx, &job, &e.payload)?,
-            EventType::CellFailed => {
-                self.touch_job(&tx, &job, JobStatus::Processing, None)?;
-            }
-            EventType::Heartbeat => self.touch_heartbeat(&tx, &job)?,
-            EventType::JobSucceeded => self.complete_job(&tx, &job, &e.payload)?,
-            EventType::JobFailed => self.fail_or_retry(&tx, &job, &e.payload)?,
-            EventType::JobStarted | EventType::RetryScheduled => {
-                self.touch_heartbeat(&tx, &job)?;
-            }
-        }
-        // Events are in-flight tracking data: capped while running, dropped
-        // entirely once the job is terminal (the blueprint holds the result).
-        let terminal_now = {
-            let j = self.get_job_conn(&tx, e.job_id)?;
-            matches!(
-                j.status,
-                JobStatus::Succeeded | JobStatus::SucceededWithWarnings | JobStatus::Failed
-            )
-        };
-        if terminal_now {
-            tx.execute(
-                "DELETE FROM recognition_job_event WHERE job_id = ?1",
-                [e.job_id.to_string()],
-            )?;
-        } else {
-            self.prune_cell_events(&tx, e.job_id)?;
-        }
-        tx.commit()?;
-        Ok(true)
-    }
-
-    fn apply_cell_processed(&self, tx: &Connection, job: &Job, payload: &serde_json::Value) -> Result<()> {
-        let row = payload
-            .get("row")
-            .and_then(|v| v.as_i64())
-            .ok_or_else(|| anyhow!(ApiException::bad_request("INVALID_EVENT", "CELL_PROCESSED 缺少 row")))?;
-        let col = payload
-            .get("col")
-            .and_then(|v| v.as_i64())
-            .ok_or_else(|| anyhow!(ApiException::bad_request("INVALID_EVENT", "CELL_PROCESSED 缺少 col")))?;
-        let code = payload
-            .get("code")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_uppercase())
-            .ok_or_else(|| anyhow!(ApiException::bad_request("INVALID_EVENT", "CELL_PROCESSED 缺少 code")))?;
-        let confidence = payload.get("confidence").and_then(|v| v.as_f64());
-        self.apply_cell_inner(tx, job, row, col, &code, confidence)
     }
 
     /// Shared cell-write logic used by both the single-event path and the
@@ -427,31 +328,19 @@ impl JobService {
     /// at `base_sequence + 1`. `recognized_total` is the live progress value
     /// (cells recognized so far) — it wins over the cell-table count so the
     /// progress bar never moves backwards.
+    /// Worker batch path: apply many cells in ONE transaction (per-cell
+    /// transactions serialized concurrent workers on the db lock). Cells are
+    /// upserted by (job_id, row, col) — idempotent across retries.
     pub fn apply_cell_batch(
         &self,
         job_id: Uuid,
-        attempt: i64,
-        base_sequence: i64,
         cells: &[(i64, i64, String, f64)],
         recognized_total: i64,
     ) -> Result<()> {
         let mut conn = self.db.lock().unwrap();
         let tx = conn.transaction()?;
         let job = self.get_job_conn(&tx, job_id)?;
-        for (i, (row, col, code, conf)) in cells.iter().enumerate() {
-            let seq = base_sequence + i as i64 + 1;
-            let exists: Option<i64> = tx
-                .query_row(
-                    "SELECT 1 FROM recognition_job_event WHERE job_id = ?1 AND attempt = ?2 AND sequence = ?3",
-                    params![job_id.to_string(), attempt, seq],
-                    |r| r.get(0),
-                )
-                .optional()?;
-            if exists.is_some() {
-                continue; // already applied (idempotent replay)
-            }
-            self.append_event_tx(&tx, job_id, attempt, seq, EventType::CellProcessed,
-                serde_json::json!({"row": row, "col": col, "code": code, "confidence": conf}))?;
+        for (row, col, code, conf) in cells {
             self.apply_cell_inner(&tx, &job, *row, *col, code, Some(*conf))?;
         }
         let stored: i64 = tx.query_row(
@@ -460,16 +349,19 @@ impl JobService {
             |r| r.get(0),
         )?;
         self.touch_job(&tx, &job, JobStatus::Processing, Some(recognized_total.max(stored)))?;
-        self.prune_cell_events(&tx, job_id)?;
         tx.commit()?;
         Ok(())
     }
 
-    /// 008: JOB_SUCCEEDED → verify processed == total, atomically create blueprint.
-    fn complete_job(&self, tx: &Connection, job: &Job, _payload: &serde_json::Value) -> Result<()> {
+    /// Atomically create the blueprint from the stored cells and mark the
+    /// job SUCCEEDED. Requires processed == total (the worker fills gaps).
+    pub fn complete_job(&self, job_id: Uuid) -> Result<()> {
+        let mut conn = self.db.lock().unwrap();
+        let tx = conn.transaction()?;
+        let job = self.get_job_conn(&tx, job_id)?;
         if job.processed_cells < job.total_cells {
             return Err(anyhow!(ApiException::bad_request(
-                "INVALID_EVENT",
+                "INVALID_STATE",
                 format!(
                     "JOB_SUCCEEDED 时 processed({}) != total({})",
                     job.processed_cells, job.total_cells
@@ -495,6 +387,7 @@ impl JobService {
                 })
             })?
             .collect::<rusqlite::Result<Vec<_>>>()?;
+        drop(stmt);
 
         let bp_id = Uuid::new_v4();
         tx.execute(
@@ -531,19 +424,21 @@ impl JobService {
             "UPDATE recognition_job SET blueprint_id = ?2, status = 'SUCCEEDED', updated_at = ?3 WHERE id = ?1",
             params![job.id.to_string(), bp_id.to_string(), crate::db::ts_to_sql(now())],
         )?;
-        // The blueprint now holds every cell — drop the per-job copy (it is
-        // only needed while the job is in flight; keeps the db compact).
+        // The blueprint now holds every cell — drop the per-job copy.
         tx.execute(
             "DELETE FROM recognition_job_cell WHERE job_id = ?1",
             [job.id.to_string()],
         )?;
+        tx.commit()?;
         Ok(())
     }
 
-    /// 008: JOB_FAILED → retry until max_retries, then terminal.
-    fn fail_or_retry(&self, tx: &Connection, job: &Job, payload: &serde_json::Value) -> Result<()> {
-        let error_code = payload.get("code").and_then(|v| v.as_str()).unwrap_or("RECOGNITION_FAILED");
-        let error_message = payload.get("message").and_then(|v| v.as_str());
+    /// Fail a job: retry (attempt+1) until max_retries, then terminal.
+    /// The caller (worker loop) re-runs OCR after a retry.
+    pub fn fail_job(&self, job_id: Uuid, code: &str, message: &str) -> Result<()> {
+        let mut conn = self.db.lock().unwrap();
+        let tx = conn.transaction()?;
+        let job = self.get_job_conn(&tx, job_id)?;
         if job.retry_count < job.max_retries {
             let attempt = job.attempt + 1;
             let retry_count = job.retry_count + 1;
@@ -555,27 +450,18 @@ impl JobService {
                     retry_count,
                     attempt,
                     crate::db::ts_to_sql(now()),
-                    error_code,
-                    error_message,
+                    code,
+                    message,
                 ],
             )?;
-            self.append_event_tx(
-                tx,
-                job.id,
-                attempt,
-                self.next_internal_sequence(tx, job.id, attempt),
-                EventType::RetryScheduled,
-                serde_json::json!({"nextAttempt": attempt}),
-            )?;
-            // Note: local mode has no re-dispatch — the caller (worker loop)
-            // checks job.attempt changes and re-runs OCR if needed.
         } else {
             tx.execute(
                 "UPDATE recognition_job SET status = 'FAILED', error_code = ?2, error_message = ?3,
                     heartbeat_at = ?4, updated_at = ?4 WHERE id = ?1",
-                params![job.id.to_string(), error_code, error_message, crate::db::ts_to_sql(now())],
+                params![job.id.to_string(), code, message, crate::db::ts_to_sql(now())],
             )?;
         }
+        tx.commit()?;
         Ok(())
     }
 
@@ -607,10 +493,6 @@ impl JobService {
         for job in &jobs {
             let conn = self.db.lock().unwrap();
             let _ = conn.execute(
-                "DELETE FROM recognition_job_event WHERE job_id = ?1",
-                [job.id.to_string()],
-            );
-            let _ = conn.execute(
                 "DELETE FROM recognition_job_cell WHERE job_id = ?1",
                 [job.id.to_string()],
             );
@@ -619,24 +501,6 @@ impl JobService {
             self.compact();
         }
         jobs.len()
-    }
-
-    /// Cap per-job cell events (CELL_PROCESSED/CELL_FAILED/HEARTBEAT) to the
-    /// most recent KEEP (200). Lifecycle events (JOB_STARTED, RETRY_SCHEDULED,
-    /// JOB_SUCCEEDED, JOB_FAILED) are always kept.
-    fn prune_cell_events(&self, conn: &Connection, job_id: Uuid) -> Result<()> {
-        const KEEP: i64 = 200;
-        conn.execute(
-            "DELETE FROM recognition_job_event WHERE job_id = ?1
-             AND type IN ('CELL_PROCESSED','CELL_FAILED','HEARTBEAT')
-             AND id NOT IN (
-                 SELECT id FROM recognition_job_event
-                 WHERE job_id = ?1 AND type IN ('CELL_PROCESSED','CELL_FAILED','HEARTBEAT')
-                 ORDER BY attempt DESC, sequence DESC LIMIT ?2
-             )",
-            params![job_id.to_string(), KEEP],
-        )?;
-        Ok(())
     }
 
     fn touch_job(&self, tx: &Connection, job: &Job, status: JobStatus, processed: Option<i64>) -> Result<()> {
@@ -655,61 +519,6 @@ impl JobService {
             ],
         )?;
         Ok(())
-    }
-
-    fn touch_heartbeat(&self, tx: &Connection, job: &Job) -> Result<()> {
-        tx.execute(
-            "UPDATE recognition_job SET heartbeat_at = ?2, updated_at = ?2 WHERE id = ?1",
-            params![job.id.to_string(), crate::db::ts_to_sql(now())],
-        )?;
-        Ok(())
-    }
-
-    fn append_event(
-        &self,
-        job_id: Uuid,
-        attempt: i64,
-        sequence: i64,
-        event_type: EventType,
-        payload: serde_json::Value,
-    ) -> Result<()> {
-        let conn = self.db.lock().unwrap();
-        self.append_event_tx(&conn, job_id, attempt, sequence, event_type, payload)
-    }
-
-    fn append_event_tx(
-        &self,
-        conn: &Connection,
-        job_id: Uuid,
-        attempt: i64,
-        sequence: i64,
-        event_type: EventType,
-        payload: serde_json::Value,
-    ) -> Result<()> {
-        conn.execute(
-            "INSERT INTO recognition_job_event (job_id, attempt, sequence, type, payload, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            params![
-                job_id.to_string(),
-                attempt,
-                sequence,
-                serde_json::to_string(&event_type).unwrap().trim_matches('"'),
-                payload.to_string(),
-                crate::db::ts_to_sql(now()),
-            ],
-        )?;
-        Ok(())
-    }
-
-    /// Next free sequence within the current attempt (RETRY_SCHEDULED etc.).
-    fn next_internal_sequence(&self, conn: &Connection, job_id: Uuid, attempt: i64) -> i64 {
-        conn.query_row(
-            "SELECT COALESCE(MAX(sequence), 0) + 1 FROM recognition_job_event
-             WHERE job_id = ?1 AND attempt = ?2",
-            params![job_id.to_string(), attempt],
-            |r| r.get(0),
-        )
-        .unwrap_or(1)
     }
 
     // ── Queries ──────────────────────────────────────────────────────
@@ -782,25 +591,6 @@ impl JobService {
             .query_map(params![page_size, (page - 1) * page_size], job_from_row)?
             .collect::<rusqlite::Result<Vec<_>>>()?;
         Ok((jobs, total))
-    }
-
-    pub fn list_events(&self, job_id: Uuid, page: i64, page_size: i64, sort_dir: &str) -> Result<(Vec<JobEvent>, i64)> {
-        let conn = self.db.lock().unwrap();
-        self.get_job_conn(&conn, job_id)?; // 404 check
-        let dir = if sort_dir.eq_ignore_ascii_case("desc") { "DESC" } else { "ASC" };
-        let total: i64 = conn.query_row(
-            "SELECT COUNT(*) FROM recognition_job_event WHERE job_id = ?1",
-            [job_id.to_string()],
-            |r| r.get(0),
-        )?;
-        let mut stmt = conn.prepare(&format!(
-            "SELECT job_id, attempt, sequence, type, payload, created_at FROM recognition_job_event
-             WHERE job_id = ?1 ORDER BY attempt {dir}, sequence {dir} LIMIT ?2 OFFSET ?3"
-        ))?;
-        let events = stmt
-            .query_map(params![job_id.to_string(), page_size, (page - 1) * page_size], event_from_row)?
-            .collect::<rusqlite::Result<Vec<_>>>()?;
-        Ok((events, total))
     }
 
     pub fn get_blueprint(&self, id: Uuid) -> Result<(Blueprint, Job, Vec<BlueprintCell>)> {
