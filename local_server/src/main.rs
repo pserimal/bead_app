@@ -89,7 +89,7 @@ fn load_mard_codes(library_path: &str) -> Vec<String> {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let port: u16 = env_or("BEAD_PORT", "8080").parse().unwrap_or(8080);
+    let port: u16 = env_or("BEAD_PORT", "5173").parse().unwrap_or(5173);
     let db_path = env_or("BEAD_DB_PATH", "data/bead-local.db");
     if let Some(parent) = std::path::Path::new(&db_path).parent() {
         if !parent.as_os_str().is_empty() {

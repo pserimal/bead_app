@@ -8,7 +8,7 @@ setlocal
 cd /d %~dp0
 
 rem ── 停掉正在运行的实例（否则 exe 被占用，copy 会静默失败）──
-set "SRV_PORT=8080"
+set "SRV_PORT=5173"
 if defined BEAD_PORT set "SRV_PORT=%BEAD_PORT%"
 for /f "tokens=5" %%p in ('netstat -ano ^| findstr /R /C:":%SRV_PORT% .*LISTENING"') do (
     echo [pack] stopping running instance PID %%p (port %SRV_PORT%)

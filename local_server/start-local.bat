@@ -16,7 +16,7 @@ if exist "%ROOT%onnxruntime.dll" (
 )
 
 rem ── 数据与配置默认值（本目录自包含）──
-if not defined BEAD_PORT set "BEAD_PORT=8080"
+if not defined BEAD_PORT set "BEAD_PORT=5173"
 if not defined BEAD_DB_PATH set "BEAD_DB_PATH=%ROOT%data\bead-local.db"
 if not defined BEAD_UPLOADS_DIR set "BEAD_UPLOADS_DIR=%ROOT%uploads"
 if not defined BEAD_COLORS_PATH set "BEAD_COLORS_PATH=%ROOT%data\default_colors.json"
@@ -55,10 +55,16 @@ set "LAN_IP="
 for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /C:"IPv4"') do if not defined LAN_IP set "LAN_IP=%%a"
 if defined LAN_IP set "LAN_IP=%LAN_IP: =%"
 
-echo [start] 服务已就绪（绑定 0.0.0.0）:
+echo [start] 服务已就绪（绑定 0.0.0.0，端口 %BEAD_PORT%）:
 echo   本机访问   : http://localhost:%BEAD_PORT%
 if defined LAN_IP echo   局域网访问 : http://%LAN_IP%:%BEAD_PORT%
-echo [start] 浏览器已自动打开，本窗口即将自动关闭。停止请运行 stop-local.bat，重启请运行 restart-local.bat
-start "" "http://localhost:%BEAD_PORT%"
+echo [start] 浏览器将打开局域网地址——同一局域网内其他设备（手机/平板/其他电脑）
+echo [start] 也可通过上面的局域网地址访问。
+echo [start] 本窗口即将自动关闭。停止请运行 stop-local.bat，重启请运行 restart-local.bat
+if defined LAN_IP (
+    start "" "http://%LAN_IP%:%BEAD_PORT%"
+) else (
+    start "" "http://localhost:%BEAD_PORT%"
+)
 ping -n 3 127.0.0.1 >nul
 exit /b 0
