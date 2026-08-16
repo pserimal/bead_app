@@ -1,7 +1,7 @@
 # PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-08-15
-**Branch:** flash-test
+**Generated:** 2026-08-16
+**Branch:** master
 
 ## OVERVIEW
 
@@ -11,12 +11,13 @@
 
 ```
 frontend/  ──build──▶  local_server/release/dist/（磁盘 serve，替换即生效，无需重编）
-                           │  axum :8080（0.0.0.0，局域网）
+                           │  axum :5173（0.0.0.0，局域网）
                            │  ├─ /api/v1/*（契约 007）
                            │  ├─ 静态资源（磁盘 dist/ 目录，SPA，no-cache）
                            │  ├─ SQLite（data/bead-local.db，WAL）
                            │  └─ ONNX Runtime 推理（进程内 worker 线程）
 training/（Python，开发期）──export_onnx──▶ artifacts/models/*/model.onnx
+tag push（v*）──▶ .github/workflows/release.yml ──▶ GitHub Release zip（不含模型；模型由用户按 README 网盘下载）
 ```
 
 ## STRUCTURE
@@ -26,11 +27,13 @@ ai_dou/
 ├── local_server/           ──── PART 1: RUST RUNTIME（单二进制局域网部署）────
 │   ├── src/ocr/            # CRNN 推理（onnxruntime/ort + INTER_AREA 预处理 + trie 解码）
 │   ├── src/{api,service,db,models,export}.rs  # axum API + SQLite（/api/v1 契约）
-│   ├── tests/              # api_contract.rs（17 测试 = Kotlin 9 个 MockMvc 移植）+ parity.rs
+│   ├── tests/              # api_contract.rs（18 测试 = Kotlin 9 个 MockMvc 移植 + 扩展）+ parity.rs
 │   ├── src/bin/bench_acceptance.rs  # Rust 端验收门禁（4 真实集参照值硬编码）
-│   ├── build-release.bat   # 一条命令：构建 + 自包含 release/ + 打 zip（自动排除 db/uploads）
+│   ├── resources/default_colors.json  # mard 291 色运行时种子（committed）
+│   ├── build-release.bat   # 本地打包：构建 + 自包含 release/ + 打 zip（不含模型，含 README/VERSION）
 │   ├── start-local.bat     # 一键启动：后台无窗口 + 自动开浏览器 + 日志落盘
 │   └── stop-local.bat      # 按端口杀进程
+├── .github/workflows/release.yml  # 发布流水线：tag（v*）触发 → 构建 zip → GitHub Release
 ├── frontend/               ──── PART 2: FRONTEND（零后端依赖，同源 /api/v1）────
 │   ├── src/
 │   │   ├── api/            # Axios wrappers per resource (client.ts baseURL /api/v1)
@@ -94,20 +97,20 @@ ai_dou/
 
 ## CONVENTIONS
 
-- **无 CI/CD** — 无 `.github/workflows/`；发布 = `local_server/build-release.bat`（一条命令出 zip）
+- **发布流水线（2026-08-16 上线）**：`.github/workflows/release.yml`，推送 tag（`v*`，tag 即版本）触发 → windows-latest 构建前端 + Rust release 二进制 + 契约测试 → 下载 onnxruntime 1.23.2 官方 DLL → 打包 `bead-local-server-<tag>.zip`（含 README.md/VERSION.txt，**不含模型**）→ 上传 artifact + 发布 GitHub Release。本地等价物：`build-release.bat`（一条命令出 zip）
 - **无 pyproject.toml** — conda env `bead-train`（Python 训练）；Rust 工具链：`RUSTUP_HOME=D:\devtools\rust`、`CARGO_HOME=D:\repos\cargo`
 - **数据库**：SQLite（local_server/data/bead-local.db，WAL 模式；任务终态后 VACUUM+checkpoint 回收空间）
 - **事件策略**：任务进行中事件保留（上限 200 条），终态后全部删除（事件是中间数据；结果在 blueprint）
-- **模型 artifacts**（010 R3）：immutable `artifacts/models/<name>-<version>/`；model.pt + model.onnx 双产物（运行时用 onnx）
+- **模型 artifacts**（010 R3）：immutable `artifacts/models/<name>-<version>/`；model.pt + model.onnx 双产物（运行时用 onnx）。**onnx 不入 git、不进发布 zip**——最终用户按 README「安装」第 2 步从网盘下载模型解压到应用目录 `models\`；模型缺失/加载失败时服务以无模型模式降级启动（创建任务返回 503 MODEL_NOT_INSTALLED，中文提示，见 `main.rs` + `api.rs create_job`）
 - **Checkpoint 元数据**（010 R2）：hard-check format_version/model_arch/num_classes/input_size/input_channels/blank_index/charset_hash
 - **`PaginatedResponse[T]` 镜像**：`local_server/src/models.rs` ↔ `frontend/src/types/api.ts` — keep aligned
 - **ESLint flat config** — `frontend/eslint.config.js`（v10+）；**Tailwind v4 CSS-based**；无 Prettier
-- **测试**：local_server 21（3 unit + 17 contract + 1 parity）；frontend 175（vitest）；训练 eval 见 eval_acceptance
+- **测试**：local_server 22（3 unit + 18 contract + 1 parity）；frontend 180（vitest）；训练 eval 见 eval_acceptance
 
 ## ANTI-PATTERNS (THIS PROJECT)
 
-- **Rust Windows 构建**：PATH 里 MinGW `link` 抢占 MSVC link.exe → `.cargo/config.toml` 已固化 linker + LIB（Windows SDK 26100）
-- **onnxruntime 版本**：ort 用 load-dynamic + api-23，`ORT_DYLIB_PATH` 指向 1.23.2 DLL（与 Python 参照同核心）；部署时 DLL 放 exe 旁
+- **Rust Windows 构建**：PATH 里 MinGW `link` 抢占 MSVC link.exe → `.cargo/config.toml` 已固化 linker + LIB（Windows SDK 26100，机器特定）——**CI 构建前必须先删该文件**（windows-latest 自带 VS2022，rustc 自动发现 link.exe）
+- **onnxruntime 版本**：ort 用 load-dynamic + api-23，`ORT_DYLIB_PATH` 指向 1.23.2 DLL（与 Python 参照同核心）；部署时 DLL 放 exe 旁；CI 从微软官方 release 下载 `onnxruntime-win-x64-1.23.2.zip`（lib/onnxruntime.dll + providers_shared.dll）
 - **数值一致三定律**：batch 统一 128；输入 uint8 量化（round→u8→/255）；cv2 INTER_AREA = 加权区域平均
 - **bat 脚本**：必须 CRLF（write 工具写 LF 会吞首字符）；`"%OUT%\data\"` 尾反斜杠是转义坑
 - **Git Bash**：`python` 不可用（exit 49）→ 用 conda python；`taskkill /PID` 会被 MSYS 转义 → `//PID`
@@ -140,15 +143,18 @@ ai_dou/
 cd frontend && node.exe node_modules/vite/bin/vite.js build
 cp -r dist/* ../local_server/release/dist/   # 可选：或直接跑下面的 build-release.bat
 
-# 一条命令出包：重编 exe + 同步 dist + 自包含 release/ + 打 zip（自动排除 db/uploads）
+# 本地一条命令出包：重编 exe + 同步 dist + 自包含 release/ + 打 zip（不含模型，含 README/VERSION）
 cd local_server && cmd //c build-release.bat
-# 注：脚本中 `..\server\...\default_colors.json` 的 copy 已失效（server/ 已删）——因 release/data/ 已有该文件，报错无害
-# 产物：local_server/bead-local-server-v0.1.0.zip（解压任意目录 → 双击 start-local.bat）
+# 产物：local_server/bead-local-server-v0.1.0.zip（解压任意目录 → 按 README 装模型 → 双击 start-local.bat）
+
+# GitHub 发布（推荐）：打 tag 即发布，流水线自动出包 + GitHub Release
+# tag 即版本（如 v0.1.0）；产物在 Release 页 / Actions artifact（zip 不含模型，见 README 安装说明）
+git tag v0.1.0 && git push origin v0.1.0
 
 # 一键启动（发布/开发机均可）：
 cd local_server/release && start-local.bat   # 后台无窗口 + 自动开浏览器；stop-local.bat 停止
 
-# 开发运行（:8080）：
+# 开发运行（默认 :5173；前端 dev :5173 proxy /api → 8080 联调时用 BEAD_PORT=8080）：
 export PATH="/d/repos/cargo/bin:$PATH" RUSTUP_HOME='D:\devtools\rust' CARGO_HOME='D:\repos\cargo'
 ORT_DYLIB_PATH=E:\devtools\conda\envs\bead-train\Lib\site-packages\onnxruntime\capi\onnxruntime.dll \
   cargo run    # env 覆盖：BEAD_PORT/BEAD_DB_PATH/BEAD_UPLOADS_DIR/BEAD_ARTIFACT_DIR
@@ -182,12 +188,12 @@ python -m training.scripts.build_color_library --csv-dir .scratch/beadcolors-src
 
 ```bash
 cd frontend && npm install && npm run dev   # :5173, proxies /api → :8080（须先起 local_server）
-cd frontend && npm test                     # 175 tests
+cd frontend && npm test                     # 180 tests
 ```
 
 ## NOTES
 
-- 前端 dev proxy：`/api` → `http://localhost:8080`（vite.config.ts）；生产同源（Rust 磁盘 serve `release/dist/`）
+- 前端 dev proxy：`/api` → `http://localhost:8080`（vite.config.ts，dev 时 local_server 用 BEAD_PORT=8080）；生产同源（Rust 磁盘 serve `release/dist/`）
 - 上传限制：30MB（axum DefaultBodyLimit 32MB 兜底），JPEG/PNG
 - 基线模型：`bean-mard-v10`（原 crnn_color_mard_v8，zip exact_match 0.9405，post-CTC-fix）；**当前生产 = bean-mard-v12**（2026-08-15 部署）。bean-mard-v12 = v11 配方 + **修正 H18↔H12 标注噪声后重训**（用户修正 1_标注结果_07-29 的 46 个错标）；5 级模糊合成图纸 + 新标注保留；模糊图纸生成器与 blank-cap 代码保留。
 - **模型验收门禁**：任何新 checkpoint 部署前必须跑 `eval_acceptance`（基准集与容差固定，不允许为过门禁增删）；Rust 端再跑 `bench_acceptance`
