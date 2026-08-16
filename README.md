@@ -1,102 +1,97 @@
 # 🧩 拼豆助手
 
-拼豆助手是一个拼豆图案识别应用。用户上传拼豆图纸图片，框选网格区域、设置行列数；系统对每个格子做 OCR（CRNN 模型）识别编码，对照拼豆颜色库生成可读的拼豆图纸。
+拼豆助手是一款**拼豆图纸识别工具**。把拼豆图纸（打印的或屏幕上的网格图纸）拍成照片、或截图上传，它会自动识别每个格子里的编码（如 H7、F2、C21），对照品牌颜色库，生成一份清晰、可读、可以照着拼的电子图纸。
 
-## 功能特性
+---
 
-- 🖼️ 单裁剪上传：图片 + 裁剪框 + 行列数（裁剪框支持拖拽缩放/键盘微调/数值输入）
-- 🔤 CRNN 逐格 OCR：识别格子内印刷的字母数字编码（如 H7、F2、C21）
-- 🎨 颜色库映射：mard 291 色（运行时）+ 多品牌快照（OCR 词表），UNMAPPED 编码明确标注、可校正
-- 📋 识别任务追踪：异步任务、实时进度、人类化事件时间线、自动重试
-- 🔍 任务历史 + 图纸详情（只读棋盘 + 颜色图例 + 校正导出）
+## 一、安装与使用（普通用户）
 
-## 架构
+### 1. 安装（三步搞定，无需安装任何软件）
 
-**2026-08-15：Kotlin 云端后端已移除，统一为 Rust 单二进制运行时。**
+#### 第 1 步：下载并解压应用
+
+- 拿到应用压缩包 `bead-local-server-v0.1.0.zip`（随发布提供）
+- 解压到任意目录（如 `D:\拼豆助手\`），双击进去能看到 `start-local.bat`
+
+#### 第 2 步：下载并安装识别模型（首次使用必做）
+
+识别模型体积较大，没有打包进应用，需要从网盘下载一次：
+
+1. **打开网盘链接**（夸克网盘）：`https://pan.quark.cn/s/ef8e5bac36ad`
+2. **下载模型压缩包**（`.zip`，文件名类似 `bead-models-...zip`）
+3. **解压到应用目录的 `models` 文件夹**：
+
+   ```
+   <你的解压目录>\models\                （例如 D:\拼豆助手\models\）
+   ```
+
+   解压完成后确认结构（**只有一层模型目录**）：
+
+   ```
+   models\
+   ├── bean-mard-v12-2026-08-15T10-39-29Z\   ← 模型目录（带版本和日期）
+   │   ├── model.onnx          ← 识别引擎用的模型文件
+   │   ├── charset.json        ← 识别字符集
+   │   ├── manifest.json       ← 模型信息
+   │   └── ...（其余文件保留即可，不用管）
+   └── model-current.txt       ← 当前使用的模型（一般不用动）
+   ```
+
+   ⚠️ **常见错误**：解压后变成 `models\models\bean-mard-...\`（多套一层目录）。解压时选「解压到当前目录」，并检查 `model.onnx` 能直接在模型目录里看到。
+
+#### 第 3 步：启动
+
+- **启动**：双击 `start-local.bat` —— 后台启动服务，并自动打开浏览器页面（http://localhost:8080）
+- **停止**：双击 `stop-local.bat`
+- **重启**：先停止、再启动
+
+### 2. 使用说明
+
+1. **上传**：打开页面，点「上传图纸」，选择图片（图纸照片或截图均可，支持 JPG/PNG，30MB 以内）
+2. **框选网格**：拖拽调整裁剪框，框住图纸的网格区域；填入**行数、列数**（图纸上一般会标，如 80 行 × 158 列）
+3. **开始识别**：点击开始，任务约几十秒到 1 分钟（格子越多越久），可实时看到进度
+4. **查看图纸**：识别完成后进入图纸详情——每个格子显示**编码 + 颜色**，右侧是颜色图例
+5. **手动校正**：识别不准的格子，去「校正」页手动修改（支持 Shift+点击 矩形批量选择）；蓝色标记可恢复原识别
+6. **导出**：需要照着拼的时候，可导出包含逐格图纸和色号统计的资料包
+7. **手机/平板使用**：同一 WiFi 下，其他设备浏览器访问 `http://<本机IP>:8080` 即可（IP 见启动时的提示）
+
+### 3. 常见问题
+
+| 问题 | 解决办法 |
+|------|----------|
+| 双击后浏览器打不开页面 | 看 `data\server.err.log` 的报错；最常见原因是**模型没装好**（回到安装第 2 步检查目录结构） |
+| 识别结果大量是 UNMAPPED（灰色斜线格） | 图纸照片不够清晰/反光/拍歪，换更清晰的图重试；少量格子可在校正页手动改 |
+| 想换一个模型版本 | `models` 目录可以同时放多个版本；改 `models\model-current.txt` 里的目录名，重启即可 |
+| 手机访问不了 | 确认在同一局域网；如仍不行检查系统防火墙是否放行 8080 端口（启动脚本已尝试自动放行） |
+| 数据存在哪里 | 全部在本机：数据库 `data\bead-local.db`、上传图片 `uploads\`，不联网、不传云端 |
+
+---
+
+## 二、原理与项目结构（简介）
+
+### 工作原理
 
 ```
-[ 浏览器（本机/局域网任意设备）]
-        │  http://<本机IP>:8080
-        ▼
-[ bead-local-server.exe  （单进程，零外部依赖）]
-        │  axum
-        ├─ /api/v1/* ──── SQLite（data/bead-local.db）
-        ├─ 静态资源 ────── 前端 React build（磁盘 dist/ 目录，替换即生效）
-        └─ OCR worker ──── ONNX Runtime（model.onnx）进程内推理
+图纸图片 → 框选网格区域 → 逐格 OCR 识别编码 → 对照颜色库 → 生成可读电子图纸
 ```
 
-- **local_server/** — Rust（axum + SQLite + ONNX Runtime）：API、任务编排、事件、蓝图生成、前端托管
-- **frontend/** — React + TypeScript + Vite（构建产物部署为 `release/dist/`，磁盘托管、替换即生效、无需重编 exe；也可 npm run dev 开发）
-- **training/** — Python CRNN 训练 + 数据标注 + 模型发布（开发期工具，非运行时依赖）
-- **ocr_core/** — 训练/导出共用的 Python OCR 核心（运行时推理在 Rust）
+1. 用户上传图纸图片并框选出网格区域（行列数由用户指定）
+2. 程序把网格切成一个个格子，用 **CRNN 文字识别模型**（OCR）识别格子内印刷的字母数字编码（如 `H7`、`F2`、`C21`）
+3. 每个编码对照**拼豆颜色库**（mard 291 色）找到对应颜色；库里没有的编码标记为 UNMAPPED
+4. 生成**只读电子图纸**：逐格颜色 + 编码 + 色号，支持手动校正与导出
 
-## 快速开始（部署）
+### 项目结构
 
-```bash
-# 前置：Windows 机器（无需安装任何运行时）
-1. 解压 local_server/bead-local-server-v0.1.0.zip 到任意目录
-2. 双击 start-local.bat（后台启动 + 自动打开浏览器 http://localhost:8080）
-3. 局域网其他设备访问 http://<本机IP>:8080
-4. 停止：双击 stop-local.bat
-```
+| 目录 | 作用 |
+|------|------|
+| `local_server/` | **主程序**（Rust 单文件）：网页服务 + 识别引擎 + 数据存储，一个 exe 全搞定 |
+| `frontend/` | 网页界面（React）：上传、图纸查看、校正、颜色库 |
+| `training/` + `ocr_core/` | 模型训练工具（开发用，运行时不需要） |
 
-日志：`data/server.log` / `data/server.err.log`；数据库：`data/bead-local.db`（自动创建）。
+### 技术栈
 
-## 开发
+Rust（axum）+ SQLite + ONNX Runtime（识别引擎）；React + TypeScript（界面）；PyTorch（模型训练）。
 
-### Rust 运行时（local_server/）
+### 开发者
 
-```bash
-# 前置：Rust 1.97（rustup，RUSTUP_HOME=D:\devtools\rust, CARGO_HOME=D:\repos\cargo）、
-#       Windows SDK 26100、onnxruntime 1.23.2 DLL（ORT_DYLIB_PATH）
-cd local_server
-ORT_DYLIB_PATH=<onnxruntime.dll> cargo run          # :8080
-ORT_DYLIB_PATH=<onnxruntime.dll> cargo test         # 21 tests
-ORT_DYLIB_PATH=<onnxruntime.dll> cargo run --release --bin bench_acceptance  # 验收门禁
-
-# 出包（前端构建 + exe + DLL + 数据 + 模型 → zip）
-cd ../frontend && npm run build
-cd ../local_server && cmd /c build-release.bat
-```
-
-### 前端（frontend/）
-
-```bash
-cd frontend && npm install && npm run dev   # :5173，/api 代理到 :8080（需先起 local_server）
-cd frontend && npm test                     # 175 tests
-```
-
-### 训练 / 模型（training/，conda env bead-train）
-
-```bash
-python -m training.scripts.train_crnn --synth-n 50000 --epochs 30
-python -m training.scripts.publish_checkpoint --checkpoint <ckpt> --name <n> --version <v>
-python -m training.scripts.export_onnx --checkpoint artifacts/models/<n>-<v>/model.pt \
-    --out-dir artifacts/models/<n>-<v> --verify        # 发布 model.onnx 双产物
-python -m training.scripts.eval_acceptance --candidate <ckpt|onnx> --production <current>  # 门禁
-```
-
-## 技术栈
-
-### 运行时（Rust）
-- **axum 0.8** + **tokio** — HTTP API
-- **rusqlite (SQLite, bundled)** — 持久化（WAL）
-- **ort (ONNX Runtime 1.23.2, load-dynamic)** — CRNN 推理
-- **axum 静态文件服务** — 前端 `dist/` 目录磁盘托管（替换即生效；非 embed）
-- **serde / chrono / uuid / image / zip**
-
-### 前端
-- **React 19** + **TypeScript** + **Vite** + **TanStack React Query** + **Tailwind CSS v4** + **Vitest**
-
-### 训练（Python，开发期）
-- **PyTorch** — CRNN 训练
-- **onnx / onnxruntime** — 导出与验证
-
-## 文档
-
-- `AGENTS.md` / `CLAUDE.md` — 架构、命令、坑位
-- `docs/acceptance.md` — 模型验收门禁（固定基准 + 容差）
-- `docs/crop-math.md` — 裁剪数学契约（Rust + 前端两处实现）
-- `docs/board-viewer-perf.md` — 图纸查看器性能门禁
-- `docs/adr/` — 架构决策记录
-- `.scratch/spring-kotlin-python-rewrite/` — 历史架构决策（含 2026-08-15 Kotlin 移除）
+开发、测试、模型训练等完整命令与架构细节见 **`AGENTS.md`**；架构决策记录见 `docs/adr/`。
