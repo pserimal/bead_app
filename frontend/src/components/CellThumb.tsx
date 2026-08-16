@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import type { BlueprintCellDto, CropBoxDto } from '../types/api';
 import { cellCropRect } from '../lib/correctionModel';
@@ -9,7 +9,8 @@ const THUMB = 56;
  * 校正页格子缩略图：canvas 直绘原图裁剪（IntersectionObserver 懒裁剪，进视口才画）。
  * 带勾选框（批量）与 ✓ 修正徽章。
  */
-export default function CellThumb({
+/** 格子 key（row:col）由组件自身构造，回调只传 key → 回调引用稳定，memo 在滚动窗口化时真正生效 */
+export default memo(function CellThumb({
   cell,
   rows,
   cols,
@@ -25,12 +26,12 @@ export default function CellThumb({
   rows: number;
   cols: number;
   cropBox: CropBoxDto | null;
-  image: HTMLImageElement | null;
+  image: CanvasImageSource | null;
   checked: boolean;
-  onToggle: () => void;
-  onShiftToggle: () => void;
-  onContextMenu: (e: ReactMouseEvent) => void;
-  onEdit: () => void;
+  onToggle: (key: string) => void;
+  onShiftToggle: (key: string) => void;
+  onContextMenu: (e: ReactMouseEvent, key: string) => void;
+  onEdit: (key: string) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawnRef = useRef(false);
@@ -55,26 +56,37 @@ export default function CellThumb({
       draw();
       return;
     }
+    // 滚动中不抢帧：进入视口后交给 requestIdleCallback（浏览器空闲时批量补画，最多延迟 200ms）。
+    // 移动端单次 drawImage 约 1-6ms，滚动中同步画会直接吃掉帧预算导致滑动卡顿。
+    const scheduleDraw = () => {
+      if (drawnRef.current) return;
+      if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(() => draw(), { timeout: 200 });
+      } else {
+        setTimeout(draw, 100);
+      }
+    };
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
-            draw();
+            scheduleDraw();
             observer.unobserve(entry.target);
           }
         }
       },
-      { rootMargin: '300px' },
+      { rootMargin: '0px' },
     );
     observer.observe(canvas);
     return () => observer.disconnect();
   }, [image, cropBox, rows, cols, cell]);
 
   const corrected = cell.correctedCode != null;
+  const key = `${cell.row}:${cell.col}`;
 
   return (
     <div className="flex flex-col items-center gap-0.5 select-none" title={`行 ${cell.row + 1} · 列 ${cell.col + 1} · 识别 ${cell.code}${corrected ? ` → 修正 ${cell.correctedCode}` : ''}`}>
-      <div className="relative block cursor-pointer" onClick={onEdit} onContextMenu={onContextMenu} role="button" aria-label={`修改格子 ${cell.row + 1},${cell.col + 1}`}>
+      <div className="relative block cursor-pointer" onClick={() => onEdit(key)} onContextMenu={(e) => onContextMenu(e, key)} role="button" aria-label={`修改格子 ${cell.row + 1},${cell.col + 1}`}>
           <span
             className="block rounded border overflow-hidden transition-shadow hover:shadow-[var(--shadow-sm)]"
             style={{
@@ -103,11 +115,11 @@ export default function CellThumb({
             // Shift+点击 → 矩形连选（拦截 checkbox，避免触发普通 toggle）
             if (e.shiftKey) {
               e.preventDefault();
-              onShiftToggle();
+              onShiftToggle(key);
             }
           }}
         >
-          <input type="checkbox" className="sr-only" checked={checked} onChange={onToggle} aria-label={`勾选格子 ${cell.row + 1},${cell.col + 1}`} />
+          <input type="checkbox" className="sr-only" checked={checked} onChange={() => onToggle(key)} aria-label={`勾选格子 ${cell.row + 1},${cell.col + 1}`} />
           {checked && <span className="text-white text-[10px] leading-none">✓</span>}
         </label>
       </div>
@@ -123,4 +135,4 @@ export default function CellThumb({
       </span>
     </div>
   );
-}
+});

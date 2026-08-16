@@ -67,6 +67,29 @@ export default function CorrectionPage() {
     };
   }, [id]);
 
+  // 缩略图绘制源：cropBox 区域缩到 ≤3000px 宽的离屏 canvas（大原图逐格 drawImage 裁剪缩放是移动端滚动卡顿主因）。
+  // 原图已够小（cropBox ≤3000）则直接用原图，零开销。
+  const drawSource = useMemo(() => {
+    if (!image || !blueprint?.cropBox) return null;
+    const cb = blueprint.cropBox;
+    const MAX_W = 3000;
+    const scale = Math.min(1, MAX_W / cb.width);
+    if (scale >= 1) {
+      return { source: image as CanvasImageSource, cropBox: cb };
+    }
+    const w = Math.max(1, Math.round(cb.width * scale));
+    const h = Math.max(1, Math.round(cb.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'medium';
+    ctx.drawImage(image, cb.x, cb.y, cb.width, cb.height, 0, 0, w, h);
+    return { source: canvas, cropBox: { x: 0, y: 0, width: w, height: h } };
+  }, [image, blueprint]);
+
   const cellsByPos = useMemo(() => {
     const map = new Map<string, BlueprintCellDto>();
     if (blueprint) for (const cell of blueprint.cells) map.set(`${cell.row}:${cell.col}`, cell);
@@ -159,7 +182,6 @@ export default function CorrectionPage() {
   const WINDOW_BUFFER_SCREENS = 2;
   const [viewport, setViewport] = useState({ w: 0, h: 0, scrollTop: 0 });
   const listRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
   // 容器尺寸变化（含初始）→ 重算窗口。注意：组件首渲染可能处于 isLoading early-return（容器未挂载），
   // 故依赖 isLoading——蓝图加载完成后容器出现，重新挂上 ResizeObserver
   useEffect(() => {
@@ -173,14 +195,14 @@ export default function CorrectionPage() {
     ro.observe(el);
     return () => ro.disconnect();
   }, [isLoading]);
-  // 滚动 → rAF 节流更新 scrollTop（每帧最多一次重渲染，窗口小开销可控）
+  // 滚动 → 100ms 节流更新窗口（滚动中不每帧重渲染 React 窗口；2 屏缓冲保证窗口跟随无感知滞后）
+  const lastScrollUpdateRef = useRef(0);
   const onRightScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
-    if (rafRef.current != null) return;
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = null;
-      setViewport((v) => (v.scrollTop === el.scrollTop ? v : { ...v, scrollTop: el.scrollTop }));
-    });
+    const now = performance.now();
+    if (now - lastScrollUpdateRef.current < 100) return;
+    lastScrollUpdateRef.current = now;
+    setViewport((v) => (v.scrollTop === el.scrollTop ? v : { ...v, scrollTop: el.scrollTop }));
   }, []);
   // 切组：滚动位置归零
   useEffect(() => {
@@ -282,6 +304,8 @@ export default function CorrectionPage() {
     if (keys.length === 0) return;
     setEditor({ keys });
   }, []);
+  // 单格入口（CellThumb onEdit）：稳定引用，保证 memo 生效
+  const openEditorForCell = useCallback((key: string) => openEditor([key]), [openEditor]);
 
   /** 右键格子：已选中 → 菜单操作整个选中集；未选中 → 先只选该格 */
   const handleCellContextMenu = useCallback((e: React.MouseEvent, key: string) => {
@@ -533,13 +557,13 @@ export default function CorrectionPage() {
                           cell={cell}
                           rows={blueprint.rows}
                           cols={blueprint.cols}
-                          cropBox={blueprint.cropBox}
-                          image={image}
+                          cropBox={drawSource?.cropBox ?? blueprint.cropBox}
+                          image={drawSource?.source ?? image}
                           checked={selected.has(`${cell.row}:${cell.col}`)}
-                          onToggle={() => toggleCell(`${cell.row}:${cell.col}`)}
-                          onShiftToggle={() => shiftSelect(`${cell.row}:${cell.col}`)}
-                          onContextMenu={(e) => handleCellContextMenu(e, `${cell.row}:${cell.col}`)}
-                          onEdit={() => openEditor([`${cell.row}:${cell.col}`])}
+                          onToggle={toggleCell}
+                          onShiftToggle={shiftSelect}
+                          onContextMenu={handleCellContextMenu}
+                          onEdit={openEditorForCell}
                         />
                       ))}
                     </div>
