@@ -51,9 +51,9 @@ netstat -ano | findstr /R /C:":%BEAD_PORT% .*LISTENING" >nul 2>&1
 if errorlevel 1 goto waitport
 
 rem ── 就绪：显示地址（含本机局域网 IP），打开浏览器，窗口自动关闭 ──
+rem ── 检测真实局域网 IP（get-lan-ip.ps1 排除虚拟网卡/代理网段）──
 set "LAN_IP="
-for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /C:"IPv4"') do if not defined LAN_IP set "LAN_IP=%%a"
-if defined LAN_IP set "LAN_IP=%LAN_IP: =%"
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%ROOT%get-lan-ip.ps1"') do set "LAN_IP=%%a"
 
 echo [start] 服务已就绪（绑定 0.0.0.0，端口 %BEAD_PORT%）:
 echo   本机访问   : http://localhost:%BEAD_PORT%

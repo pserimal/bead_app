@@ -34,12 +34,12 @@ copy /y start-local.bat "%OUT%" >nul
 copy /y ..\server\src\main\resources\default_colors.json "%OUT%\data" >nul
 copy /y ..\artifacts\colors\library.json "%OUT%\data" >nul
 
-set "ART=..\artifacts\models\bean-mard-v11-2026-08-14T00-00-00Z"
-if not exist "%OUT%\models\bean-mard-v11-2026-08-14T00-00-00Z" mkdir "%OUT%\models\bean-mard-v11-2026-08-14T00-00-00Z"
-copy /y "%ART%\model.onnx" "%OUT%\models\bean-mard-v11-2026-08-14T00-00-00Z" >nul
-copy /y "%ART%\manifest.json" "%OUT%\models\bean-mard-v11-2026-08-14T00-00-00Z" >nul
-copy /y "%ART%\charset.json" "%OUT%\models\bean-mard-v11-2026-08-14T00-00-00Z" >nul
-copy /y "%ART%\code_dict.json" "%OUT%\models\bean-mard-v11-2026-08-14T00-00-00Z" >nul
+set "ART=..\artifacts\models\bean-mard-v12-2026-08-15T10-39-29Z"
+if not exist "%OUT%\models\bean-mard-v12-2026-08-15T10-39-29Z" mkdir "%OUT%\models\bean-mard-v12-2026-08-15T10-39-29Z"
+copy /y "%ART%\model.onnx" "%OUT%\models\bean-mard-v12-2026-08-15T10-39-29Z" >nul
+copy /y "%ART%\manifest.json" "%OUT%\models\bean-mard-v12-2026-08-15T10-39-29Z" >nul
+copy /y "%ART%\charset.json" "%OUT%\models\bean-mard-v12-2026-08-15T10-39-29Z" >nul
+copy /y "%ART%\code_dict.json" "%OUT%\models\bean-mard-v12-2026-08-15T10-39-29Z" >nul
 
 if exist "%CONDA_PREFIX%\Lib\site-packages\onnxruntime\capi\onnxruntime.dll" (
     copy /y "%CONDA_PREFIX%\Lib\site-packages\onnxruntime\capi\onnxruntime.dll" "%OUT%" >nul
@@ -49,8 +49,8 @@ if exist "%CONDA_PREFIX%\Lib\site-packages\onnxruntime\capi\onnxruntime.dll" (
 )
 
 rem ── 清理发布目录模型：只保留生产模型（v11），且只留 onnx（运行时不需要 pt）──
-for /d %%d in ("%OUT%\models\*") do if /i not "%%~nxd"=="bean-mard-v11-2026-08-14T00-00-00Z" rmdir /s /q "%%d"
-del /q "%OUT%\models\bean-mard-v11-2026-08-14T00-00-00Z\*.pt" 2>nul
+for /d %%d in ("%OUT%\models\*") do if /i not "%%~nxd"=="bean-mard-v12-2026-08-15T10-39-29Z" rmdir /s /q "%%d"
+del /q "%OUT%\models\bean-mard-v12-2026-08-15T10-39-29Z\*.pt" 2>nul
 
 rem ── 打 zip（自动排除运行数据：db/uploads 不进入发布包；运行目录数据原样保留）──
 set "ZIP=%~dp0bead-local-server-v0.1.0.zip"
@@ -66,5 +66,5 @@ rmdir /s /q "%~dp0.stage-zip"
 echo.
 echo 发布目录: %OUT%  （自包含，可整体拷贝到任意 Windows 机器）
 echo 压缩包  : %ZIP%
-echo 部署: 拷贝 %OUT% 或解压 %ZIP% 到目标机器，双击 start-local.bat，浏览器访问 http://^<IP^>:8080
+echo 部署: 拷贝 %OUT% 或解压 %ZIP% 到目标机器，双击 start-local.bat，浏览器访问 http://^<IP^>:5173
 echo 注意: 打包不影响 %OUT%\data\bead-local.db（运行数据原样保留）
