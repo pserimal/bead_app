@@ -471,6 +471,17 @@ async fn create_job(
     }
     let parsed_codes = parse_codes(codes.as_deref())?;
 
+    // 无模型模式（模型未安装——main.rs 降级启动时 active_id 为 None）：
+    // 拒绝创建识别任务，前端会把 message 直接提示给用户。
+    // 注意：必须在写文件/建 job 之前检查，避免留下孤儿任务。
+    if state.auto_ocr && state.model_pool.active_id().is_none() {
+        return Err(ApiException::new(
+            503,
+            "MODEL_NOT_INSTALLED",
+            "识别模型未安装：请按 README 安装说明下载模型，解压到应用目录 models 文件夹后重启应用",
+        ));
+    }
+
     std::fs::create_dir_all(&state.uploads_dir)
         .map_err(|_| ApiException::new(500, "STORAGE_ERROR", "存储目录创建失败"))?;
     let safe_name: String = filename

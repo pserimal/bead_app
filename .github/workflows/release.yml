@@ -1,0 +1,123 @@
+# 构建发布流水线
+#
+# 触发方式：推送 tag（tag 即应用版本，如 v0.1.0）→ 构建并发布
+#   bead-local-server-<tag>.zip（含 README.md / VERSION.txt；不含模型——
+#   模型由用户按 README「安装」第 2 步从网盘下载，解压到应用目录 models\）
+#
+# 产物结构（与本地 build-release.bat 对齐）：
+#   bead-local-server/
+#     bead-local-server.exe      Rust 单二进制（axum + SQLite + ONNX）
+#     onnxruntime.dll            ONNX Runtime 1.23.2（官方 release 包）
+#     onnxruntime_providers_shared.dll
+#     start-local.bat / stop-local.bat / restart-local.bat / get-lan-ip.ps1
+#     data/default_colors.json   mard 291 色种子
+#     data/library.json          颜色库完整快照
+#     models/                    空目录（用户自行放入模型）
+#     dist/                      前端构建产物（磁盘托管，替换即生效）
+#     README.md / VERSION.txt
+
+name: build-release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+env:
+  ORT_VERSION: '1.23.2'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build frontend
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+        shell: pwsh
+
+      - name: Setup Rust (MSVC)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: x86_64-pc-windows-msvc
+
+      # local_server/.cargo/config.toml 硬编码了本机 MSVC/SDK 路径，仅本机可用；
+      # windows-latest 自带 VS2022，rustc 自动发现 link.exe，无需该配置。
+      - name: Remove machine-specific cargo config
+        run: Remove-Item local_server/.cargo/config.toml
+
+      - name: Build release binary
+        run: |
+          cd local_server
+          cargo build --release --locked
+        shell: pwsh
+
+      - name: Unit + contract tests (no ORT/model needed)
+        run: |
+          cd local_server
+          cargo test --locked --lib
+          cargo test --locked --test api_contract
+        shell: pwsh
+
+      - name: Download onnxruntime ${{ env.ORT_VERSION }}
+        run: |
+          $ProgressPreference = 'SilentlyContinue'
+          Invoke-WebRequest "https://github.com/microsoft/onnxruntime/releases/download/v$env:ORT_VERSION/onnxruntime-win-x64-$env:ORT_VERSION.zip" -OutFile ort.zip
+          Expand-Archive ort.zip -DestinationPath ort
+          Get-ChildItem "ort/onnxruntime-win-x64-$env:ORT_VERSION/lib" | Select-Object Name, Length
+        shell: pwsh
+
+      - name: Stage release package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ver = $env:GITHUB_REF_NAME
+          $stage = Join-Path $env:RUNNER_TEMP 'stage'
+          $out = Join-Path $stage 'bead-local-server'
+          Remove-Item $stage -Recurse -Force -ErrorAction SilentlyContinue
+          foreach ($d in @($out, "$out\data", "$out\models", "$out\dist", "$out\uploads")) {
+            New-Item -ItemType Directory -Force $d | Out-Null
+          }
+          # binary + runtime DLLs
+          Copy-Item local_server/target/release/bead-local-server.exe $out
+          Copy-Item "ort/onnxruntime-win-x64-$env:ORT_VERSION/lib/onnxruntime.dll" $out
+          Copy-Item "ort/onnxruntime-win-x64-$env:ORT_VERSION/lib/onnxruntime_providers_shared.dll" $out
+          # launcher scripts
+          Copy-Item local_server/start-local.bat, local_server/stop-local.bat, local_server/restart-local.bat, local_server/get-lan-ip.ps1 $out
+          # runtime seed data (models/ stays EMPTY — users install the model per README)
+          Copy-Item local_server/resources/default_colors.json "$out\data"
+          Copy-Item artifacts/colors/library.json "$out\data"
+          # frontend
+          Copy-Item frontend/dist/* "$out\dist" -Recurse
+          # docs + version (tag = version, e.g. v0.1.0)
+          Copy-Item README.md "$out\README.md"
+          Set-Content -Path "$out\VERSION.txt" -Value $ver -NoNewline
+          # zip (top-level folder: bead-local-server/)
+          $zip = "bead-local-server-$ver.zip"
+          Compress-Archive -Path $out -DestinationPath $zip -CompressionLevel Optimal
+          Get-ChildItem $zip | Select-Object Name, Length
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bead-local-server-${{ github.ref_name }}
+          path: bead-local-server-${{ github.ref_name }}.zip
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bead-local-server-${{ github.ref_name }}.zip

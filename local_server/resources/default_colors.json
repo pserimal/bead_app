@@ -1,0 +1,2039 @@
+[
+  {
+    "brand": "mard",
+    "code": "A1",
+    "color_name": "A1",
+    "color_hex": "#FAF4C8",
+    "sort_order": 1
+  },
+  {
+    "brand": "mard",
+    "code": "A10",
+    "color_name": "A10",
+    "color_hex": "#F77C31",
+    "sort_order": 2
+  },
+  {
+    "brand": "mard",
+    "code": "A11",
+    "color_name": "A11",
+    "color_hex": "#FFDD99",
+    "sort_order": 3
+  },
+  {
+    "brand": "mard",
+    "code": "A12",
+    "color_name": "A12",
+    "color_hex": "#FE9F72",
+    "sort_order": 4
+  },
+  {
+    "brand": "mard",
+    "code": "A13",
+    "color_name": "A13",
+    "color_hex": "#FFC365",
+    "sort_order": 5
+  },
+  {
+    "brand": "mard",
+    "code": "A14",
+    "color_name": "A14",
+    "color_hex": "#FD543D",
+    "sort_order": 6
+  },
+  {
+    "brand": "mard",
+    "code": "A15",
+    "color_name": "A15",
+    "color_hex": "#FFF365",
+    "sort_order": 7
+  },
+  {
+    "brand": "mard",
+    "code": "A16",
+    "color_name": "A16",
+    "color_hex": "#FFFF9F",
+    "sort_order": 8
+  },
+  {
+    "brand": "mard",
+    "code": "A17",
+    "color_name": "A17",
+    "color_hex": "#FFE36E",
+    "sort_order": 9
+  },
+  {
+    "brand": "mard",
+    "code": "A18",
+    "color_name": "A18",
+    "color_hex": "#FEBE7D",
+    "sort_order": 10
+  },
+  {
+    "brand": "mard",
+    "code": "A19",
+    "color_name": "A19",
+    "color_hex": "#FD7C72",
+    "sort_order": 11
+  },
+  {
+    "brand": "mard",
+    "code": "A2",
+    "color_name": "A2",
+    "color_hex": "#FFFFD5",
+    "sort_order": 12
+  },
+  {
+    "brand": "mard",
+    "code": "A20",
+    "color_name": "A20",
+    "color_hex": "#FFD568",
+    "sort_order": 13
+  },
+  {
+    "brand": "mard",
+    "code": "A21",
+    "color_name": "A21",
+    "color_hex": "#FFE395",
+    "sort_order": 14
+  },
+  {
+    "brand": "mard",
+    "code": "A22",
+    "color_name": "A22",
+    "color_hex": "#F4F57D",
+    "sort_order": 15
+  },
+  {
+    "brand": "mard",
+    "code": "A23",
+    "color_name": "A23",
+    "color_hex": "#E6C9B7",
+    "sort_order": 16
+  },
+  {
+    "brand": "mard",
+    "code": "A24",
+    "color_name": "A24",
+    "color_hex": "#F7F8A2",
+    "sort_order": 17
+  },
+  {
+    "brand": "mard",
+    "code": "A25",
+    "color_name": "A25",
+    "color_hex": "#FFD67D",
+    "sort_order": 18
+  },
+  {
+    "brand": "mard",
+    "code": "A26",
+    "color_name": "A26",
+    "color_hex": "#FFC830",
+    "sort_order": 19
+  },
+  {
+    "brand": "mard",
+    "code": "A3",
+    "color_name": "A3",
+    "color_hex": "#FEFF8B",
+    "sort_order": 20
+  },
+  {
+    "brand": "mard",
+    "code": "A4",
+    "color_name": "A4",
+    "color_hex": "#FBED56",
+    "sort_order": 21
+  },
+  {
+    "brand": "mard",
+    "code": "A5",
+    "color_name": "A5",
+    "color_hex": "#F4D738",
+    "sort_order": 22
+  },
+  {
+    "brand": "mard",
+    "code": "A6",
+    "color_name": "A6",
+    "color_hex": "#FEAC4C",
+    "sort_order": 23
+  },
+  {
+    "brand": "mard",
+    "code": "A7",
+    "color_name": "A7",
+    "color_hex": "#FE8B4C",
+    "sort_order": 24
+  },
+  {
+    "brand": "mard",
+    "code": "A8",
+    "color_name": "A8",
+    "color_hex": "#FFDA45",
+    "sort_order": 25
+  },
+  {
+    "brand": "mard",
+    "code": "A9",
+    "color_name": "A9",
+    "color_hex": "#FF995B",
+    "sort_order": 26
+  },
+  {
+    "brand": "mard",
+    "code": "B1",
+    "color_name": "B1",
+    "color_hex": "#E6EE31",
+    "sort_order": 27
+  },
+  {
+    "brand": "mard",
+    "code": "B10",
+    "color_name": "B10",
+    "color_hex": "#95D3C2",
+    "sort_order": 28
+  },
+  {
+    "brand": "mard",
+    "code": "B11",
+    "color_name": "B11",
+    "color_hex": "#5D722A",
+    "sort_order": 29
+  },
+  {
+    "brand": "mard",
+    "code": "B12",
+    "color_name": "B12",
+    "color_hex": "#166F41",
+    "sort_order": 30
+  },
+  {
+    "brand": "mard",
+    "code": "B13",
+    "color_name": "B13",
+    "color_hex": "#CAEB7B",
+    "sort_order": 31
+  },
+  {
+    "brand": "mard",
+    "code": "B14",
+    "color_name": "B14",
+    "color_hex": "#ADE946",
+    "sort_order": 32
+  },
+  {
+    "brand": "mard",
+    "code": "B15",
+    "color_name": "B15",
+    "color_hex": "#2E5132",
+    "sort_order": 33
+  },
+  {
+    "brand": "mard",
+    "code": "B16",
+    "color_name": "B16",
+    "color_hex": "#C5ED9C",
+    "sort_order": 34
+  },
+  {
+    "brand": "mard",
+    "code": "B17",
+    "color_name": "B17",
+    "color_hex": "#9BB13A",
+    "sort_order": 35
+  },
+  {
+    "brand": "mard",
+    "code": "B18",
+    "color_name": "B18",
+    "color_hex": "#E6EE49",
+    "sort_order": 36
+  },
+  {
+    "brand": "mard",
+    "code": "B19",
+    "color_name": "B19",
+    "color_hex": "#24B88C",
+    "sort_order": 37
+  },
+  {
+    "brand": "mard",
+    "code": "B2",
+    "color_name": "B2",
+    "color_hex": "#63F347",
+    "sort_order": 38
+  },
+  {
+    "brand": "mard",
+    "code": "B20",
+    "color_name": "B20",
+    "color_hex": "#C2F0CC",
+    "sort_order": 39
+  },
+  {
+    "brand": "mard",
+    "code": "B21",
+    "color_name": "B21",
+    "color_hex": "#156A6B",
+    "sort_order": 40
+  },
+  {
+    "brand": "mard",
+    "code": "B22",
+    "color_name": "B22",
+    "color_hex": "#0B3C43",
+    "sort_order": 41
+  },
+  {
+    "brand": "mard",
+    "code": "B23",
+    "color_name": "B23",
+    "color_hex": "#303A21",
+    "sort_order": 42
+  },
+  {
+    "brand": "mard",
+    "code": "B24",
+    "color_name": "B24",
+    "color_hex": "#EEFCA5",
+    "sort_order": 43
+  },
+  {
+    "brand": "mard",
+    "code": "B25",
+    "color_name": "B25",
+    "color_hex": "#4E846D",
+    "sort_order": 44
+  },
+  {
+    "brand": "mard",
+    "code": "B26",
+    "color_name": "B26",
+    "color_hex": "#8D7A35",
+    "sort_order": 45
+  },
+  {
+    "brand": "mard",
+    "code": "B27",
+    "color_name": "B27",
+    "color_hex": "#CCE1AF",
+    "sort_order": 46
+  },
+  {
+    "brand": "mard",
+    "code": "B28",
+    "color_name": "B28",
+    "color_hex": "#9EE5B9",
+    "sort_order": 47
+  },
+  {
+    "brand": "mard",
+    "code": "B29",
+    "color_name": "B29",
+    "color_hex": "#C5E254",
+    "sort_order": 48
+  },
+  {
+    "brand": "mard",
+    "code": "B3",
+    "color_name": "B3",
+    "color_hex": "#9EF780",
+    "sort_order": 49
+  },
+  {
+    "brand": "mard",
+    "code": "B30",
+    "color_name": "B30",
+    "color_hex": "#E2FCB1",
+    "sort_order": 50
+  },
+  {
+    "brand": "mard",
+    "code": "B31",
+    "color_name": "B31",
+    "color_hex": "#B0E792",
+    "sort_order": 51
+  },
+  {
+    "brand": "mard",
+    "code": "B32",
+    "color_name": "B32",
+    "color_hex": "#9CAB5A",
+    "sort_order": 52
+  },
+  {
+    "brand": "mard",
+    "code": "B4",
+    "color_name": "B4",
+    "color_hex": "#5DE035",
+    "sort_order": 53
+  },
+  {
+    "brand": "mard",
+    "code": "B5",
+    "color_name": "B5",
+    "color_hex": "#35E352",
+    "sort_order": 54
+  },
+  {
+    "brand": "mard",
+    "code": "B6",
+    "color_name": "B6",
+    "color_hex": "#65E2A6",
+    "sort_order": 55
+  },
+  {
+    "brand": "mard",
+    "code": "B7",
+    "color_name": "B7",
+    "color_hex": "#3DAF80",
+    "sort_order": 56
+  },
+  {
+    "brand": "mard",
+    "code": "B8",
+    "color_name": "B8",
+    "color_hex": "#1C9C4F",
+    "sort_order": 57
+  },
+  {
+    "brand": "mard",
+    "code": "B9",
+    "color_name": "B9",
+    "color_hex": "#27523A",
+    "sort_order": 58
+  },
+  {
+    "brand": "mard",
+    "code": "C1",
+    "color_name": "C1",
+    "color_hex": "#E8FFE7",
+    "sort_order": 59
+  },
+  {
+    "brand": "mard",
+    "code": "C10",
+    "color_name": "C10",
+    "color_hex": "#3EBCE2",
+    "sort_order": 60
+  },
+  {
+    "brand": "mard",
+    "code": "C11",
+    "color_name": "C11",
+    "color_hex": "#28DDDE",
+    "sort_order": 61
+  },
+  {
+    "brand": "mard",
+    "code": "C12",
+    "color_name": "C12",
+    "color_hex": "#1C334D",
+    "sort_order": 62
+  },
+  {
+    "brand": "mard",
+    "code": "C13",
+    "color_name": "C13",
+    "color_hex": "#CDE8FF",
+    "sort_order": 63
+  },
+  {
+    "brand": "mard",
+    "code": "C14",
+    "color_name": "C14",
+    "color_hex": "#D5FDFF",
+    "sort_order": 64
+  },
+  {
+    "brand": "mard",
+    "code": "C15",
+    "color_name": "C15",
+    "color_hex": "#22C4C6",
+    "sort_order": 65
+  },
+  {
+    "brand": "mard",
+    "code": "C16",
+    "color_name": "C16",
+    "color_hex": "#1557A8",
+    "sort_order": 66
+  },
+  {
+    "brand": "mard",
+    "code": "C17",
+    "color_name": "C17",
+    "color_hex": "#04D1F6",
+    "sort_order": 67
+  },
+  {
+    "brand": "mard",
+    "code": "C18",
+    "color_name": "C18",
+    "color_hex": "#1D3344",
+    "sort_order": 68
+  },
+  {
+    "brand": "mard",
+    "code": "C19",
+    "color_name": "C19",
+    "color_hex": "#1887A2",
+    "sort_order": 69
+  },
+  {
+    "brand": "mard",
+    "code": "C2",
+    "color_name": "C2",
+    "color_hex": "#A9F9FC",
+    "sort_order": 70
+  },
+  {
+    "brand": "mard",
+    "code": "C20",
+    "color_name": "C20",
+    "color_hex": "#176DAF",
+    "sort_order": 71
+  },
+  {
+    "brand": "mard",
+    "code": "C21",
+    "color_name": "C21",
+    "color_hex": "#BEDDFF",
+    "sort_order": 72
+  },
+  {
+    "brand": "mard",
+    "code": "C22",
+    "color_name": "C22",
+    "color_hex": "#67B4BE",
+    "sort_order": 73
+  },
+  {
+    "brand": "mard",
+    "code": "C23",
+    "color_name": "C23",
+    "color_hex": "#C8E2FF",
+    "sort_order": 74
+  },
+  {
+    "brand": "mard",
+    "code": "C24",
+    "color_name": "C24",
+    "color_hex": "#7CC4FF",
+    "sort_order": 75
+  },
+  {
+    "brand": "mard",
+    "code": "C25",
+    "color_name": "C25",
+    "color_hex": "#A9E5E5",
+    "sort_order": 76
+  },
+  {
+    "brand": "mard",
+    "code": "C26",
+    "color_name": "C26",
+    "color_hex": "#3CAED8",
+    "sort_order": 77
+  },
+  {
+    "brand": "mard",
+    "code": "C27",
+    "color_name": "C27",
+    "color_hex": "#D3DFFA",
+    "sort_order": 78
+  },
+  {
+    "brand": "mard",
+    "code": "C28",
+    "color_name": "C28",
+    "color_hex": "#BBCFED",
+    "sort_order": 79
+  },
+  {
+    "brand": "mard",
+    "code": "C29",
+    "color_name": "C29",
+    "color_hex": "#34488E",
+    "sort_order": 80
+  },
+  {
+    "brand": "mard",
+    "code": "C3",
+    "color_name": "C3",
+    "color_hex": "#A0E2FB",
+    "sort_order": 81
+  },
+  {
+    "brand": "mard",
+    "code": "C4",
+    "color_name": "C4",
+    "color_hex": "#41CCFF",
+    "sort_order": 82
+  },
+  {
+    "brand": "mard",
+    "code": "C5",
+    "color_name": "C5",
+    "color_hex": "#01ACEB",
+    "sort_order": 83
+  },
+  {
+    "brand": "mard",
+    "code": "C6",
+    "color_name": "C6",
+    "color_hex": "#50AAF0",
+    "sort_order": 84
+  },
+  {
+    "brand": "mard",
+    "code": "C7",
+    "color_name": "C7",
+    "color_hex": "#3677D2",
+    "sort_order": 85
+  },
+  {
+    "brand": "mard",
+    "code": "C8",
+    "color_name": "C8",
+    "color_hex": "#0F54C0",
+    "sort_order": 86
+  },
+  {
+    "brand": "mard",
+    "code": "C9",
+    "color_name": "C9",
+    "color_hex": "#324BCA",
+    "sort_order": 87
+  },
+  {
+    "brand": "mard",
+    "code": "D1",
+    "color_name": "D1",
+    "color_hex": "#AEB4F2",
+    "sort_order": 88
+  },
+  {
+    "brand": "mard",
+    "code": "D10",
+    "color_name": "D10",
+    "color_hex": "#361851",
+    "sort_order": 89
+  },
+  {
+    "brand": "mard",
+    "code": "D11",
+    "color_name": "D11",
+    "color_hex": "#B9BAE1",
+    "sort_order": 90
+  },
+  {
+    "brand": "mard",
+    "code": "D12",
+    "color_name": "D12",
+    "color_hex": "#DE9AD4",
+    "sort_order": 91
+  },
+  {
+    "brand": "mard",
+    "code": "D13",
+    "color_name": "D13",
+    "color_hex": "#B90095",
+    "sort_order": 92
+  },
+  {
+    "brand": "mard",
+    "code": "D14",
+    "color_name": "D14",
+    "color_hex": "#8B279B",
+    "sort_order": 93
+  },
+  {
+    "brand": "mard",
+    "code": "D15",
+    "color_name": "D15",
+    "color_hex": "#2F1F90",
+    "sort_order": 94
+  },
+  {
+    "brand": "mard",
+    "code": "D16",
+    "color_name": "D16",
+    "color_hex": "#E3E1EE",
+    "sort_order": 95
+  },
+  {
+    "brand": "mard",
+    "code": "D17",
+    "color_name": "D17",
+    "color_hex": "#C4D4F6",
+    "sort_order": 96
+  },
+  {
+    "brand": "mard",
+    "code": "D18",
+    "color_name": "D18",
+    "color_hex": "#A45EC7",
+    "sort_order": 97
+  },
+  {
+    "brand": "mard",
+    "code": "D19",
+    "color_name": "D19",
+    "color_hex": "#D8C3D7",
+    "sort_order": 98
+  },
+  {
+    "brand": "mard",
+    "code": "D2",
+    "color_name": "D2",
+    "color_hex": "#858EDD",
+    "sort_order": 99
+  },
+  {
+    "brand": "mard",
+    "code": "D20",
+    "color_name": "D20",
+    "color_hex": "#9C32B2",
+    "sort_order": 100
+  },
+  {
+    "brand": "mard",
+    "code": "D21",
+    "color_name": "D21",
+    "color_hex": "#9A009B",
+    "sort_order": 101
+  },
+  {
+    "brand": "mard",
+    "code": "D22",
+    "color_name": "D22",
+    "color_hex": "#333A95",
+    "sort_order": 102
+  },
+  {
+    "brand": "mard",
+    "code": "D23",
+    "color_name": "D23",
+    "color_hex": "#EBDAFC",
+    "sort_order": 103
+  },
+  {
+    "brand": "mard",
+    "code": "D24",
+    "color_name": "D24",
+    "color_hex": "#7786E5",
+    "sort_order": 104
+  },
+  {
+    "brand": "mard",
+    "code": "D25",
+    "color_name": "D25",
+    "color_hex": "#494FC7",
+    "sort_order": 105
+  },
+  {
+    "brand": "mard",
+    "code": "D26",
+    "color_name": "D26",
+    "color_hex": "#DFC2F8",
+    "sort_order": 106
+  },
+  {
+    "brand": "mard",
+    "code": "D3",
+    "color_name": "D3",
+    "color_hex": "#2F54AF",
+    "sort_order": 107
+  },
+  {
+    "brand": "mard",
+    "code": "D4",
+    "color_name": "D4",
+    "color_hex": "#182A84",
+    "sort_order": 108
+  },
+  {
+    "brand": "mard",
+    "code": "D5",
+    "color_name": "D5",
+    "color_hex": "#B843C5",
+    "sort_order": 109
+  },
+  {
+    "brand": "mard",
+    "code": "D6",
+    "color_name": "D6",
+    "color_hex": "#AC7BDE",
+    "sort_order": 110
+  },
+  {
+    "brand": "mard",
+    "code": "D7",
+    "color_name": "D7",
+    "color_hex": "#8854B3",
+    "sort_order": 111
+  },
+  {
+    "brand": "mard",
+    "code": "D8",
+    "color_name": "D8",
+    "color_hex": "#E2D3FF",
+    "sort_order": 112
+  },
+  {
+    "brand": "mard",
+    "code": "D9",
+    "color_name": "D9",
+    "color_hex": "#D5B9F8",
+    "sort_order": 113
+  },
+  {
+    "brand": "mard",
+    "code": "E1",
+    "color_name": "E1",
+    "color_hex": "#FDD3CC",
+    "sort_order": 114
+  },
+  {
+    "brand": "mard",
+    "code": "E10",
+    "color_name": "E10",
+    "color_hex": "#D33793",
+    "sort_order": 115
+  },
+  {
+    "brand": "mard",
+    "code": "E11",
+    "color_name": "E11",
+    "color_hex": "#FCDDD2",
+    "sort_order": 116
+  },
+  {
+    "brand": "mard",
+    "code": "E12",
+    "color_name": "E12",
+    "color_hex": "#F78FC3",
+    "sort_order": 117
+  },
+  {
+    "brand": "mard",
+    "code": "E13",
+    "color_name": "E13",
+    "color_hex": "#B5006D",
+    "sort_order": 118
+  },
+  {
+    "brand": "mard",
+    "code": "E14",
+    "color_name": "E14",
+    "color_hex": "#FFD1BA",
+    "sort_order": 119
+  },
+  {
+    "brand": "mard",
+    "code": "E15",
+    "color_name": "E15",
+    "color_hex": "#F8C7C9",
+    "sort_order": 120
+  },
+  {
+    "brand": "mard",
+    "code": "E16",
+    "color_name": "E16",
+    "color_hex": "#FFF3EB",
+    "sort_order": 121
+  },
+  {
+    "brand": "mard",
+    "code": "E17",
+    "color_name": "E17",
+    "color_hex": "#FFE2EA",
+    "sort_order": 122
+  },
+  {
+    "brand": "mard",
+    "code": "E18",
+    "color_name": "E18",
+    "color_hex": "#FFC7DB",
+    "sort_order": 123
+  },
+  {
+    "brand": "mard",
+    "code": "E19",
+    "color_name": "E19",
+    "color_hex": "#FEBAD5",
+    "sort_order": 124
+  },
+  {
+    "brand": "mard",
+    "code": "E2",
+    "color_name": "E2",
+    "color_hex": "#FEC0DF",
+    "sort_order": 125
+  },
+  {
+    "brand": "mard",
+    "code": "E20",
+    "color_name": "E20",
+    "color_hex": "#D8C7D1",
+    "sort_order": 126
+  },
+  {
+    "brand": "mard",
+    "code": "E21",
+    "color_name": "E21",
+    "color_hex": "#BD9DA1",
+    "sort_order": 127
+  },
+  {
+    "brand": "mard",
+    "code": "E22",
+    "color_name": "E22",
+    "color_hex": "#B785A1",
+    "sort_order": 128
+  },
+  {
+    "brand": "mard",
+    "code": "E23",
+    "color_name": "E23",
+    "color_hex": "#937A8D",
+    "sort_order": 129
+  },
+  {
+    "brand": "mard",
+    "code": "E24",
+    "color_name": "E24",
+    "color_hex": "#E1BCE8",
+    "sort_order": 130
+  },
+  {
+    "brand": "mard",
+    "code": "E3",
+    "color_name": "E3",
+    "color_hex": "#FFB7E7",
+    "sort_order": 131
+  },
+  {
+    "brand": "mard",
+    "code": "E4",
+    "color_name": "E4",
+    "color_hex": "#E8649E",
+    "sort_order": 132
+  },
+  {
+    "brand": "mard",
+    "code": "E5",
+    "color_name": "E5",
+    "color_hex": "#F551A2",
+    "sort_order": 133
+  },
+  {
+    "brand": "mard",
+    "code": "E6",
+    "color_name": "E6",
+    "color_hex": "#F13D74",
+    "sort_order": 134
+  },
+  {
+    "brand": "mard",
+    "code": "E7",
+    "color_name": "E7",
+    "color_hex": "#C63478",
+    "sort_order": 135
+  },
+  {
+    "brand": "mard",
+    "code": "E8",
+    "color_name": "E8",
+    "color_hex": "#FFDBE9",
+    "sort_order": 136
+  },
+  {
+    "brand": "mard",
+    "code": "E9",
+    "color_name": "E9",
+    "color_hex": "#E970CC",
+    "sort_order": 137
+  },
+  {
+    "brand": "mard",
+    "code": "F1",
+    "color_name": "F1",
+    "color_hex": "#FD957B",
+    "sort_order": 138
+  },
+  {
+    "brand": "mard",
+    "code": "F10",
+    "color_name": "F10",
+    "color_hex": "#8A4526",
+    "sort_order": 139
+  },
+  {
+    "brand": "mard",
+    "code": "F11",
+    "color_name": "F11",
+    "color_hex": "#5A2121",
+    "sort_order": 140
+  },
+  {
+    "brand": "mard",
+    "code": "F12",
+    "color_name": "F12",
+    "color_hex": "#FD4E6A",
+    "sort_order": 141
+  },
+  {
+    "brand": "mard",
+    "code": "F13",
+    "color_name": "F13",
+    "color_hex": "#F35744",
+    "sort_order": 142
+  },
+  {
+    "brand": "mard",
+    "code": "F14",
+    "color_name": "F14",
+    "color_hex": "#FFA9AD",
+    "sort_order": 143
+  },
+  {
+    "brand": "mard",
+    "code": "F15",
+    "color_name": "F15",
+    "color_hex": "#D30022",
+    "sort_order": 144
+  },
+  {
+    "brand": "mard",
+    "code": "F16",
+    "color_name": "F16",
+    "color_hex": "#FEC2A6",
+    "sort_order": 145
+  },
+  {
+    "brand": "mard",
+    "code": "F17",
+    "color_name": "F17",
+    "color_hex": "#E69C79",
+    "sort_order": 146
+  },
+  {
+    "brand": "mard",
+    "code": "F18",
+    "color_name": "F18",
+    "color_hex": "#D37C46",
+    "sort_order": 147
+  },
+  {
+    "brand": "mard",
+    "code": "F19",
+    "color_name": "F19",
+    "color_hex": "#C1444A",
+    "sort_order": 148
+  },
+  {
+    "brand": "mard",
+    "code": "F2",
+    "color_name": "F2",
+    "color_hex": "#FC3D46",
+    "sort_order": 149
+  },
+  {
+    "brand": "mard",
+    "code": "F20",
+    "color_name": "F20",
+    "color_hex": "#CD9391",
+    "sort_order": 150
+  },
+  {
+    "brand": "mard",
+    "code": "F21",
+    "color_name": "F21",
+    "color_hex": "#F7B4C6",
+    "sort_order": 151
+  },
+  {
+    "brand": "mard",
+    "code": "F22",
+    "color_name": "F22",
+    "color_hex": "#FDC0D0",
+    "sort_order": 152
+  },
+  {
+    "brand": "mard",
+    "code": "F23",
+    "color_name": "F23",
+    "color_hex": "#F67E66",
+    "sort_order": 153
+  },
+  {
+    "brand": "mard",
+    "code": "F24",
+    "color_name": "F24",
+    "color_hex": "#E698AA",
+    "sort_order": 154
+  },
+  {
+    "brand": "mard",
+    "code": "F25",
+    "color_name": "F25",
+    "color_hex": "#E54B4F",
+    "sort_order": 155
+  },
+  {
+    "brand": "mard",
+    "code": "F3",
+    "color_name": "F3",
+    "color_hex": "#F74941",
+    "sort_order": 156
+  },
+  {
+    "brand": "mard",
+    "code": "F4",
+    "color_name": "F4",
+    "color_hex": "#FC283C",
+    "sort_order": 157
+  },
+  {
+    "brand": "mard",
+    "code": "F5",
+    "color_name": "F5",
+    "color_hex": "#E7002F",
+    "sort_order": 158
+  },
+  {
+    "brand": "mard",
+    "code": "F6",
+    "color_name": "F6",
+    "color_hex": "#943630",
+    "sort_order": 159
+  },
+  {
+    "brand": "mard",
+    "code": "F7",
+    "color_name": "F7",
+    "color_hex": "#971937",
+    "sort_order": 160
+  },
+  {
+    "brand": "mard",
+    "code": "F8",
+    "color_name": "F8",
+    "color_hex": "#BC0028",
+    "sort_order": 161
+  },
+  {
+    "brand": "mard",
+    "code": "F9",
+    "color_name": "F9",
+    "color_hex": "#E2677A",
+    "sort_order": 162
+  },
+  {
+    "brand": "mard",
+    "code": "G1",
+    "color_name": "G1",
+    "color_hex": "#FFE2CE",
+    "sort_order": 163
+  },
+  {
+    "brand": "mard",
+    "code": "G10",
+    "color_name": "G10",
+    "color_hex": "#D98C39",
+    "sort_order": 164
+  },
+  {
+    "brand": "mard",
+    "code": "G11",
+    "color_name": "G11",
+    "color_hex": "#E0C593",
+    "sort_order": 165
+  },
+  {
+    "brand": "mard",
+    "code": "G12",
+    "color_name": "G12",
+    "color_hex": "#FFC890",
+    "sort_order": 166
+  },
+  {
+    "brand": "mard",
+    "code": "G13",
+    "color_name": "G13",
+    "color_hex": "#B7714A",
+    "sort_order": 167
+  },
+  {
+    "brand": "mard",
+    "code": "G14",
+    "color_name": "G14",
+    "color_hex": "#8D614C",
+    "sort_order": 168
+  },
+  {
+    "brand": "mard",
+    "code": "G15",
+    "color_name": "G15",
+    "color_hex": "#FCF9E0",
+    "sort_order": 169
+  },
+  {
+    "brand": "mard",
+    "code": "G16",
+    "color_name": "G16",
+    "color_hex": "#F2D9BA",
+    "sort_order": 170
+  },
+  {
+    "brand": "mard",
+    "code": "G17",
+    "color_name": "G17",
+    "color_hex": "#78524B",
+    "sort_order": 171
+  },
+  {
+    "brand": "mard",
+    "code": "G18",
+    "color_name": "G18",
+    "color_hex": "#FFE4CC",
+    "sort_order": 172
+  },
+  {
+    "brand": "mard",
+    "code": "G19",
+    "color_name": "G19",
+    "color_hex": "#E07935",
+    "sort_order": 173
+  },
+  {
+    "brand": "mard",
+    "code": "G2",
+    "color_name": "G2",
+    "color_hex": "#FFC4AA",
+    "sort_order": 174
+  },
+  {
+    "brand": "mard",
+    "code": "G20",
+    "color_name": "G20",
+    "color_hex": "#A94023",
+    "sort_order": 175
+  },
+  {
+    "brand": "mard",
+    "code": "G21",
+    "color_name": "G21",
+    "color_hex": "#B88558",
+    "sort_order": 176
+  },
+  {
+    "brand": "mard",
+    "code": "G3",
+    "color_name": "G3",
+    "color_hex": "#F4C3A5",
+    "sort_order": 177
+  },
+  {
+    "brand": "mard",
+    "code": "G4",
+    "color_name": "G4",
+    "color_hex": "#E1B383",
+    "sort_order": 178
+  },
+  {
+    "brand": "mard",
+    "code": "G5",
+    "color_name": "G5",
+    "color_hex": "#EDB045",
+    "sort_order": 179
+  },
+  {
+    "brand": "mard",
+    "code": "G6",
+    "color_name": "G6",
+    "color_hex": "#E99C17",
+    "sort_order": 180
+  },
+  {
+    "brand": "mard",
+    "code": "G7",
+    "color_name": "G7",
+    "color_hex": "#9D5B3E",
+    "sort_order": 181
+  },
+  {
+    "brand": "mard",
+    "code": "G8",
+    "color_name": "G8",
+    "color_hex": "#753832",
+    "sort_order": 182
+  },
+  {
+    "brand": "mard",
+    "code": "G9",
+    "color_name": "G9",
+    "color_hex": "#E6B483",
+    "sort_order": 183
+  },
+  {
+    "brand": "mard",
+    "code": "H1",
+    "color_name": "H1",
+    "color_hex": "#FDFBFF",
+    "sort_order": 184
+  },
+  {
+    "brand": "mard",
+    "code": "H10",
+    "color_name": "H10",
+    "color_hex": "#EEE9EA",
+    "sort_order": 185
+  },
+  {
+    "brand": "mard",
+    "code": "H11",
+    "color_name": "H11",
+    "color_hex": "#CECDD5",
+    "sort_order": 186
+  },
+  {
+    "brand": "mard",
+    "code": "H12",
+    "color_name": "H12",
+    "color_hex": "#FFF5ED",
+    "sort_order": 187
+  },
+  {
+    "brand": "mard",
+    "code": "H13",
+    "color_name": "H13",
+    "color_hex": "#F5ECD2",
+    "sort_order": 188
+  },
+  {
+    "brand": "mard",
+    "code": "H14",
+    "color_name": "H14",
+    "color_hex": "#CFD7D3",
+    "sort_order": 189
+  },
+  {
+    "brand": "mard",
+    "code": "H15",
+    "color_name": "H15",
+    "color_hex": "#98A6A8",
+    "sort_order": 190
+  },
+  {
+    "brand": "mard",
+    "code": "H16",
+    "color_name": "H16",
+    "color_hex": "#1D1414",
+    "sort_order": 191
+  },
+  {
+    "brand": "mard",
+    "code": "H17",
+    "color_name": "H17",
+    "color_hex": "#F1EDED",
+    "sort_order": 192
+  },
+  {
+    "brand": "mard",
+    "code": "H18",
+    "color_name": "H18",
+    "color_hex": "#FFFDF0",
+    "sort_order": 193
+  },
+  {
+    "brand": "mard",
+    "code": "H19",
+    "color_name": "H19",
+    "color_hex": "#F6EFE2",
+    "sort_order": 194
+  },
+  {
+    "brand": "mard",
+    "code": "H2",
+    "color_name": "H2",
+    "color_hex": "#FEFFFF",
+    "sort_order": 195
+  },
+  {
+    "brand": "mard",
+    "code": "H20",
+    "color_name": "H20",
+    "color_hex": "#949FA3",
+    "sort_order": 196
+  },
+  {
+    "brand": "mard",
+    "code": "H21",
+    "color_name": "H21",
+    "color_hex": "#FFFBE1",
+    "sort_order": 197
+  },
+  {
+    "brand": "mard",
+    "code": "H22",
+    "color_name": "H22",
+    "color_hex": "#CACAD4",
+    "sort_order": 198
+  },
+  {
+    "brand": "mard",
+    "code": "H23",
+    "color_name": "H23",
+    "color_hex": "#9A9D94",
+    "sort_order": 199
+  },
+  {
+    "brand": "mard",
+    "code": "H3",
+    "color_name": "H3",
+    "color_hex": "#B6B1BA",
+    "sort_order": 200
+  },
+  {
+    "brand": "mard",
+    "code": "H4",
+    "color_name": "H4",
+    "color_hex": "#89858C",
+    "sort_order": 201
+  },
+  {
+    "brand": "mard",
+    "code": "H5",
+    "color_name": "H5",
+    "color_hex": "#48464E",
+    "sort_order": 202
+  },
+  {
+    "brand": "mard",
+    "code": "H6",
+    "color_name": "H6",
+    "color_hex": "#2F2B2F",
+    "sort_order": 203
+  },
+  {
+    "brand": "mard",
+    "code": "H7",
+    "color_name": "H7",
+    "color_hex": "#000000",
+    "sort_order": 204
+  },
+  {
+    "brand": "mard",
+    "code": "H8",
+    "color_name": "H8",
+    "color_hex": "#E7D6DB",
+    "sort_order": 205
+  },
+  {
+    "brand": "mard",
+    "code": "H9",
+    "color_name": "H9",
+    "color_hex": "#EDEDED",
+    "sort_order": 206
+  },
+  {
+    "brand": "mard",
+    "code": "M1",
+    "color_name": "M1",
+    "color_hex": "#BCC6B8",
+    "sort_order": 207
+  },
+  {
+    "brand": "mard",
+    "code": "M10",
+    "color_name": "M10",
+    "color_hex": "#C5B2BC",
+    "sort_order": 208
+  },
+  {
+    "brand": "mard",
+    "code": "M11",
+    "color_name": "M11",
+    "color_hex": "#9F7594",
+    "sort_order": 209
+  },
+  {
+    "brand": "mard",
+    "code": "M12",
+    "color_name": "M12",
+    "color_hex": "#644749",
+    "sort_order": 210
+  },
+  {
+    "brand": "mard",
+    "code": "M13",
+    "color_name": "M13",
+    "color_hex": "#D19066",
+    "sort_order": 211
+  },
+  {
+    "brand": "mard",
+    "code": "M14",
+    "color_name": "M14",
+    "color_hex": "#C77362",
+    "sort_order": 212
+  },
+  {
+    "brand": "mard",
+    "code": "M15",
+    "color_name": "M15",
+    "color_hex": "#757D78",
+    "sort_order": 213
+  },
+  {
+    "brand": "mard",
+    "code": "M2",
+    "color_name": "M2",
+    "color_hex": "#8AA386",
+    "sort_order": 214
+  },
+  {
+    "brand": "mard",
+    "code": "M3",
+    "color_name": "M3",
+    "color_hex": "#697D80",
+    "sort_order": 215
+  },
+  {
+    "brand": "mard",
+    "code": "M4",
+    "color_name": "M4",
+    "color_hex": "#E3D2BC",
+    "sort_order": 216
+  },
+  {
+    "brand": "mard",
+    "code": "M5",
+    "color_name": "M5",
+    "color_hex": "#D0CCAA",
+    "sort_order": 217
+  },
+  {
+    "brand": "mard",
+    "code": "M6",
+    "color_name": "M6",
+    "color_hex": "#B0A782",
+    "sort_order": 218
+  },
+  {
+    "brand": "mard",
+    "code": "M7",
+    "color_name": "M7",
+    "color_hex": "#B4A497",
+    "sort_order": 219
+  },
+  {
+    "brand": "mard",
+    "code": "M8",
+    "color_name": "M8",
+    "color_hex": "#B38281",
+    "sort_order": 220
+  },
+  {
+    "brand": "mard",
+    "code": "M9",
+    "color_name": "M9",
+    "color_hex": "#A58767",
+    "sort_order": 221
+  },
+  {
+    "brand": "mard",
+    "code": "P1",
+    "color_name": "P1",
+    "color_hex": "#FCF7F8",
+    "sort_order": 222
+  },
+  {
+    "brand": "mard",
+    "code": "P10",
+    "color_name": "P10",
+    "color_hex": "#D9C7EA",
+    "sort_order": 223
+  },
+  {
+    "brand": "mard",
+    "code": "P11",
+    "color_name": "P11",
+    "color_hex": "#F3ECC9",
+    "sort_order": 224
+  },
+  {
+    "brand": "mard",
+    "code": "P12",
+    "color_name": "P12",
+    "color_hex": "#E6EEF2",
+    "sort_order": 225
+  },
+  {
+    "brand": "mard",
+    "code": "P13",
+    "color_name": "P13",
+    "color_hex": "#AACBEF",
+    "sort_order": 226
+  },
+  {
+    "brand": "mard",
+    "code": "P14",
+    "color_name": "P14",
+    "color_hex": "#337680",
+    "sort_order": 227
+  },
+  {
+    "brand": "mard",
+    "code": "P15",
+    "color_name": "P15",
+    "color_hex": "#668575",
+    "sort_order": 228
+  },
+  {
+    "brand": "mard",
+    "code": "P16",
+    "color_name": "P16",
+    "color_hex": "#FEBF45",
+    "sort_order": 229
+  },
+  {
+    "brand": "mard",
+    "code": "P17",
+    "color_name": "P17",
+    "color_hex": "#FEA324",
+    "sort_order": 230
+  },
+  {
+    "brand": "mard",
+    "code": "P18",
+    "color_name": "P18",
+    "color_hex": "#FEB89F",
+    "sort_order": 231
+  },
+  {
+    "brand": "mard",
+    "code": "P19",
+    "color_name": "P19",
+    "color_hex": "#FFFEEC",
+    "sort_order": 232
+  },
+  {
+    "brand": "mard",
+    "code": "P2",
+    "color_name": "P2",
+    "color_hex": "#B0A9AC",
+    "sort_order": 233
+  },
+  {
+    "brand": "mard",
+    "code": "P20",
+    "color_name": "P20",
+    "color_hex": "#FEBECF",
+    "sort_order": 234
+  },
+  {
+    "brand": "mard",
+    "code": "P21",
+    "color_name": "P21",
+    "color_hex": "#ECBEBF",
+    "sort_order": 235
+  },
+  {
+    "brand": "mard",
+    "code": "P22",
+    "color_name": "P22",
+    "color_hex": "#E4A89F",
+    "sort_order": 236
+  },
+  {
+    "brand": "mard",
+    "code": "P23",
+    "color_name": "P23",
+    "color_hex": "#A56268",
+    "sort_order": 237
+  },
+  {
+    "brand": "mard",
+    "code": "P3",
+    "color_name": "P3",
+    "color_hex": "#AFDCAB",
+    "sort_order": 238
+  },
+  {
+    "brand": "mard",
+    "code": "P4",
+    "color_name": "P4",
+    "color_hex": "#FEA49F",
+    "sort_order": 239
+  },
+  {
+    "brand": "mard",
+    "code": "P5",
+    "color_name": "P5",
+    "color_hex": "#EE8C3E",
+    "sort_order": 240
+  },
+  {
+    "brand": "mard",
+    "code": "P6",
+    "color_name": "P6",
+    "color_hex": "#5FD0A7",
+    "sort_order": 241
+  },
+  {
+    "brand": "mard",
+    "code": "P7",
+    "color_name": "P7",
+    "color_hex": "#EB9270",
+    "sort_order": 242
+  },
+  {
+    "brand": "mard",
+    "code": "P8",
+    "color_name": "P8",
+    "color_hex": "#F0D958",
+    "sort_order": 243
+  },
+  {
+    "brand": "mard",
+    "code": "P9",
+    "color_name": "P9",
+    "color_hex": "#D9D9D9",
+    "sort_order": 244
+  },
+  {
+    "brand": "mard",
+    "code": "Q1",
+    "color_name": "Q1",
+    "color_hex": "#F2A5E8",
+    "sort_order": 245
+  },
+  {
+    "brand": "mard",
+    "code": "Q2",
+    "color_name": "Q2",
+    "color_hex": "#E9EC91",
+    "sort_order": 246
+  },
+  {
+    "brand": "mard",
+    "code": "Q3",
+    "color_name": "Q3",
+    "color_hex": "#FFFF00",
+    "sort_order": 247
+  },
+  {
+    "brand": "mard",
+    "code": "Q4",
+    "color_name": "Q4",
+    "color_hex": "#FFEBFA",
+    "sort_order": 248
+  },
+  {
+    "brand": "mard",
+    "code": "Q5",
+    "color_name": "Q5",
+    "color_hex": "#76CEDE",
+    "sort_order": 249
+  },
+  {
+    "brand": "mard",
+    "code": "R1",
+    "color_name": "R1",
+    "color_hex": "#D50D21",
+    "sort_order": 250
+  },
+  {
+    "brand": "mard",
+    "code": "R10",
+    "color_name": "R10",
+    "color_hex": "#FFDB4C",
+    "sort_order": 251
+  },
+  {
+    "brand": "mard",
+    "code": "R11",
+    "color_name": "R11",
+    "color_hex": "#FFEBFA",
+    "sort_order": 252
+  },
+  {
+    "brand": "mard",
+    "code": "R12",
+    "color_name": "R12",
+    "color_hex": "#D8D5CE",
+    "sort_order": 253
+  },
+  {
+    "brand": "mard",
+    "code": "R13",
+    "color_name": "R13",
+    "color_hex": "#55514C",
+    "sort_order": 254
+  },
+  {
+    "brand": "mard",
+    "code": "R14",
+    "color_name": "R14",
+    "color_hex": "#9FE4DF",
+    "sort_order": 255
+  },
+  {
+    "brand": "mard",
+    "code": "R15",
+    "color_name": "R15",
+    "color_hex": "#77CEE9",
+    "sort_order": 256
+  },
+  {
+    "brand": "mard",
+    "code": "R16",
+    "color_name": "R16",
+    "color_hex": "#3ECFCA",
+    "sort_order": 257
+  },
+  {
+    "brand": "mard",
+    "code": "R17",
+    "color_name": "R17",
+    "color_hex": "#4A867A",
+    "sort_order": 258
+  },
+  {
+    "brand": "mard",
+    "code": "R18",
+    "color_name": "R18",
+    "color_hex": "#7FCD9D",
+    "sort_order": 259
+  },
+  {
+    "brand": "mard",
+    "code": "R19",
+    "color_name": "R19",
+    "color_hex": "#CDE55D",
+    "sort_order": 260
+  },
+  {
+    "brand": "mard",
+    "code": "R2",
+    "color_name": "R2",
+    "color_hex": "#F92F83",
+    "sort_order": 261
+  },
+  {
+    "brand": "mard",
+    "code": "R20",
+    "color_name": "R20",
+    "color_hex": "#E8C7B4",
+    "sort_order": 262
+  },
+  {
+    "brand": "mard",
+    "code": "R21",
+    "color_name": "R21",
+    "color_hex": "#AD6F3C",
+    "sort_order": 263
+  },
+  {
+    "brand": "mard",
+    "code": "R22",
+    "color_name": "R22",
+    "color_hex": "#6C372F",
+    "sort_order": 264
+  },
+  {
+    "brand": "mard",
+    "code": "R23",
+    "color_name": "R23",
+    "color_hex": "#FEB872",
+    "sort_order": 265
+  },
+  {
+    "brand": "mard",
+    "code": "R24",
+    "color_name": "R24",
+    "color_hex": "#F3C1C0",
+    "sort_order": 266
+  },
+  {
+    "brand": "mard",
+    "code": "R25",
+    "color_name": "R25",
+    "color_hex": "#C9675E",
+    "sort_order": 267
+  },
+  {
+    "brand": "mard",
+    "code": "R26",
+    "color_name": "R26",
+    "color_hex": "#D293BE",
+    "sort_order": 268
+  },
+  {
+    "brand": "mard",
+    "code": "R27",
+    "color_name": "R27",
+    "color_hex": "#EA8CB1",
+    "sort_order": 269
+  },
+  {
+    "brand": "mard",
+    "code": "R28",
+    "color_name": "R28",
+    "color_hex": "#9C87D6",
+    "sort_order": 270
+  },
+  {
+    "brand": "mard",
+    "code": "R3",
+    "color_name": "R3",
+    "color_hex": "#FD8324",
+    "sort_order": 271
+  },
+  {
+    "brand": "mard",
+    "code": "R4",
+    "color_name": "R4",
+    "color_hex": "#F8EC31",
+    "sort_order": 272
+  },
+  {
+    "brand": "mard",
+    "code": "R5",
+    "color_name": "R5",
+    "color_hex": "#35C75B",
+    "sort_order": 273
+  },
+  {
+    "brand": "mard",
+    "code": "R6",
+    "color_name": "R6",
+    "color_hex": "#238891",
+    "sort_order": 274
+  },
+  {
+    "brand": "mard",
+    "code": "R7",
+    "color_name": "R7",
+    "color_hex": "#19779D",
+    "sort_order": 275
+  },
+  {
+    "brand": "mard",
+    "code": "R8",
+    "color_name": "R8",
+    "color_hex": "#1A60C3",
+    "sort_order": 276
+  },
+  {
+    "brand": "mard",
+    "code": "R9",
+    "color_name": "R9",
+    "color_hex": "#9A56B4",
+    "sort_order": 277
+  },
+  {
+    "brand": "mard",
+    "code": "T1",
+    "color_name": "T1",
+    "color_hex": "#FFFFFF",
+    "sort_order": 278
+  },
+  {
+    "brand": "mard",
+    "code": "Y1",
+    "color_name": "Y1",
+    "color_hex": "#FD6FB4",
+    "sort_order": 279
+  },
+  {
+    "brand": "mard",
+    "code": "Y2",
+    "color_name": "Y2",
+    "color_hex": "#FEB481",
+    "sort_order": 280
+  },
+  {
+    "brand": "mard",
+    "code": "Y3",
+    "color_name": "Y3",
+    "color_hex": "#D7FAA0",
+    "sort_order": 281
+  },
+  {
+    "brand": "mard",
+    "code": "Y4",
+    "color_name": "Y4",
+    "color_hex": "#8BDBFA",
+    "sort_order": 282
+  },
+  {
+    "brand": "mard",
+    "code": "Y5",
+    "color_name": "Y5",
+    "color_hex": "#E987EA",
+    "sort_order": 283
+  },
+  {
+    "brand": "mard",
+    "code": "ZG1",
+    "color_name": "ZG1",
+    "color_hex": "#DAABB3",
+    "sort_order": 284
+  },
+  {
+    "brand": "mard",
+    "code": "ZG2",
+    "color_name": "ZG2",
+    "color_hex": "#D6AA87",
+    "sort_order": 285
+  },
+  {
+    "brand": "mard",
+    "code": "ZG3",
+    "color_name": "ZG3",
+    "color_hex": "#C1BD8D",
+    "sort_order": 286
+  },
+  {
+    "brand": "mard",
+    "code": "ZG4",
+    "color_name": "ZG4",
+    "color_hex": "#96869F",
+    "sort_order": 287
+  },
+  {
+    "brand": "mard",
+    "code": "ZG5",
+    "color_name": "ZG5",
+    "color_hex": "#8490A6",
+    "sort_order": 288
+  },
+  {
+    "brand": "mard",
+    "code": "ZG6",
+    "color_name": "ZG6",
+    "color_hex": "#94BFE2",
+    "sort_order": 289
+  },
+  {
+    "brand": "mard",
+    "code": "ZG7",
+    "color_name": "ZG7",
+    "color_hex": "#E2A9D2",
+    "sort_order": 290
+  },
+  {
+    "brand": "mard",
+    "code": "ZG8",
+    "color_name": "ZG8",
+    "color_hex": "#AB91C0",
+    "sort_order": 291
+  }
+]

@@ -161,6 +161,36 @@ async fn create_job_returns_202_and_contract() {
 }
 
 #[tokio::test]
+async fn create_job_without_model_returns_503() {
+    // Degraded mode (main.rs): model not installed → active_id is None →
+    // job creation is rejected with a user-facing message; no orphan job.
+    let db = db::open(std::path::Path::new(":memory:")).unwrap();
+    let service = JobService::new(Arc::new(db));
+    let state = Arc::new(AppState {
+        service,
+        model_pool: bead_local_server::api::ModelPool::new(std::env::temp_dir().join("bead-test-models")),
+        mard_codes: vec![],
+        uploads_dir: std::env::temp_dir().join("bead-test-uploads"),
+        seed_version: "seed-3".into(),
+        auto_ocr: true,
+        frontend: bead_local_server::api::Frontend {
+            dist_dir: std::path::PathBuf::from("tests/fixtures/dist"),
+        },
+        models_dir: std::env::temp_dir().join("bead-test-models"),
+        model_current_file: std::env::temp_dir().join("bead-test-model-current.txt"),
+    });
+    let app = router(state.clone());
+    let (status, body) = send(&app, multipart_create("")).await;
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(body["code"], "MODEL_NOT_INSTALLED");
+    assert!(body["message"].as_str().is_some_and(|m| !m.is_empty()));
+    // No job was persisted.
+    let (status, body) = send(&app, get(&app, "/api/v1/jobs")).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["total"], 0);
+}
+
+#[tokio::test]
 async fn job_list_pagination_and_status_filter() {
     let (app, _) = test_app();
     create_job(&app).await;

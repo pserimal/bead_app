@@ -138,13 +138,7 @@ async fn main() -> anyhow::Result<()> {
     service.seed_colors(&load_color_seed(&colors_path))?;
     let seed_version = service.color_library_version();
 
-    let model = bead_local_server::ocr::OnnxModel::load(std::path::Path::new(&artifact_dir))?;
     let mard_codes = load_mard_codes(&library_path);
-    println!(
-        "[start] model={artifact_dir} chars={} mard_codes={} colors_version={seed_version} db={db_path}",
-        model.chars.len(),
-        mard_codes.len()
-    );
 
     let pool = bead_local_server::api::ModelPool::new(std::path::PathBuf::from(models_dir.clone()));
     let active_id = std::path::Path::new(&artifact_dir)
@@ -152,13 +146,26 @@ async fn main() -> anyhow::Result<()> {
         .unwrap_or_default()
         .to_string_lossy()
         .to_string();
-    // Preload one slot with the active model (fail fast at startup) and
-    // register it as active for new workers.
-    {
-        let slot = pool.acquire_worker().expect("model preload failed");
-        debug_assert!(slot.is_some());
+    // 模型加载：失败时降级启动（无模型模式）。此时识别任务会被 503 拒绝并
+    // 提示用户安装模型（README「安装」第 2 步：从网盘下载解压到 models\）。
+    match bead_local_server::ocr::OnnxModel::load(std::path::Path::new(&artifact_dir)) {
+        Ok(m) => {
+            println!("[start] model={artifact_dir} chars={}", m.chars.len());
+            // Register as active first, then preload one slot (fail fast at
+            // startup; debug builds additionally assert the slot is loaded).
+            pool.set_active(active_id.clone());
+            let _slot = pool.acquire_worker().expect("model preload failed");
+        }
+        Err(e) => {
+            eprintln!("[warn] 识别模型加载失败（{artifact_dir}）: {e}");
+            eprintln!("[warn] 应用以无模型模式启动：浏览/历史/颜色库可用，提交识别任务会提示模型未安装。");
+            eprintln!("[warn] 请按 README「安装」第 2 步从网盘下载模型，解压到应用目录 models 下后重启。");
+        }
     }
-    pool.set_active(active_id.clone());
+    println!(
+        "[start] mard_codes={} colors_version={seed_version} db={db_path}",
+        mard_codes.len()
+    );
     let state = Arc::new(AppState {
         service,
         model_pool: pool,
