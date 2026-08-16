@@ -152,19 +152,64 @@ export default function CorrectionPage() {
     if (activeCode == null || activeCode === 'BLANK') return null;
     return swatches.find((s) => s.code === activeCode)?.hex ?? codeCells[0]?.color?.hex ?? null;
   }, [activeCode, swatches, codeCells]);
-  // 渐进渲染：初始只挂载前 N 个，右栏滚动近底部自动追加（避免大组一次渲染 5 千 DOM 卡顿）
-  const RENDER_STEP = 300;
-  const [renderLimit, setRenderLimit] = useState(RENDER_STEP);
+  // 双向窗口化：只渲染视口内 ±2 屏的格子，滚出视口即卸载（深翻页不堆积 DOM，移动端流畅）
+  // 固定网格列宽（CellThumb 56px + gap 8px），行高按 CellThumb 实际高度 + gap 估算，略保守（多渲染不遗漏）
+  const CELL_W = 64;
+  const CELL_H = 96;
+  const WINDOW_BUFFER_SCREENS = 2;
+  const [viewport, setViewport] = useState({ w: 0, h: 0, scrollTop: 0 });
+  const listRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
+  // 容器尺寸变化（含初始）→ 重算窗口。注意：组件首渲染可能处于 isLoading early-return（容器未挂载），
+  // 故依赖 isLoading——蓝图加载完成后容器出现，重新挂上 ResizeObserver
   useEffect(() => {
-    setRenderLimit(RENDER_STEP);
-  }, [activeCode]);
+    const el = listRef.current;
+    if (!el) return;
+    const update = () => {
+      setViewport((v) => (v.w === el.clientWidth && v.h === el.clientHeight ? v : { ...v, w: el.clientWidth, h: el.clientHeight }));
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isLoading]);
+  // 滚动 → rAF 节流更新 scrollTop（每帧最多一次重渲染，窗口小开销可控）
   const onRightScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const el = e.currentTarget;
-    if (el.scrollTop + el.clientHeight > el.scrollHeight - 600) {
-      setRenderLimit((n) => Math.min(codeCells.length, n + RENDER_STEP));
-    }
-  }, [codeCells.length]);
-  const renderedCells = codeCells.slice(0, renderLimit);
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      setViewport((v) => (v.scrollTop === el.scrollTop ? v : { ...v, scrollTop: el.scrollTop }));
+    });
+  }, []);
+  // 切组：滚动位置归零
+  useEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = 0;
+    setViewport((v) => (v.scrollTop === 0 ? v : { ...v, scrollTop: 0 }));
+  }, [activeCode]);
+  // 窗口内格子：按网格行列计算可见区间（含上下各 2 屏缓冲）
+  const renderedCells = useMemo(() => {
+    const total = codeCells.length;
+    if (total === 0) return [];
+    const cols = gridCols(viewport.w);
+    const startRow = Math.max(0, Math.floor(viewport.scrollTop / CELL_H) - WINDOW_BUFFER_SCREENS);
+    const rows = Math.ceil(viewport.h / CELL_H) + 2 * WINDOW_BUFFER_SCREENS + 1;
+    const start = Math.min(total, startRow * cols);
+    const end = Math.min(total, start + rows * cols);
+    return codeCells.slice(start, end);
+  }, [codeCells, viewport]);
+  // 全量行数（滚动条占位高度用）
+  const totalRows = useMemo(() => {
+    if (codeCells.length === 0) return 0;
+    return Math.ceil(codeCells.length / gridCols(viewport.w));
+  }, [codeCells, viewport.w]);
+  // 窗口起始行（translateY 定位）
+  const windowStartRow = useMemo(() => {
+    const firstKey = renderedCells[0];
+    if (!firstKey) return 0;
+    const idx = codeCells.indexOf(firstKey);
+    return idx < 0 ? 0 : Math.floor(idx / gridCols(viewport.w));
+  }, [renderedCells, codeCells, viewport.w]);
 
   const selectedKeys = useMemo(() => [...selected], [selected]);
   const selectedBreakdown = useMemo(() => computeBreakdown(selectedKeys, cellsByPos), [selectedKeys, cellsByPos]);
@@ -477,29 +522,27 @@ export default function CorrectionPage() {
                     {codeCells.length > 0 && codeCells.every((c) => selected.has(`${c.row}:${c.col}`)) ? '取消全选' : '全选'}
                   </button>
                   <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Shift+点击：连选/取下当前编码格子</span>
-                  {renderLimit < codeCells.length && (
-                    <span className="ml-auto text-xs" style={{ color: 'var(--color-text-muted)' }}>
-                      已加载 {renderLimit}/{codeCells.length} · 滚动继续加载
-                    </span>
-                  )}
                 </div>
-                <div className="max-h-[calc(70vh-53px)] overflow-y-auto p-3" style={{ scrollbarWidth: 'thin' }} onScroll={onRightScroll}>
-                  <div className="flex flex-wrap gap-2">
-                    {renderedCells.map((cell) => (
-                      <CellThumb
-                        key={`${cell.row}:${cell.col}`}
-                        cell={cell}
-                        rows={blueprint.rows}
-                        cols={blueprint.cols}
-                        cropBox={blueprint.cropBox}
-                        image={image}
-                        checked={selected.has(`${cell.row}:${cell.col}`)}
-                        onToggle={() => toggleCell(`${cell.row}:${cell.col}`)}
-                        onShiftToggle={() => shiftSelect(`${cell.row}:${cell.col}`)}
-                        onContextMenu={(e) => handleCellContextMenu(e, `${cell.row}:${cell.col}`)}
-                        onEdit={() => openEditor([`${cell.row}:${cell.col}`])}
-                      />
-                    ))}
+                <div ref={listRef} className="max-h-[calc(70vh-53px)] overflow-y-auto p-3" style={{ scrollbarWidth: 'thin' }} onScroll={onRightScroll}>
+                  {/* 占位高度 = 全量行数（保持滚动条长度与完整列表一致）；窗口行 translateY 定位到起始行 */}
+                  <div style={{ height: Math.max(0, totalRows * CELL_H - 8) }}>
+                    <div className="flex flex-wrap gap-2" style={{ transform: `translateY(${windowStartRow * CELL_H}px)` }}>
+                      {renderedCells.map((cell) => (
+                        <CellThumb
+                          key={`${cell.row}:${cell.col}`}
+                          cell={cell}
+                          rows={blueprint.rows}
+                          cols={blueprint.cols}
+                          cropBox={blueprint.cropBox}
+                          image={image}
+                          checked={selected.has(`${cell.row}:${cell.col}`)}
+                          onToggle={() => toggleCell(`${cell.row}:${cell.col}`)}
+                          onShiftToggle={() => shiftSelect(`${cell.row}:${cell.col}`)}
+                          onContextMenu={(e) => handleCellContextMenu(e, `${cell.row}:${cell.col}`)}
+                          onEdit={() => openEditor([`${cell.row}:${cell.col}`])}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -608,6 +651,11 @@ function controlStyle(): React.CSSProperties {
     fontFamily: 'var(--font-body)',
     fontSize: 'var(--text-sm)',
   };
+}
+
+/** 右栏网格每行格数：与 flex-wrap 实际排布一致（容器 clientWidth，p-3=12px×2 padding，56px 格 + 8px gap） */
+function gridCols(containerWidth: number): number {
+  return Math.max(1, Math.floor((containerWidth - 16) / 64));
 }
 
 function smallBtn(): React.CSSProperties {
