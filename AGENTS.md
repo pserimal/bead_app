@@ -106,7 +106,7 @@ ai_dou/
 - **Checkpoint 元数据**（010 R2）：hard-check format_version/model_arch/num_classes/input_size/input_channels/blank_index/charset_hash
 - **`PaginatedResponse[T]` 镜像**：`local_server/src/models.rs` ↔ `frontend/src/types/api.ts` — keep aligned
 - **ESLint flat config** — `frontend/eslint.config.js`（v10+）；**Tailwind v4 CSS-based**；无 Prettier
-- **测试**：local_server 18（3 unit + 14 contract + 1 parity）；frontend 180（vitest）；训练 eval 见 eval_acceptance
+- **测试**：local_server 18（3 unit + 14 contract + 1 parity）；frontend 186（vitest）；训练 eval 见 eval_acceptance
 
 ## ANTI-PATTERNS (THIS PROJECT)
 
@@ -207,13 +207,33 @@ python -m training.scripts.build_color_library --csv-dir .scratch/beadcolors-src
 ### 前端
 
 ```bash
-cd frontend && npm install && npm run dev   # :5173, proxies /api → :8080（须先起 local_server）
-cd frontend && npm test                     # 180 tests
+# 启动（dev 联调：vite :5173，/api proxy → http://localhost:8080）
+# ① 先起后端联调实例（端口避开 5173，见上文「开发运行」）：
+ORT_DYLIB_PATH=... BEAD_PORT=8080 cargo run
+# ② 装依赖 + 起 dev server（打开 http://localhost:5173）：
+cd frontend && npm install --include=dev && npm run dev
+
+# 构建（产物 frontend/dist；部署 = 拷贝 dist，磁盘 serve 立即生效，无需重启）：
+cd frontend && node.exe node_modules/vite/bin/vite.js build   # 等价 npm run build（多跑 tsc -b）
+cp -r dist/* ../local_server/release/dist/                                 # 开发机
+cp -r dist/* /d/download/bead-local-server-v0.1.0/bead-local-server/dist/  # 用户实际运行实例
+
+# 测试 / lint：
+cd frontend && npm test    # 186 vitest 用例（直接调 vitest 会假失败，见下）
+npx eslint src/<file>      # 只查单个文件更快（flat config v10+）
 ```
+
+前端开发注意事项（踩过的坑）：
+
+- **Windows 全局 NODE_ENV=production**：`npm install` 必须 `--include=dev`；`npm test` 必须走 package.json 脚本（cross-env 注入 NODE_ENV=test）——直接调 vitest 会因 React.act 缺失产生 83 个假失败
+- WSL bash 里 `node` 不在 PATH → 用 `node.exe`（npm 可用）；npm registry = npmmirror
+- **React 19 lint 规则**（react-hooks v6）：effect 里 setState（set-state-in-effect）、渲染期访问 ref（refs-during-render）会被 eslint 报错——新代码避免，旧报错可顺带修
+- 调试：chrome-devtools MCP 连 Windows Chrome；WSL 的 curl 不通 Windows 进程 → 用 `/mnt/c/WINDOWS/system32/curl.exe`；遇旧前端行为先硬刷新（index.html 已带 no-cache）
+- 测试红线：不得用真实用户 blueprint 做交互测试（用户明确要求）；浏览器验证后刷新页面恢复干净状态
+- **已知 lint 债务**（预存在，动这些文件时顺带修）：useBoardViewer 渲染期写 ref ×4、CropPage（prefer-const/exhaustive-deps）、ColorLibraryPage（no-useless-assignment）、ToastContext（react-refresh）
 
 ## NOTES
 
-- 前端 dev proxy：`/api` → `http://localhost:8080`（vite.config.ts，dev 时 local_server 用 BEAD_PORT=8080）；生产同源（Rust 磁盘 serve `release/dist/`）
 - 上传限制：30MB（axum DefaultBodyLimit 32MB 兜底），JPEG/PNG
 - 基线模型：`bean-mard-v10`（原 crnn_color_mard_v8，zip exact_match 0.9405，post-CTC-fix）；**当前生产 = bean-mard-v12**（2026-08-15 部署）。bean-mard-v12 = v11 配方 + **修正 H18↔H12 标注噪声后重训**（用户修正 1_标注结果_07-29 的 46 个错标）；5 级模糊合成图纸 + 新标注保留；模糊图纸生成器与 blank-cap 代码保留。
 - **模型验收门禁**：任何新 checkpoint 部署前必须跑 `eval_acceptance`（基准集与容差固定，不允许为过门禁增删）；Rust 端再跑 `bench_acceptance`
