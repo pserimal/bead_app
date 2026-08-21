@@ -106,7 +106,7 @@ ai_dou/
 - **Checkpoint 元数据**（010 R2）：hard-check format_version/model_arch/num_classes/input_size/input_channels/blank_index/charset_hash
 - **`PaginatedResponse[T]` 镜像**：`local_server/src/models.rs` ↔ `frontend/src/types/api.ts` — keep aligned
 - **ESLint flat config** — `frontend/eslint.config.js`（v10+）；**Tailwind v4 CSS-based**；无 Prettier
-- **测试**：local_server 22（3 unit + 18 contract + 1 parity）；frontend 180（vitest）；训练 eval 见 eval_acceptance
+- **测试**：local_server 18（3 unit + 14 contract + 1 parity）；frontend 180（vitest）；训练 eval 见 eval_acceptance
 
 ## ANTI-PATTERNS (THIS PROJECT)
 
@@ -116,7 +116,7 @@ ai_dou/
 - **bat 脚本**：必须 CRLF（write 工具写 LF 会吞首字符）；`"%OUT%\data\"` 尾反斜杠是转义坑
 - **Git Bash**：`python` 不可用（exit 49）→ 用 conda python；`taskkill /PID` 会被 MSYS 转义 → `//PID`
 - **SQLite 删除不缩文件**：prune/删除后必须 `VACUUM + wal_checkpoint(TRUNCATE)`（compact）
-- **多实例**：`netstat -ano | grep :8080` 查 OwningProcess 再 debug
+- **多实例**：`netstat -ano | grep :5173` 查 OwningProcess 再 debug
 - **前端缓存**：index.html 已带 `Cache-Control: no-cache`；遇到旧行为先硬刷新
 
 ## UNIQUE STYLES
@@ -158,12 +158,28 @@ git tag v0.1.0 && git push origin v0.1.0
 # 一键启动（发布/开发机均可）：
 cd local_server/release && start-local.bat   # 后台无窗口 + 自动开浏览器；stop-local.bat 停止
 
+# 一键重启（开发/部署通用；先停旧实例再启动，自动开浏览器）：
+cd local_server/release && restart-local.bat
+# 手动等价：stop-local.bat → start-local.bat
+
+#### 后端重启注意事项（重要）
+
+- **默认端口 5173**（`BEAD_PORT` 可覆盖，服务绑定 0.0.0.0）；重启后浏览器自动打开**局域网 IP** 地址（`get-lan-ip.ps1` 排除虚拟网卡/代理网段后选真实网卡）——多网卡/代理环境下检测可能不准，访问不了时用 `ipconfig` 找真实 IPv4 手动访问 `http://<IP>:5173`
+- **不自动放行防火墙**（2026-08-16 移除）：局域网设备访问不了时由用户自行决定，管理员运行 `netsh advfirewall firewall add rule name="bead-local-server" dir=in action=allow protocol=TCP localport=5173`（不再需要时 delete rule）
+- 服务为**后台无窗口进程**，日志落盘 `release/data/server.log`（stdout）与 `server.err.log`（stderr）；启动失败先看 err.log——最常见：模型缺失/`model.onnx not found`（检查 `BEAD_ARTIFACT_DIR` 指向的目录）
+- **模型**：`start-local.bat` 默认 `BEAD_ARTIFACT_DIR=models\bean-mard-v12-2026-08-15T10-39-29Z`（生产 v12）；切换模型 = 改 `data/model-current.txt` 目录名或放 `models/` 后调 `/api/v1/models/{id}/activate`，重启后保持
+- **数据红线**：重启/打包流程绝不触碰 `release/data/`（bead-local.db）与 `release/uploads/`（用户上传）；禁止删除历史任务与上传文件
+- **多实例**：重启前确认旧实例已停（文件锁），`netstat -ano | grep :5173` 查 OwningProcess 再 debug；`restart-local.bat` 已内置先停后启
+- **前端 dist/ 磁盘托管**：替换 `release/dist/` 即生效，**无需重启**；只有 Rust 改动才需要重启
+- **事件时间线已删除**（2026-08-16）：任务只有实时进度（`processedCells`），无 events 端点/表；worker 直接调 `apply_cell_batch`/`complete_job`/`fail_job`
+- bat 脚本必须 CRLF（write 工具写 LF 会吞首字符）；脚本改动后同步 `release/` 副本
+
 # 开发运行（默认 :5173；前端 dev :5173 proxy /api → 8080 联调时用 BEAD_PORT=8080）：
 export PATH="/d/repos/cargo/bin:$PATH" RUSTUP_HOME='D:\devtools\rust' CARGO_HOME='D:\repos\cargo'
 ORT_DYLIB_PATH=E:\devtools\conda\envs\bead-train\Lib\site-packages\onnxruntime\capi\onnxruntime.dll \
   cargo run    # env 覆盖：BEAD_PORT/BEAD_DB_PATH/BEAD_UPLOADS_DIR/BEAD_ARTIFACT_DIR
 
-# 测试（21 个：3 unit + 17 contract + 1 parity）：
+# 测试（18 个：3 unit + 14 contract + 1 parity）：
 ORT_DYLIB_PATH=... cargo test
 # Rust 端验收门禁（4 真实集，参照值硬编码在 bin）：
 ORT_DYLIB_PATH=... cargo run --release --bin bench_acceptance
