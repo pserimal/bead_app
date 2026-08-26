@@ -397,6 +397,20 @@ export function useMaterialsCapture(blueprintId: string | null) {
                 bbox: { x: entry.bbox.x, y: entry.bbox.y, w: entry.bbox.width, h: entry.bbox.height },
               })),
             });
+            // 恢复图例区域框：已保存格子（有真实坐标）的外接矩形 = 之前的框选位置。
+            // 仅当画布框仍是初始占位（用户尚未拖动/重画）时应用，避免覆盖用户操作。
+            const boxes = saved
+              .map((entry) => ({ x: entry.bbox.x, y: entry.bbox.y, w: entry.bbox.width, h: entry.bbox.height }))
+              .filter((b) => b.w > 0 && b.h > 0);
+            const current = boxRef.current;
+            const isPlaceholder = !current || (current.x <= 0 && current.y <= 0 && current.w <= 100 && current.h <= 100);
+            if (boxes.length > 0 && isPlaceholder) {
+              const minX = Math.min(...boxes.map((b) => b.x));
+              const minY = Math.min(...boxes.map((b) => b.y));
+              const maxX = Math.max(...boxes.map((b) => b.x + b.w));
+              const maxY = Math.max(...boxes.map((b) => b.y + b.h));
+              dispatch({ type: 'box', box: { x: minX, y: minY, w: maxX - minX, h: maxY - minY } });
+            }
           }
         } catch {
           // An absent saved list is a valid补录 starting point.
