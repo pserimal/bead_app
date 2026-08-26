@@ -132,3 +132,68 @@ pub fn build_corrections_zip(
     }
     Ok(buf)
 }
+
+/// A legend entry already resolved to its source-image crop rect.
+pub struct LegendSampleCrop {
+    pub row: i64,
+    pub col: i64,
+    pub code: String,
+    pub count: i64,
+    pub bbox: (f64, f64, f64, f64), // x, y, w, h in image pixels
+}
+
+fn crop_rect_bbox(img_w: i64, img_h: i64, b: (f64, f64, f64, f64)) -> (i64, i64, i64, i64) {
+    let ix = ((b.2 * 0.10).floor() as i64).max(1);
+    let iy = ((b.3 * 0.10).floor() as i64).max(1);
+    let x0 = (b.0.floor() as i64) + ix;
+    let y0 = (b.1.floor() as i64) + iy;
+    let x1 = (b.0 + b.2).floor() as i64 - ix;
+    let y1 = (b.1 + b.3).floor() as i64 - iy;
+    let x0 = x0.clamp(0, img_w);
+    let y0 = y0.clamp(0, img_h);
+    let x1 = x1.clamp(x0, img_w);
+    let y1 = y1.clamp(y0, img_h);
+    (x0, y0, (x1 - x0).max(1), (y1 - y0).max(1))
+}
+
+/// Build the legend-samples zip (confirmed entries only): manifest.csv (BOM,
+/// columns `编码,文件名,行,列,数量`) + one PNG per entry cropped from the
+/// original image at the stored bbox (10% inset, same convention as the
+/// corrections export; no colour fields per requirement).
+pub fn build_legend_samples_zip(
+    image: &RgbImage,
+    entries: &[LegendSampleCrop],
+) -> Result<Vec<u8>> {
+    let mut buf = Vec::new();
+    {
+        let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+        let (iw, ih) = (image.width() as i64, image.height() as i64);
+        let mut manifest = String::from("\u{FEFF}编码,文件名,行,列,数量\n");
+        for e in entries {
+            let (rx, ry, rw, rh) = crop_rect_bbox(iw, ih, e.bbox);
+            let cw = rw.max(1) as u32;
+            let chh = rh.max(1) as u32;
+            let mut crop = RgbImage::new(cw, chh);
+            for y in 0..chh {
+                for x in 0..cw {
+                    let sx = (rx as u32 + x).min(iw as u32 - 1);
+                    let sy = (ry as u32 + y).min(ih as u32 - 1);
+                    crop.put_pixel(x, y, *image.get_pixel(sx, sy));
+                }
+            }
+            let fname = format!("{}_{}_r{}_c{}.png", e.code, e.count, e.row + 1, e.col + 1);
+            let mut png = Vec::new();
+            crop.write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png)?;
+            zip.start_file(&fname, zip::write::SimpleFileOptions::default())?;
+            zip.write_all(&png)?;
+            manifest.push_str(&format!(
+                "{},{},{},{},{}\n",
+                e.code, fname, e.row + 1, e.col + 1, e.count
+            ));
+        }
+        zip.start_file("manifest.csv", zip::write::SimpleFileOptions::default())?;
+        zip.write_all(manifest.as_bytes())?;
+        zip.finish()?;
+    }
+    Ok(buf)
+}

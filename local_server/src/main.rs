@@ -148,6 +148,23 @@ async fn main() -> anyhow::Result<()> {
         .to_string();
     // 模型加载：失败时降级启动（无模型模式）。此时识别任务会被 503 拒绝并
     // 提示用户安装模型（README「安装」第 2 步：从网盘下载解压到 models\）。
+    // Legend text engine (PP-OCRv5 rec) — degrade silently to None when the
+    // model files are absent; legend endpoints then return 503.
+    let legend_rec =
+        match bead_local_server::legend_ocr::LegendRecModel::find_and_load(std::path::Path::new(&models_dir)) {
+            Ok(Some(m)) => {
+                println!("[start] legend rec engine loaded (ppocrv5-mobile-rec)");
+                Some(Arc::new(std::sync::Mutex::new(m)))
+            }
+            Ok(None) => {
+                eprintln!("[warn] 图例识别模型未安装（models/ppocrv5-mobile-rec.onnx）——图例功能不可用，其余功能不受影响");
+                None
+            }
+            Err(e) => {
+                eprintln!("[warn] 图例识别模型加载失败：{e}——图例功能不可用");
+                None
+            }
+        };
     match bead_local_server::ocr::OnnxModel::load(std::path::Path::new(&artifact_dir)) {
         Ok(m) => {
             println!("[start] model={artifact_dir} chars={}", m.chars.len());
@@ -176,6 +193,7 @@ async fn main() -> anyhow::Result<()> {
         frontend: bead_local_server::api::Frontend::resolve("dist"),
         models_dir: std::path::PathBuf::from(models_dir.clone()),
         model_current_file: current_file,
+        legend_rec,
     });
 
     // Resume jobs interrupted by a previous shutdown (re-run OCR in-process).

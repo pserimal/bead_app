@@ -4,7 +4,6 @@ import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatePresence } from 'framer-motion';
 import {
-  slideUp,
   pageSlideUpFadeOut,
   staggerContainer,
 } from '../lib/animations';
@@ -79,8 +78,8 @@ function renderRoutesAt(initialPath: string) {
 }
 
 describe('pageSlideUpFadeOut variant', () => {
-  it('enter matches slideUp (opacity 0→1, y 20→0)', () => {
-    expect(pageSlideUpFadeOut.initial).toEqual(slideUp.initial);
+  it('enter fades and slides up (opacity 0→1, y 12→0)', () => {
+    expect(pageSlideUpFadeOut.initial).toEqual({ opacity: 0, y: 12 });
     expect((pageSlideUpFadeOut.animate as Record<string, unknown>).opacity).toBe(1);
     expect((pageSlideUpFadeOut.animate as Record<string, unknown>).y).toBe(0);
   });
@@ -96,9 +95,9 @@ describe('pageSlideUpFadeOut variant', () => {
     expect(pageSlideUpFadeOut.exit).toBeDefined();
   });
 
-  it('initial has y: 20 (slideUp origin)', () => {
-    expect((pageSlideUpFadeOut.initial as Record<string, unknown>).y).toBe(20);
-  });
+  it('initial has y: 12 (slideUp origin)', () => {
+    expect((pageSlideUpFadeOut.initial as Record<string, unknown>).y).toBe(12);
+  });;
 });
 
 describe('AnimatePresence mode="wait" in App', () => {
@@ -146,8 +145,8 @@ describe('page navigation transitions', () => {
 describe('staggerContainer variant', () => {
   it('defines staggerChildren timing', () => {
     const transition = (staggerContainer.animate as Record<string, unknown>).transition as Record<string, unknown>;
-    expect(transition.staggerChildren).toBe(0.1);
-    expect(transition.delayChildren).toBe(0.1);
+    expect(transition.staggerChildren).toBe(0.04);
+    expect(transition.delayChildren).toBe(0.02);
   });
 
   it('has empty initial state (children animate independently)', () => {
@@ -158,12 +157,12 @@ describe('staggerContainer variant', () => {
 describe('page transition configuration', () => {
   it('pageSlideUpFadeOut has enter transition with duration 0.5', () => {
     const transition = (pageSlideUpFadeOut.animate as Record<string, unknown>).transition as Record<string, unknown>;
-    expect(transition.duration).toBe(0.5);
+    expect(transition.duration).toBe(0.25);
   });
 
   it('pageSlideUpFadeOut has exit transition with duration 0.2', () => {
     const transition = (pageSlideUpFadeOut.exit as Record<string, unknown>).transition as Record<string, unknown>;
-    expect(transition.duration).toBe(0.2);
+    expect(transition.duration).toBe(0.15);
   });
 
   it('pageSlideUpFadeOut enter uses easeOut', () => {

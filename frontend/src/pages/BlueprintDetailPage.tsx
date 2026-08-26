@@ -64,11 +64,11 @@ export default function BlueprintDetailPage() {
     }
     return best;
   }, [blueprint]);
-  // 待复核数（详情页角标；与校正页默认档位 90% 一致）
+  // 待复核数（详情页角标；与校正页默认档位 90% 一致；已修正的格子不再计入）
   const reviewCount = useMemo(() => {
     if (!blueprint) return 0;
     return blueprint.cells.filter(
-      (c) => c.status === 'UNMAPPED' || (c.confidence != null && c.confidence < 0.9),
+      (c) => c.correctedCode == null && (c.status === 'UNMAPPED' || (c.confidence != null && c.confidence < 0.9)),
     ).length;
   }, [blueprint]);
 
@@ -184,6 +184,14 @@ export default function BlueprintDetailPage() {
               style={{ ...controlStyle(), fontWeight: 600, color: '#fff', background: 'var(--color-accent)', borderColor: 'var(--color-accent)' }}
             >
               校正{reviewCount > 0 ? `（${reviewCount}）` : ''}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/materials?blueprint=${id}`)}
+              style={{ ...controlStyle(), fontWeight: 600, color: 'var(--color-accent)', borderColor: 'var(--color-accent)' }}
+              title="重新框选/识别并按需修改物料清单（复用物料清单录入界面）"
+            >
+              修改物料清单
             </button>
             <button
               type="button"

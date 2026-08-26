@@ -13,6 +13,7 @@ import JobDetailPage from './pages/JobDetailPage';
 import BlueprintDetailPage from './pages/BlueprintDetailPage';
 import CorrectionPage from './pages/CorrectionPage';
 import ColorLibraryPage from './pages/ColorLibraryPage';
+import MaterialsCapturePage from './pages/MaterialsCapturePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,6 +83,14 @@ function AnimatedRoutes() {
           element={
             <AnimatedPage variants={pageSlideUpFadeOut}>
               <ColorLibraryPage />
+            </AnimatedPage>
+          }
+        />
+        <Route
+          path="/materials"
+          element={
+            <AnimatedPage variants={pageSlideUpFadeOut}>
+              <MaterialsCapturePage />
             </AnimatedPage>
           }
         />

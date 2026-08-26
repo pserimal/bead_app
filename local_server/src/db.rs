@@ -95,6 +95,26 @@ CREATE TABLE IF NOT EXISTS color_library (
     version TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS legend_entry (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id      TEXT NOT NULL REFERENCES recognition_job(id) ON DELETE CASCADE,
+    ordinal     INTEGER NOT NULL,
+    row_index   INTEGER NOT NULL DEFAULT 0,
+    col_index   INTEGER NOT NULL DEFAULT 0,
+    code        TEXT NOT NULL,
+    count       INTEGER NOT NULL,
+    status      TEXT NOT NULL DEFAULT 'accepted',
+    source      TEXT NOT NULL DEFAULT 'manual',
+    confirmed   INTEGER NOT NULL DEFAULT 0,
+    bbox_x      REAL NOT NULL DEFAULT 0,
+    bbox_y      REAL NOT NULL DEFAULT 0,
+    bbox_w      REAL NOT NULL DEFAULT 0,
+    bbox_h      REAL NOT NULL DEFAULT 0,
+    created_at  TEXT NOT NULL,
+    updated_at  TEXT NOT NULL,
+    UNIQUE (job_id, ordinal)
+);
+
 CREATE INDEX IF NOT EXISTS idx_job_status ON recognition_job(status);
 CREATE INDEX IF NOT EXISTS idx_job_heartbeat ON recognition_job(status, heartbeat_at);
 CREATE INDEX IF NOT EXISTS idx_bp_cells ON blueprint_cell(blueprint_id);

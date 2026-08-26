@@ -53,8 +53,8 @@ describe('animations.ts — variant exports', () => {
 
   it('staggerContainer defines stagger timing', () => {
     expect((staggerContainer.animate as Record<string, unknown>).transition).toMatchObject({
-      staggerChildren: 0.1,
-      delayChildren: 0.1,
+      staggerChildren: 0.04,
+      delayChildren: 0.02,
     });
   });
 

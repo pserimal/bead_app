@@ -129,10 +129,12 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
   // 回调走 ref：手势 effect 不随回调身份重绑
   const onCellTapRef = useRef(options.onCellTap);
   const onHoverRef = useRef(options.onHover);
-  onCellTapRef.current = options.onCellTap;
-  onHoverRef.current = options.onHover;
   const highlightRef = useRef(highlightCode);
-  highlightRef.current = highlightCode;
+  useEffect(() => {
+    onCellTapRef.current = options.onCellTap;
+    onHoverRef.current = options.onHover;
+    highlightRef.current = highlightCode;
+  }, [highlightCode, options.onCellTap, options.onHover]);
 
   const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
   const [view, setView] = useState<ViewState>({ scale: 1, panX: 0, panY: 0 });
@@ -150,7 +152,9 @@ export function useBoardViewer(options: BoardViewerOptions): BoardViewer {
     return w > FULL_BOARD_MAX_DIM || h > FULL_BOARD_MAX_DIM || (w * h) / 1e6 > FULL_BOARD_MAX_MP;
   }, [cols, cellSize, rows, view.scale]);
   const viewportModeRef = useRef(viewportMode);
-  viewportModeRef.current = viewportMode;
+  useEffect(() => {
+    viewportModeRef.current = viewportMode;
+  }, [viewportMode]);
 
   const boardWidth = cols * cellSize + AXIS_GUTTER * 2;
   const boardHeight = rows * cellSize + AXIS_GUTTER * 2;

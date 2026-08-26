@@ -38,12 +38,14 @@ export function naturalCompare(a: string, b: string): number {
   return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 }
 
-/** 待复核：UNMAPPED 无条件进列表，其余 conf < threshold */
+/** 待复核：UNMAPPED 无条件进列表，其余 conf < threshold；已修正的格子不计入（复核完成后计数归零） */
 export function computeReviewCells(cells: BlueprintCellDto[], threshold: number): BlueprintCellDto[] {
-  return cells.filter((c) => c.status === 'UNMAPPED' || (c.confidence != null && c.confidence < threshold));
+  return cells.filter(
+    (c) => c.correctedCode == null && (c.status === 'UNMAPPED' || (c.confidence != null && c.confidence < threshold)),
+  );
 }
 
-/** 可见格：模式（待复核/全部）+ 搜索（坐标/编码/修正码）+ 三态修正筛选 */
+/** 可见格：模式（待复核/全部）+ 搜索（仅全部模式）+ 三态修正筛选 */
 export function computeVisibleCells(
   allCells: BlueprintCellDto[],
   reviewCells: BlueprintCellDto[],
@@ -64,16 +66,30 @@ export function computeVisibleCells(
   return list;
 }
 
-/** 左栏编码列表：按有效码分组 + 自然序（空白排最后） */
-export function buildCodeList(cells: BlueprintCellDto[]): { code: string; count: number }[] {
+/** 全量编码计数：按有效码统计全部格子（对比结果显示始终基于全量格子，而非当前筛选/待复核子集） */
+export function buildAllCodeCounts(cells: BlueprintCellDto[]): Map<string, number> {
   const map = new Map<string, number>();
   for (const cell of cells) {
     const eff = effectiveCode(cell);
     map.set(eff, (map.get(eff) ?? 0) + 1);
   }
-  return [...map.entries()]
+  return map;
+}
+
+/** 左栏编码列表：按有效码分组 + 自然序（空白排最后） */
+export function buildCodeList(cells: BlueprintCellDto[]): { code: string; count: number }[] {
+  return [...buildAllCodeCounts(cells).entries()]
     .map(([code, count]) => ({ code, count }))
     .sort((a, b) => naturalCompare(a.code, b.code));
+}
+
+/**
+ * 清单-图纸差异：期望 − 实际（全量格子计数）。
+ * 正 = 图纸缺（清单有而图纸少）；负 = 图纸多（清单没有/次数更少，如 A1 实际 20 → −20）。
+ * expected 为 null/undefined（未启用清单）→ 返回 null（不显示差异）。
+ */
+export function legendDiff(expected: number | null | undefined, actual: number): number | null {
+  return expected == null ? null : expected - actual;
 }
 
 /** 多选格的编码构成（批量操作条展示：最多前 3 组） */

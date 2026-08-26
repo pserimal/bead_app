@@ -14,7 +14,7 @@ export default function ColorLibraryPage() {
     queryFn: async () => {
       const items: ColorDto[] = [];
       let page = 1;
-      let total = 0;
+      let total: number;
       for (;;) {
         const res = await getColors({ q: q || undefined, pageSize: 100, page });
         items.push(...res.items);
@@ -42,6 +42,8 @@ export default function ColorLibraryPage() {
             value={q}
             onChange={(e) => setQ(e.target.value.toUpperCase())}
             placeholder="按编码前缀搜索，如 H1"
+            id="color-search"
+            name="colorSearch"
             className="px-4 py-2 rounded-lg w-full max-w-xs"
             style={{ border: '1px solid var(--color-border)', background: 'var(--color-card)' }}
           />

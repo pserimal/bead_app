@@ -93,3 +93,11 @@ artifacts/models/current
 local_server/target/
 local_server/release/
 local_server/bead-local-server-v*.zip
+
+# Legend OCR engine (PP-OCRv5, distributed via 网盘 like the CRNN model)
+local_server/models/*.onnx
+local_server/models/*.txt
+
+# Runtime data (SQLite DB, uploads) — never commit
+local_server/data/
+data/

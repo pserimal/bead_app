@@ -10,6 +10,31 @@
 /// Each destination pixel averages the source pixels overlapping its mapped
 /// source rectangle, weighted by overlap area. `src` is row-major
 /// `(src_h, src_w, channels)` f32 in [0, 255]; returns `(dst_h, dst_w, channels)`.
+/// Crop a rect from a full BGR u8 image (row-major h×w×3). Returns the crop
+/// buffer plus its `(w, h)`. Coordinates are clamped; empty rects become 1px.
+pub fn crop_bgr(
+    img: &[u8],
+    iw: usize,
+    ih: usize,
+    x0: usize,
+    y0: usize,
+    x1: usize,
+    y1: usize,
+) -> (Vec<u8>, usize, usize) {
+    let x0 = x0.min(iw.saturating_sub(1));
+    let y0 = y0.min(ih.saturating_sub(1));
+    let x1 = x1.clamp(x0 + 1, iw);
+    let y1 = y1.clamp(y0 + 1, ih);
+    let cw = x1 - x0;
+    let ch = y1 - y0;
+    let mut out = Vec::with_capacity(cw * ch * 3);
+    for y in y0..y0 + ch {
+        let row = y * iw * 3;
+        out.extend_from_slice(&img[row + x0 * 3..row + (x0 + cw) * 3]);
+    }
+    (out, cw, ch)
+}
+
 pub fn resize_inter_area(
     src: &[f32],
     src_w: usize,

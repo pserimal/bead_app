@@ -5,16 +5,20 @@ import { motion } from 'framer-motion';
 import { useBlueprint } from '../hooks/useBlueprints';
 import { updateBlueprintCells } from '../api/blueprints';
 import { getColors } from '../api/colors';
+import { getBlueprintLegend } from '../api/materials';
 import apiClient from '../api/client';
 import { useToast } from '../components/ToastContext';
 import { staggerContainer, staggerItem } from '../lib/animations';
 import CellThumb from '../components/CellThumb';
 import CorrectionEditorModal from '../components/CorrectionEditorModal';
 import {
+  buildAllCodeCounts,
   buildCodeList,
   computeBreakdown,
   computeReviewCells,
   computeVisibleCells,
+  legendDiff,
+  naturalCompare,
   normalizeHex,
   rangeKeys,
   toggleKeys,
@@ -45,6 +49,14 @@ export default function CorrectionPage() {
   const [imageError, setImageError] = useState(false);
   // 两栏布局：左栏选中编码 + 右栏该编码的全部格子（不分页，缩略图懒裁剪）
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
+
+  // 物料清单（实时）：作为各编码「期望数量」基准，校正后编码条数字/颜色即时更新
+  const { data: legendEntries } = useQuery({
+    queryKey: ['legend', id],
+    queryFn: () => getBlueprintLegend(id!),
+    enabled: !!id,
+  });
+  const hasLegend = (legendEntries?.length ?? 0) > 0;
 
   // 原图加载一次（校正页所有缩略图共用）
   useEffect(() => {
@@ -96,6 +108,12 @@ export default function CorrectionPage() {
     return map;
   }, [blueprint]);
 
+  // 全量编码计数：待复核/搜索/筛选只影响左栏列表内容，对比数值始终基于全部格子的有效码
+  const allCodeCounts = useMemo(() => {
+    if (!blueprint) return new Map<string, number>();
+    return buildAllCodeCounts(blueprint.cells);
+  }, [blueprint]);
+
   // 全量颜色（色板用）：/colors 每页 100，拉完为止
   const { data: allColors } = useQuery({
     queryKey: ['colors', 'all'],
@@ -116,6 +134,28 @@ export default function CorrectionPage() {
     for (const c of allColors ?? []) map.set(c.code, c);
     return map;
   }, [allColors]);
+
+  // 物料清单对比：库外码标记用全量颜色表
+  const knownCodes = useMemo(
+    () => new Set((allColors ?? []).map((c) => c.code.toUpperCase())),
+    [allColors],
+  );
+
+  // 各编码的期望数量（实时，来自物料清单；同码多条合并求和）。
+  // 空白格期望 = 棋盘总格数 − 清单非空白码数量之和（清单未覆盖的部分视为空）。
+  const expectedByCode = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!hasLegend || !blueprint) return map;
+    let nonBlankTotal = 0;
+    for (const e of legendEntries ?? []) {
+      const code = e.code.trim().toUpperCase();
+      if (!code || code === 'BLANK') continue;
+      map.set(code, (map.get(code) ?? 0) + e.count);
+      nonBlankTotal += e.count;
+    }
+    map.set('BLANK', Math.max(0, blueprint.rows * blueprint.cols - nonBlankTotal));
+    return map;
+  }, [hasLegend, blueprint, legendEntries]);
 
   // 校验/色板用的合法编码：任务 validCodes 优先；为空（老任务）回退到全颜色库
   const validCodeList = useMemo(() => {
@@ -154,13 +194,34 @@ export default function CorrectionPage() {
     return computeVisibleCells(blueprint.cells, reviewCells, mode, search, fixFilter);
   }, [blueprint, mode, reviewCells, search, fixFilter]);
 
-  // 左栏编码列表（按有效码 = corrected ?? code 分组，自然序：A2 < A10，空白排最后）
+  // 左栏编码列表：全部格子 + 清单独有码（双向对比完整：图纸有清单无 → A1 20(-20)；清单有图纸无 → C11 0(+8)）。
+  // 全部模式的搜索只收窄列表与右栏格子，待复核/全部模式保持全量，避免对比列表跳变
   const codeList = useMemo(() => {
-    return buildCodeList(visibleCells);
-  }, [visibleCells]);
+    const list = buildCodeList(blueprint?.cells ?? []);
+    if (hasLegend) {
+      const existing = new Set(list.map((l) => l.code));
+      for (const code of expectedByCode.keys()) {
+        if (code !== 'BLANK' && !existing.has(code)) list.push({ code, count: 0 });
+      }
+      list.sort((a, b) => naturalCompare(a.code, b.code));
+    }
+    if (mode === 'all' && search.trim()) {
+      const q = search.trim().toUpperCase();
+      const visibleCodes = new Set(visibleCells.map((c) => c.correctedCode ?? c.code));
+      return list.filter((l) => visibleCodes.has(l.code) || l.code.includes(q));
+    }
+    return list;
+  }, [blueprint, hasLegend, expectedByCode, visibleCells, mode, search]);
+  // 默认选中第一个「当前列表中有格子」的码（避免默认落在 0 格的空面板上）
+  const firstVisibleCode = useMemo(() => {
+    if (!blueprint) return null;
+    if (mode === 'all') return codeList[0]?.code ?? null;
+    const codes = new Set(visibleCells.map((c) => c.correctedCode ?? c.code));
+    return codeList.find((l) => codes.has(l.code))?.code ?? codeList[0]?.code ?? null;
+  }, [blueprint, mode, visibleCells, codeList]);
   const activeCode = selectedCode != null && codeList.some((l) => l.code === selectedCode)
     ? selectedCode
-    : (codeList[0]?.code ?? null);
+    : firstVisibleCode;
   // 右栏：当前编码（有效码）的全部格子，按 row,col 排序
   const codeCells = useMemo(() => {
     if (activeCode == null) return [];
@@ -387,21 +448,34 @@ export default function CorrectionPage() {
               {blueprint.rows} × {blueprint.cols} · {blueprint.cells.length.toLocaleString()} 格 · 勾选后批量设为编码或恢复原码
             </p>
           </div>
-          <button type="button" onClick={() => navigate(`/blueprints/${id}`)} style={{ fontSize: 'var(--text-sm)', color: 'var(--color-accent)', padding: '6px 8px' }}>← 返回详情</button>
-          <button
-            type="button"
-            onClick={exportCorrections}
-            disabled={correctedCount === 0}
-            style={{ ...controlStyle(), fontWeight: 600, color: '#fff', background: correctedCount > 0 ? 'var(--color-success)' : undefined, borderColor: correctedCount > 0 ? 'var(--color-success)' : undefined, opacity: correctedCount === 0 ? 0.45 : 1, cursor: correctedCount === 0 ? 'not-allowed' : 'pointer' }}
-            title="导出全部已校正格子（zip：manifest.csv + 格子裁剪图），供模型训练"
-          >
-            导出校正数据{correctedCount > 0 ? `（${correctedCount}）` : ''}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() => navigate(`/blueprints/${id}`)} style={{ fontSize: 'var(--text-sm)', color: 'var(--color-accent)', padding: '6px 8px' }}>← 返回详情</button>
+            <button
+              type="button"
+              onClick={() => navigate(`/materials?blueprint=${id}`)}
+              style={{ ...controlStyle(), fontWeight: 600, color: 'var(--color-accent)', borderColor: 'var(--color-accent)' }}
+              title="重新框选/识别并按需修改物料清单（复用物料清单录入界面），保存后回到此处对比"
+            >
+              修改物料清单
+            </button>
+            <button
+              type="button"
+              onClick={exportCorrections}
+              disabled={correctedCount === 0}
+              style={{ ...controlStyle(), fontWeight: 600, color: '#fff', background: correctedCount > 0 ? 'var(--color-success)' : undefined, borderColor: correctedCount > 0 ? 'var(--color-success)' : undefined, opacity: correctedCount === 0 ? 0.45 : 1, cursor: correctedCount === 0 ? 'not-allowed' : 'pointer' }}
+              title="导出全部已校正格子（zip：manifest.csv + 格子裁剪图），供模型训练"
+            >
+              导出校正数据{correctedCount > 0 ? `（${correctedCount}）` : ''}
+            </button>
+          </div>
         </motion.div>
 
         <motion.div variants={staggerItem} className="flex flex-wrap items-center gap-2">
           <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--color-border)' }}>
-            {(['review', 'all'] as const).map((m) => (
+            {([
+              ['review', `待复核（${reviewCells.length}）`],
+              ['all', `全部（${blueprint.cells.length.toLocaleString()}）`],
+            ] as const).map(([m, label]) => (
               <button
                 key={m}
                 type="button"
@@ -412,8 +486,9 @@ export default function CorrectionPage() {
                   background: mode === m ? 'var(--color-accent)' : 'transparent',
                   color: mode === m ? '#fff' : 'var(--color-text)',
                 }}
+                title={m === 'review' ? '待复核：低于置信度阈值且未修正的格子，修正后自动移出' : '全部：图纸上每一个格子'}
               >
-                {m === 'review' ? `待复核（${reviewCells.length}）` : '全部格子'}
+                {label}
               </button>
             ))}
           </div>
@@ -473,9 +548,15 @@ export default function CorrectionPage() {
           )}
         </motion.div>
 
+        {mode === 'review' && reviewCells.length === 0 && codeList.length > 0 && (
+          <motion.div variants={staggerItem} className="px-4 py-2.5 rounded-lg text-sm" style={{ background: 'var(--color-success-light)', border: '1px solid var(--color-success)', color: 'var(--color-success)' }}>
+            🎉 没有需要复核的格子。如清单与图纸仍有差异，可「修改物料清单」重新识别，或切「全部」查看已修正格子。
+          </motion.div>
+        )}
+
         {codeList.length === 0 && (
           <motion.div variants={staggerItem} className="py-12 text-center" style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-            {mode === 'review' ? '没有需要复核的格子 🎉' : '没有匹配的格子'}
+            {mode === 'all' ? '没有匹配的格子' : '没有需要复核的格子 🎉'}
           </motion.div>
         )}
 
@@ -487,9 +568,18 @@ export default function CorrectionPage() {
                 style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-xs)' }}
               >
                 <div className="flex lg:flex-col gap-1 w-max lg:w-auto">
-                  {codeList.map(({ code, count }) => {
+                  {codeList.map(({ code }) => {
                     const selected = activeCode === code;
                     const label = code === 'BLANK' ? '空白' : code;
+                    // 实时差异：实际数（全部格子，非当前可见子集） vs 期望数（物料清单；空白由棋盘大小推算）
+                    const actualCount = allCodeCounts.get(code) ?? 0;
+                    const expected = hasLegend ? (expectedByCode.get(code) ?? 0) : undefined; // 清单没有的码 → 期望 0，照样显示差异
+                    const diff = legendDiff(expected, actualCount);
+                    const unknown = code !== 'BLANK' && !knownCodes.has(code);
+                    const diffText = diff == null || diff === 0 ? null : `(${diff > 0 ? '+' : ''}${diff})`;
+                    const diffColor = diff == null || diff === 0
+                      ? undefined
+                      : diff > 0 ? 'var(--color-error)' : 'var(--color-warning)';
                     return (
                       <button
                         key={code}
@@ -501,19 +591,23 @@ export default function CorrectionPage() {
                           color: selected ? 'var(--color-text-inverse)' : 'var(--color-text)',
                           cursor: 'pointer',
                         }}
+                        title={diffText ? `${label} 实际 ${actualCount}，期望 ${expected}（${diff! > 0 ? '少' : '多'} ${Math.abs(diff!)}）` : (unknown ? '颜色库外编码' : undefined)}
                       >
-                        <span className="truncate" style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: selected ? 700 : 500 }}>
+                        <span className="truncate" style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', fontWeight: selected ? 700 : 500, color: !selected && unknown ? 'var(--color-text-muted)' : undefined }}>
                           {label}
                         </span>
                         <span
                           className="rounded-full px-1.5 text-[10px] leading-4 shrink-0"
                           style={{
                             background: selected ? 'rgba(255,255,255,0.22)' : 'var(--color-bg-secondary)',
-                            color: selected ? '#fff' : 'var(--color-text-muted)',
+                            color: selected
+                              ? '#fff'
+                              : diffColor ?? 'var(--color-text-muted)',
+                            fontWeight: diffText ? 700 : 400,
                             fontFamily: 'var(--font-mono)',
                           }}
                         >
-                          {count}
+                          {actualCount}{diffText}
                         </span>
                       </button>
                     );
@@ -535,6 +629,18 @@ export default function CorrectionPage() {
                     {activeCode == null ? '—' : (activeCode === 'BLANK' ? '空白' : activeCode)}
                   </span>
                   <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>{codeCells.length} 格</span>
+                  {codeCells.length === 0 && activeCode != null && (
+                    <span className="text-xs hidden sm:inline" style={{ color: 'var(--color-text-muted)' }}>
+                      {(() => {
+                        const boardCount = allCodeCounts.get(activeCode) ?? 0;
+                        const want = expectedByCode.get(activeCode);
+                        if (mode === 'all' && search.trim()) return '无匹配';
+                        if (boardCount === 0 && want != null && want > 0) return `清单需要 ${want} 个，图纸中未找到`;
+                        if (mode === 'review') return '该码格子已全部复核，可在「全部」中查看已修正格子';
+                        return '无匹配';
+                      })()}
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={toggleCodeAll}

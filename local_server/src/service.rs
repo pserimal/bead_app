@@ -875,4 +875,84 @@ impl JobService {
             .collect::<rusqlite::Result<Vec<_>>>()?;
         Ok((bp, cells))
     }
+
+    // ── Legend entries (persisted per job; blueprint reads through 1:1) ──
+
+    /// Replace the whole legend entry set of a job (idempotent save).
+    pub fn replace_legend_entries(
+        &self,
+        job_id: Uuid,
+        entries: &[crate::models::LegendEntryDto],
+    ) -> Result<()> {
+        let conn = self.db.lock().unwrap();
+        conn.execute("DELETE FROM legend_entry WHERE job_id = ?1", [job_id.to_string()])?;
+        let ts = crate::db::ts_to_sql(now());
+        for e in entries {
+            conn.execute(
+                "INSERT INTO legend_entry (job_id, ordinal, row_index, col_index, code, count,
+                    status, source, confirmed, bbox_x, bbox_y, bbox_w, bbox_h, created_at, updated_at)
+                 VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?14)",
+                rusqlite::params![
+                    job_id.to_string(),
+                    e.ordinal,
+                    e.row_index,
+                    e.col_index,
+                    e.code.trim().to_uppercase(),
+                    e.count,
+                    e.status,
+                    e.source,
+                    e.confirmed as i64,
+                    e.bbox.x,
+                    e.bbox.y,
+                    e.bbox.width,
+                    e.bbox.height,
+                    ts,
+                ],
+            )?;
+        }
+        Ok(())
+    }
+
+    /// Legend entries of a blueprint (resolved through its 1:1 job), ordered
+    /// by ordinal. Empty when the user skipped / never recorded a legend.
+    pub fn get_legend_entries_for_blueprint(
+        &self,
+        bp_id: Uuid,
+    ) -> Result<Vec<crate::models::LegendEntryDto>> {
+        let conn = self.db.lock().unwrap();
+        let job_id: String = conn
+            .query_row(
+                "SELECT job_id FROM blueprint WHERE id = ?1",
+                [bp_id.to_string()],
+                |r| r.get(0),
+            )
+            .optional()?
+            .ok_or_else(|| anyhow!(ApiException::not_found("BLUEPRINT_NOT_FOUND", format!("图纸不存在: {bp_id}"))))?;
+        let mut stmt = conn.prepare(
+            "SELECT ordinal, row_index, col_index, code, count, status, source, confirmed,
+                    bbox_x, bbox_y, bbox_w, bbox_h
+             FROM legend_entry WHERE job_id = ?1 ORDER BY ordinal",
+        )?;
+        let rows = stmt
+            .query_map([job_id], |r| {
+                Ok(crate::models::LegendEntryDto {
+                    ordinal: r.get(0)?,
+                    row_index: r.get(1)?,
+                    col_index: r.get(2)?,
+                    code: r.get(3)?,
+                    count: r.get(4)?,
+                    status: r.get(5)?,
+                    source: r.get(6)?,
+                    confirmed: r.get::<_, i64>(7)? != 0,
+                    bbox: crate::models::LegendBboxDto {
+                        x: r.get(8)?,
+                        y: r.get(9)?,
+                        width: r.get(10)?,
+                        height: r.get(11)?,
+                    },
+                })
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        Ok(rows)
+    }
 }

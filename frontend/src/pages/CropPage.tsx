@@ -1,8 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Button from '../components/Button';
 import { staggerContainer, staggerItem } from '../lib/animations';
+import {
+  clearPendingCrop,
+  loadPendingUpload,
+  readPendingCrop,
+  readPendingWizard,
+  savePendingCrop,
+  savePendingWizard,
+} from '../lib/pendingUpload';
+import { readLastSelection, saveLastSelection } from '../lib/selectionMemory';
+import { cacheImageFile, getCachedImageFile } from '../lib/imageCache';
 
 /*
  * 独立裁剪页。
@@ -106,7 +116,7 @@ function defaultCrop(size: ImageSize): CropRect {
 function resizeCrop(mode: ResizeHandle, origin: CropRect, dx: number, dy: number, size: ImageSize): CropRect {
   const right = origin.x + origin.w;
   const bottom = origin.y + origin.h;
-  let next = { ...origin };
+  const next = { ...origin };
 
   if (mode.includes('w')) {
     next.x = Math.min(origin.x + dx, right - MIN_CROP);
@@ -128,23 +138,35 @@ function resizeCrop(mode: ResizeHandle, origin: CropRect, dx: number, dy: number
 
 export default function CropPage() {
   const location = useLocation();
-  const state = (location.state as CropPageState | null) ?? null;
-  const imageSize: ImageSize = { w: state?.imageW ?? 0, h: state?.imageH ?? 0 };
+  const routeState = (location.state as CropPageState | null) ?? null;
+  const [pendingCrop] = useState(() => readPendingCrop());
+  const [state, setState] = useState<CropPageState | null>(() => {
+    if (!routeState && !pendingCrop) return null;
+    const imageW = pendingCrop?.imageW ?? routeState?.imageW ?? 0;
+    const imageH = pendingCrop?.imageH ?? routeState?.imageH ?? 0;
+    const rememberedCrop = imageW > 0 && imageH > 0
+      ? readLastSelection('crop', imageW, imageH)
+      : null;
+    return {
+      ...(routeState ?? { imageUrl: '', imageW, imageH }),
+      imageUrl: pendingCrop ? '' : routeState?.imageUrl || '',
+      imageW,
+      imageH,
+      initialCrop: pendingCrop?.crop ?? routeState?.initialCrop ?? rememberedCrop ?? undefined,
+      rows: pendingCrop?.rows ?? routeState?.rows,
+      cols: pendingCrop?.cols ?? routeState?.cols,
+    };
+  });
+  const [restoreFile] = useState(() => !!pendingCrop);
+  const imageSize = useMemo<ImageSize>(() => ({ w: state?.imageW ?? 0, h: state?.imageH ?? 0 }), [state?.imageH, state?.imageW]);
   const hasImage = !!state?.imageUrl && imageSize.w > 0 && imageSize.h > 0;
 
-  const [crop, setCrop] = useState<CropRect>(() => defaultCrop(imageSize));
+  const [crop, setCrop] = useState<CropRect>(() => state?.initialCrop ? clampCrop(state.initialCrop, imageSize) : defaultCrop(imageSize));
   const [rows, setRows] = useState(() => clampCellCount(state?.rows ?? 29));
   const [cols, setCols] = useState(() => clampCellCount(state?.cols ?? 29));
-  // 行列输入用字符串编辑态：允许删空/中间态自由输入（数字 state 会把空串
-  // clamp 回 1 导致最后一个数字删不掉），失焦时回显合法值
+  // 行列输入用字符串编辑态：允许删空/中间态自由输入，失焦时回显合法值。
   const [rowsStr, setRowsStr] = useState(() => String(clampCellCount(state?.rows ?? 29)));
   const [colsStr, setColsStr] = useState(() => String(clampCellCount(state?.cols ?? 29)));
-  useEffect(() => {
-    setRowsStr(String(rows));
-  }, [rows]);
-  useEffect(() => {
-    setColsStr(String(cols));
-  }, [cols]);
   const [view, setView] = useState<ViewState>({ scale: 1, x: 0, y: 0 });
 
   const stageRef = useRef<HTMLDivElement>(null);
@@ -157,9 +179,11 @@ export default function CropPage() {
   const pinchRef = useRef<{ startDist: number; startScale: number } | null>(null);
   // fit 时的 scale（缩放下限基准；初始与 ZOOM_MIN 一致）
   const fitScaleRef = useRef(ZOOM_MIN);
-  imageSizeRef.current = imageSize;
-  cropRef.current = crop;
-  viewRef.current = view;
+  useEffect(() => {
+    imageSizeRef.current = imageSize;
+    cropRef.current = crop;
+    viewRef.current = view;
+  }, [crop, imageSize, view]);
 
   const updateCrop = useCallback((next: CropRect) => {
     const value = clampCrop(next, imageSizeRef.current);
@@ -215,22 +239,67 @@ export default function CropPage() {
     setView(next);
   }, []);
 
+  /* A hard refresh loses react-router state; restore the source File from IndexedDB. */
+  useEffect(() => {
+    if (!restoreFile) return;
+    let active = true;
+    const filePromise: Promise<File | null> = getCachedImageFile('upload')
+      ? Promise.resolve(getCachedImageFile('upload')!)
+      : loadPendingUpload();
+    void filePromise.then((file) => {
+      if (!active || !file) return;
+      // 复用跨页稳定 blob URL，命中已解码缓存，切页不再重新解码
+      const url = cacheImageFile('upload', file);
+      const image = new Image();
+      image.onload = () => {
+        if (!active) return;
+        setState((previous) => previous ? { ...previous, imageUrl: url, imageW: image.naturalWidth, imageH: image.naturalHeight } : previous);
+      };
+      // url 来自跨页共享缓存，失败时不可 revoke（会影响其他页面）
+      image.src = url;
+    });
+    return () => {
+      active = false;
+    };
+  }, [restoreFile]);
+
   /* Missing route state means the user opened /crop directly. */
   useEffect(() => {
-    if (!state) window.location.href = '/';
-  }, [state]);
+    if (!state && !restoreFile) window.location.href = '/';
+  }, [restoreFile, state]);
 
   /* Initialize only when the actual image/crop inputs change. */
   useEffect(() => {
     if (!hasImage) return;
     const initial = state?.initialCrop ? clampCrop(state.initialCrop, imageSize) : defaultCrop(imageSize);
     cropRef.current = initial;
+    // Route/IndexedDB restoration is an external input; these updates are intentional.
+    /* eslint-disable react-hooks/set-state-in-effect */
     setCrop(initial);
     setRows(clampCellCount(state?.rows ?? 29));
     setCols(clampCellCount(state?.cols ?? 29));
+    /* eslint-enable react-hooks/set-state-in-effect */
     const frame = requestAnimationFrame(() => fitView(imageSize));
     return () => cancelAnimationFrame(frame);
-  }, [fitView, hasImage, imageSize.h, imageSize.w, state?.cols, state?.imageUrl, state?.initialCrop?.h, state?.initialCrop?.w, state?.initialCrop?.x, state?.initialCrop?.y, state?.rows]);
+  }, [fitView, hasImage, imageSize, state?.cols, state?.imageUrl, state?.initialCrop, state?.rows]);
+
+  // Persist edits continuously so refreshing /crop keeps the exact crop and grid.
+  useEffect(() => {
+    if (!state || !hasImage) return;
+    const existing = readPendingWizard();
+    savePendingCrop({ imageUrl: state.imageUrl, imageW: imageSize.w, imageH: imageSize.h, crop: cropRef.current, rows, cols });
+    saveLastSelection('crop', cropRef.current, imageSize.w, imageSize.h);
+    savePendingWizard({
+      ...(existing ?? {}),
+      step: 'crop',
+      imageUrl: state.imageUrl,
+      imageW: imageSize.w,
+      imageH: imageSize.h,
+      crop: cropRef.current,
+      rows,
+      cols,
+    });
+  }, [cols, crop, hasImage, imageSize.h, imageSize.w, rows, state]);
 
   /* Keep the image fitted when the viewport itself changes size. */
   useEffect(() => {
@@ -430,21 +499,24 @@ export default function CropPage() {
 
   function handleConfirm() {
     if (!state) return;
-    try {
-      sessionStorage.setItem(
-        'pendingCrop',
-        JSON.stringify({
-          crop: cropRef.current,
-          imageUrl: state.imageUrl,
-          imageW: state.imageW,
-          imageH: state.imageH,
-          rows,
-          cols,
-        }),
-      );
-    } catch {
-      // sessionStorage may be blocked; the current page can still navigate.
-    }
+    const nextCrop = cropRef.current;
+    savePendingCrop({ imageUrl: state.imageUrl, imageW: state.imageW, imageH: state.imageH, crop: nextCrop, rows, cols });
+    saveLastSelection('crop', nextCrop, state.imageW, state.imageH);
+    savePendingWizard({
+      ...(readPendingWizard() ?? {}),
+      step: 'upload',
+      imageUrl: state.imageUrl,
+      imageW: state.imageW,
+      imageH: state.imageH,
+      crop: nextCrop,
+      rows,
+      cols,
+    });
+    window.location.href = '/';
+  }
+
+  function handleCancel() {
+    clearPendingCrop();
     window.location.href = '/';
   }
 
@@ -482,7 +554,7 @@ export default function CropPage() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <Button variant="secondary" onClick={() => { window.location.href = '/'; }}>
+            <Button variant="secondary" onClick={handleCancel}>
               取消
             </Button>
             <Button onClick={handleConfirm}>✓ 确认裁剪</Button>

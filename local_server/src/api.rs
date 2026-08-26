@@ -13,6 +13,7 @@ use axum::{Json, Router};
 use serde::Deserialize;
 use uuid::Uuid;
 
+use crate::legend::{expand_bbox, parse_legend_box, validate_bbox, BoxWord, LegendBoxBbox};
 use crate::models::*;
 use crate::ocr::OnnxModel;
 use crate::service::{ApiException, JobService};
@@ -76,6 +77,9 @@ pub struct AppState {
     pub models_dir: std::path::PathBuf,
     /// Persisted active model id (data/model-current.txt).
     pub model_current_file: std::path::PathBuf,
+    /// Legend text recognition engine (PP-OCRv5 rec). `None` when the model
+    /// files are absent — legend endpoints then degrade to 503.
+    pub legend_rec: Option<Arc<Mutex<crate::legend_ocr::LegendRecModel>>>,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -238,11 +242,18 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/api/v1/blueprints/{id}/cells", patch(update_blueprint_cells))
         .route("/api/v1/blueprints/{id}/image", get(blueprint_image))
         .route("/api/v1/blueprints/{id}/cells/export-corrections", get(export_corrections))
+        .route(
+            "/api/v1/blueprints/{id}/legend",
+            get(get_blueprint_legend).post(save_blueprint_legend),
+        )
+        .route("/api/v1/blueprints/{id}/legend/export", get(export_blueprint_legend))
         .route("/api/v1/colors", get(list_colors))
         .route("/api/v1/colors/{code}", get(get_color))
         .route("/api/v1/models", get(list_models))
         .route("/api/v1/models/current", get(current_model))
         .route("/api/v1/models/{id}/activate", post(activate_model))
+        .route("/api/v1/legend/box", post(legend_box))
+        .route("/api/v1/legend/grid", post(legend_grid))
         .route_layer(body_limit)
         .fallback(serve_static)
         .with_state(state)
@@ -426,6 +437,7 @@ async fn create_job(
     let mut cols = 0i64;
     let mut codes: Option<String> = None;
     let mut name: Option<String> = None;
+    let mut legend: Option<Vec<LegendEntryDto>> = None;
 
     while let Some(field) = multipart
         .next_field()
@@ -450,6 +462,15 @@ async fn create_job(
             "cols" => cols = field.text().await.map_err(|_| ApiException::bad_request("INVALID_REQUEST", "cols 无效"))?.trim().parse().map_err(|_| ApiException::bad_request("INVALID_REQUEST", "cols 无效"))?,
             "codes" => codes = Some(field.text().await.map_err(|_| ApiException::bad_request("INVALID_REQUEST", "codes 无效"))?),
             "name" => name = Some(field.text().await.map_err(|_| ApiException::bad_request("INVALID_REQUEST", "name 无效"))?),
+            "legend" => {
+                let text = field.text().await.map_err(|_| ApiException::bad_request("INVALID_REQUEST", "legend 无效"))?;
+                if !text.trim().is_empty() {
+                    legend = match serde_json::from_str::<Vec<LegendEntryDto>>(&text) {
+                        Ok(v) => Some(v),
+                        Err(e) => return Err(ApiException::bad_request("INVALID_LEGEND", format!("legend 解析失败: {e}"))),
+                    };
+                }
+            }
             _ => {}
         }
     }
@@ -505,6 +526,14 @@ async fn create_job(
             name,
         )
         .map_err(to_api)?;
+
+    // Persist the pre-recognition legend inventory (optional; best-effort —
+    // a legend save failure must not fail an already-created job).
+    if let Some(entries) = legend {
+        if let Err(e) = state.service.replace_legend_entries(job.id, &entries) {
+            eprintln!("[legend] persist on create failed (job {}): {e}", job.id);
+        }
+    }
 
     // Dispatch OCR in-process (replaces PythonTaskDispatcher + callbacks).
     if state.auto_ocr && state.model_pool.active_id().is_some() {
@@ -923,4 +952,428 @@ async fn get_color(
         hex: c.hex,
         brand: Some(c.brand),
     }))
+}
+
+// ── Legend box (single user-selected rect) ───────────────────────────
+
+/// POST /api/v1/legend/box  multipart: image (JPEG/PNG) + x,y,width,height (+brand).
+/// Returns the structured LegendBoxResult JSON.  OCR engine is not yet wired,
+/// so a valid request returns `model_unavailable` (503 body) until the legend
+/// ONNX model is integrated; bbox validation still returns 400.
+async fn legend_box(
+    State(state): State<Arc<AppState>>,
+    mut multipart: Multipart,
+) -> Result<Response, ApiException> {
+    let mut image: Option<Bytes> = None;
+    let mut content_type: Option<String> = None;
+    let mut bbox = LegendBoxBbox { x: 0.0, y: 0.0, width: 0.0, height: 0.0 };
+    let mut has_bbox = false;
+    let mut words_json: Option<String> = None;
+
+    while let Some(field) = multipart.next_field().await.map_err(|_| ApiException::bad_request("INVALID_REQUEST", "multipart 解析失败"))? {
+        match field.name().unwrap_or("") {
+            "image" => {
+                content_type = Some(field.content_type().unwrap_or("").to_string());
+                let bytes = field.bytes().await.map_err(|_| ApiException::bad_request("INVALID_REQUEST", "图片读取失败"))?;
+                image = Some(bytes);
+            }
+            "x" => { bbox.x = field.text().await.unwrap_or_default().trim().parse().unwrap_or(f64::NAN); has_bbox = true; }
+            "y" => { bbox.y = field.text().await.unwrap_or_default().trim().parse().unwrap_or(f64::NAN); has_bbox = true; }
+            "width" => { bbox.width = field.text().await.unwrap_or_default().trim().parse().unwrap_or(f64::NAN); has_bbox = true; }
+            "height" => { bbox.height = field.text().await.unwrap_or_default().trim().parse().unwrap_or(f64::NAN); has_bbox = true; }
+            "words" => { words_json = Some(field.text().await.unwrap_or_default()); }
+            _ => {}
+        }
+    }
+    let bytes = image.ok_or_else(|| ApiException::bad_request("INVALID_REQUEST", "缺少 image 文件"))?;
+    if !has_bbox { return Err(ApiException::bad_request("INVALID_BBOX_MISSING_FIELD", "缺少 bbox 字段 x/y/width/height")); }
+    let ct = content_type.unwrap_or_default().to_lowercase();
+    if ct != "image/jpeg" && ct != "image/png" && !ct.is_empty() {
+        return Err(ApiException::new(415, "UNSUPPORTED_MEDIA_TYPE", "仅支持 JPEG/PNG 图片"));
+    }
+    if bytes.len() > 30 * 1024 * 1024 {
+        return Err(ApiException::new(413, "FILE_TOO_LARGE", "文件超过 30MB 上限"));
+    }
+    let img = image::load_from_memory(&bytes).map_err(|e| ApiException::bad_request("IMAGE_DECODE_FAILED", format!("图片解码失败: {e}")))?;
+    let (img_w, img_h) = (img.width() as i64, img.height() as i64);
+    let valid = validate_bbox(&bbox, img_w, img_h).map_err(|code| {
+        let msg: String = match code {
+            "INVALID_BBOX_NOT_FINITE" => "bbox 含非有限数值".to_string(),
+            "INVALID_BBOX_SIZE" => "bbox 宽高必须为正".to_string(),
+            "INVALID_BBOX_TOO_SMALL" => format!("bbox 过小，需至少 {}px", crate::legend::MIN_BOX_SIZE as i64),
+            "INVALID_BBOX_OUT_OF_BOUNDS" => "bbox 完全位于图片外".to_string(),
+            _ => "bbox 无效".to_string(),
+        };
+        ApiException::new(400, code, msg)
+    })?;
+    let expanded = expand_bbox(&valid, img_w, img_h);
+
+    // Test hook: if caller supplies OCR words JSON, run the pure parsing core.
+    // This lets contract tests verify legend parsing via HTTP without an OCR engine.
+    if let Some(wj) = words_json {
+        if !wj.trim().is_empty() {
+            let words: Vec<BoxWord> = serde_json::from_str(&wj).map_err(|e| ApiException::bad_request("INVALID_WORDS", format!("words JSON 解析失败: {e}")))?;
+            let mard_set: std::collections::HashSet<String> = state.mard_codes.iter().cloned().collect();
+            let res = parse_legend_box(words, &mard_set, Some(valid), Some(expanded));
+            let status = match res.status.as_str() {
+                "accepted" | "needs_confirmation" => StatusCode::OK,
+                "recognition_failed" => StatusCode::UNPROCESSABLE_ENTITY,
+                _ => StatusCode::OK,
+            };
+            return Ok((status, Json(res)).into_response());
+        }
+    }
+
+    // Try in-process legend OCR via Python EasyOCR baseline in dev.
+    // In release (no Python) this will fall through to model_unavailable.
+    let mard_set: std::collections::HashSet<String> = state.mard_codes.iter().cloned().collect();
+    if mard_set.is_empty() {
+        let res = crate::legend::LegendBoxResult {
+            code: None, count: None, raw_code: None, raw_count: None,
+            code_confidence: None, count_confidence: None, overall_confidence: 0.0,
+            status: "model_unavailable".to_string(), candidates: Default::default(),
+            bbox: Some(valid), expanded_bbox: Some(expanded),
+            diagnostics: Some("颜色库为空，无法校验编码".to_string()),
+        };
+        return Ok((StatusCode::SERVICE_UNAVAILABLE, Json(res)).into_response());
+    }
+
+    // In-process PP-OCRv5 rec engine (Rust, same ort runtime as the board
+    // CRNN). Degrades to 503 when the model files are absent.
+    let Some(engine) = state.legend_rec.clone() else {
+        let res = crate::legend::legend_empty_result(
+            Some(valid),
+            Some(expanded),
+            "model_unavailable",
+            "图例识别模型未安装：请在 models 目录放入 ppocrv5-mobile-rec.onnx 与 ppocrv5_dict.txt 后重启",
+        );
+        return Ok((StatusCode::SERVICE_UNAVAILABLE, Json(res)).into_response());
+    };
+    let mard_set: std::collections::HashSet<String> = state.mard_codes.iter().cloned().collect();
+
+    // BGR u8 buffer — parity with the cv2.imread-based validated reference.
+    let rgb = img.to_rgb8();
+    let (iw, ih) = (rgb.width() as usize, rgb.height() as usize);
+    let mut bgr = rgb.into_raw();
+    for px in bgr.chunks_exact_mut(3) {
+        px.swap(0, 2);
+    }
+    let (ex, ey, ew, eh) = (
+        expanded.x.max(0.0) as usize,
+        expanded.y.max(0.0) as usize,
+        expanded.width.ceil() as usize,
+        expanded.height.ceil() as usize,
+    );
+    let recognized = tokio::task::spawn_blocking(move || {
+        let mut e = engine.lock().map_err(|_| anyhow::anyhow!("legend engine poisoned"))?;
+        e.recognize(&bgr, iw, ih, ex.min(iw), ey.min(ih), (ex + ew).min(iw), (ey + eh).min(ih))
+    })
+    .await;
+    let (text, conf) = match recognized {
+        Ok(Ok(v)) => v,
+        Ok(Err(e)) => {
+            let res = crate::legend::legend_empty_result(
+                Some(valid),
+                Some(expanded),
+                "model_unavailable",
+                &format!("图例引擎推理失败：{e}"),
+            );
+            return Ok((StatusCode::SERVICE_UNAVAILABLE, Json(res)).into_response());
+        }
+        Err(e) => {
+            let res = crate::legend::legend_empty_result(
+                Some(valid),
+                Some(expanded),
+                "model_unavailable",
+                &format!("图例引擎任务失败：{e}"),
+            );
+            return Ok((StatusCode::SERVICE_UNAVAILABLE, Json(res)).into_response());
+        }
+    };
+
+    let parsed = crate::legend_ocr::parse_card_text(&text, &mard_set);
+    let status = if parsed.code.is_none() {
+        "recognition_failed"
+    } else if parsed.count.is_none()
+        || conf < crate::legend::ACCEPT_CODE_CONF
+        || parsed.count.map(|c| c > crate::legend::MAX_COUNT).unwrap_or(false)
+    {
+        "needs_confirmation"
+    } else {
+        "accepted"
+    };
+    let mut candidates = std::collections::HashMap::new();
+    if status == "needs_confirmation" {
+        if let Some(tok) = text
+            .to_uppercase()
+            .split(|c: char| !(c.is_ascii_alphanumeric() || c == '(' || c == ')'))
+            .find(|s| !s.is_empty())
+        {
+            let top: Vec<String> = crate::legend::code_candidates(tok, &mard_set, 3)
+                .into_iter()
+                .map(|(c, _)| c)
+                .collect();
+            if !top.is_empty() {
+                candidates.insert("code".to_string(), top);
+            }
+        }
+    }
+    let res = crate::legend::LegendBoxResult {
+        code: parsed.code.clone(),
+        count: parsed.count,
+        raw_code: Some(text.clone()),
+        raw_count: Some(text.clone()),
+        code_confidence: parsed.code.as_ref().map(|_| conf),
+        count_confidence: parsed.count.map(|_| conf),
+        overall_confidence: conf,
+        status: status.to_string(),
+        candidates,
+        bbox: Some(valid),
+        expanded_bbox: Some(expanded),
+        diagnostics: match status {
+            "recognition_failed" => Some("未在选区内找到有效 mard 编码".to_string()),
+            "needs_confirmation" => Some("识别结果需要人工确认".to_string()),
+            _ => None,
+        },
+    };
+    let http = match status {
+        "accepted" | "needs_confirmation" => StatusCode::OK,
+        "recognition_failed" => StatusCode::UNPROCESSABLE_ENTITY,
+        _ => StatusCode::OK,
+    };
+    Ok((http, Json(res)).into_response())
+}
+
+/// POST /api/v1/legend/grid  multipart: image + x,y,width,height + rows,cols
+async fn legend_grid(
+    State(state): State<Arc<AppState>>,
+    mut multipart: Multipart,
+) -> Result<Response, ApiException> {
+    let mut image: Option<Bytes> = None;
+    let mut content_type: Option<String> = None;
+    let mut bbox = LegendBoxBbox { x: 0.0, y: 0.0, width: 0.0, height: 0.0 };
+    let mut has_bbox = false;
+    let mut rows: Option<i64> = None;
+    let mut cols: Option<i64> = None;
+    while let Some(field) = multipart.next_field().await.map_err(|_| ApiException::bad_request("INVALID_REQUEST", "multipart 解析失败"))? {
+        match field.name().unwrap_or("") {
+            "image" => {
+                content_type = Some(field.content_type().unwrap_or("").to_string());
+                let bytes = field.bytes().await.map_err(|_| ApiException::bad_request("INVALID_REQUEST", "图片读取失败"))?;
+                image = Some(bytes);
+            }
+            "x" => { bbox.x = field.text().await.unwrap_or_default().trim().parse().unwrap_or(f64::NAN); has_bbox = true; }
+            "y" => { bbox.y = field.text().await.unwrap_or_default().trim().parse().unwrap_or(f64::NAN); has_bbox = true; }
+            "width" => { bbox.width = field.text().await.unwrap_or_default().trim().parse().unwrap_or(f64::NAN); has_bbox = true; }
+            "height" => { bbox.height = field.text().await.unwrap_or_default().trim().parse().unwrap_or(f64::NAN); has_bbox = true; }
+            "rows" => { rows = Some(field.text().await.unwrap_or_default().trim().parse().unwrap_or(0)); }
+            "cols" => { cols = Some(field.text().await.unwrap_or_default().trim().parse().unwrap_or(0)); }
+            _ => {}
+        }
+    }
+    let bytes = image.ok_or_else(|| ApiException::bad_request("INVALID_REQUEST", "缺少 image 文件"))?;
+    if !has_bbox { return Err(ApiException::bad_request("INVALID_BBOX_MISSING_FIELD", "缺少 bbox")); }
+    let r = rows.ok_or_else(|| ApiException::bad_request("INVALID_REQUEST", "缺少 rows"))?;
+    let c = cols.ok_or_else(|| ApiException::bad_request("INVALID_REQUEST", "缺少 cols"))?;
+    if !(1..=20).contains(&r) || !(1..=20).contains(&c) { return Err(ApiException::bad_request("INVALID_REQUEST", "rows/cols 必须在 1..20")); }
+    if (r*c) > 100 { return Err(ApiException::bad_request("INVALID_REQUEST", "网格过大，最多100格")); }
+    let ct = content_type.unwrap_or_default().to_lowercase();
+    if ct != "image/jpeg" && ct != "image/png" && !ct.is_empty() {
+        return Err(ApiException::new(415, "UNSUPPORTED_MEDIA_TYPE", "仅支持 JPEG/PNG"));
+    }
+    if bytes.len() > 30*1024*1024 { return Err(ApiException::new(413, "FILE_TOO_LARGE", "文件超过 30MB")); }
+    let img = image::load_from_memory(&bytes).map_err(|e| ApiException::bad_request("IMAGE_DECODE_FAILED", format!("图片解码失败: {e}")))?;
+    let (img_w, img_h) = (img.width() as i64, img.height() as i64);
+    let valid = validate_bbox(&bbox, img_w, img_h).map_err(|code| {
+        let msg: String = match code {
+            "INVALID_BBOX_NOT_FINITE" => "bbox 含非有限数值".to_string(),
+            "INVALID_BBOX_SIZE" => "bbox 宽高必须为正".to_string(),
+            "INVALID_BBOX_TOO_SMALL" => format!("bbox 过小，需至少 {}px", crate::legend::MIN_BOX_SIZE as i64),
+            "INVALID_BBOX_OUT_OF_BOUNDS" => "bbox 完全位于图片外".to_string(),
+            _ => "bbox 无效".to_string(),
+        };
+        ApiException::new(400, code, msg)
+    })?;
+    // In-process PP-OCRv5 rec over each grid cell (3% inset to avoid
+    // neighbour bleed). Degrades per-cell on engine errors.
+    let Some(engine) = state.legend_rec.clone() else {
+        return Err(ApiException::new(
+            503,
+            "MODEL_NOT_AVAILABLE",
+            "图例识别模型未安装：请在 models 目录放入 ppocrv5-mobile-rec.onnx 与 ppocrv5_dict.txt 后重启",
+        ));
+    };
+    let mard_set: std::collections::HashSet<String> = state.mard_codes.iter().cloned().collect();
+
+    let rgb = img.to_rgb8();
+    let (iw, ih) = (rgb.width() as usize, rgb.height() as usize);
+    let mut bgr = rgb.into_raw();
+    for px in bgr.chunks_exact_mut(3) {
+        px.swap(0, 2);
+    }
+
+    // 注意：cols 切横向宽度，rows 切纵向高度（此前写反导致每格变成整行宽×细条高）
+    let cell_w = valid.width / c as f64;
+    let cell_h = valid.height / r as f64;
+    let pad_x = (cell_w * crate::legend::SAFE_MARGIN_RATIO).max(1.0);
+    let pad_y = (cell_h * crate::legend::SAFE_MARGIN_RATIO).max(1.0);
+
+    let mut cells_out: Vec<LegendGridCellDto> = Vec::with_capacity((r * c) as usize);
+    for ri in 0..r {
+        for ci in 0..c {
+            let cx = valid.x + ci as f64 * cell_w;
+            let cy = valid.y + ri as f64 * cell_h;
+            let cell_bbox = LegendBoxBbox {
+                x: cx,
+                y: cy,
+                width: cell_w,
+                height: cell_h,
+            };
+            let x0 = ((cx + pad_x).max(0.0)) as usize;
+            let y0 = ((cy + pad_y).max(0.0)) as usize;
+            let x1 = ((cx + cell_w - pad_x).min(iw as f64)) as usize;
+            let y1 = ((cy + cell_h - pad_y).min(ih as f64)) as usize;
+            let (text, conf) = if x0 < x1 && y0 < y1 {
+                let eng = engine.clone();
+                let bgr = bgr.clone();
+                match tokio::task::spawn_blocking(move || {
+                    let mut e = eng.lock().map_err(|_| anyhow::anyhow!("poisoned"))?;
+                    e.recognize(&bgr, iw, ih, x0, y0, x1, y1)
+                })
+                .await
+                {
+                    Ok(Ok(v)) => v,
+                    Ok(Err(e)) => {
+                        eprintln!("[legend] grid cell ({ri},{ci}) rec failed: {e}");
+                        (String::new(), 0.0)
+                    }
+                    Err(e) => {
+                        eprintln!("[legend] grid cell ({ri},{ci}) task failed: {e}");
+                        (String::new(), 0.0)
+                    }
+                }
+            } else {
+                (String::new(), 0.0)
+            };
+            let parsed = crate::legend_ocr::parse_card_text(&text, &mard_set);
+            let status = if parsed.code.is_none() {
+                "recognition_failed"
+            } else if parsed.count.is_none() || conf < crate::legend::ACCEPT_CODE_CONF {
+                "needs_confirmation"
+            } else {
+                "accepted"
+            };
+            cells_out.push(LegendGridCellDto {
+                row: ri,
+                col: ci,
+                bbox: cell_bbox,
+                code: parsed.code,
+                count: parsed.count,
+                raw_code: Some(text.clone()),
+                raw_count: Some(text),
+                overall_confidence: conf,
+                status: status.to_string(),
+            });
+        }
+    }
+    Ok((
+        StatusCode::OK,
+        Json(LegendGridResponseDto { rows: r, cols: c, bbox: valid, cells: cells_out }),
+    )
+        .into_response())
+}
+
+// ── Legend persistence (per-job storage, blueprint-scoped API) ──────────
+
+/// Typed grid response (replaces the old untyped Python JSON passthrough;
+/// shape matches frontend `LegendGridResponse`).
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LegendGridResponseDto {
+    pub rows: i64,
+    pub cols: i64,
+    pub bbox: LegendBoxBbox,
+    pub cells: Vec<LegendGridCellDto>,
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LegendGridCellDto {
+    pub row: i64,
+    pub col: i64,
+    pub bbox: LegendBoxBbox,
+    pub code: Option<String>,
+    pub count: Option<i64>,
+    pub raw_code: Option<String>,
+    pub raw_count: Option<String>,
+    pub overall_confidence: f64,
+    pub status: String,
+}
+
+async fn get_blueprint_legend(
+    State(state): State<Arc<AppState>>,
+    AxumPath(id): AxumPath<Uuid>,
+) -> Result<Json<Vec<LegendEntryDto>>, ApiException> {
+    let entries = state.service.get_legend_entries_for_blueprint(id).map_err(to_api)?;
+    Ok(Json(entries))
+}
+
+async fn save_blueprint_legend(
+    State(state): State<Arc<AppState>>,
+    AxumPath(id): AxumPath<Uuid>,
+    Json(entries): Json<Vec<LegendEntryDto>>,
+) -> Result<Json<LegendSaveCount>, ApiException> {
+    for e in &entries {
+        if e.code.trim().is_empty() || e.count < 0 {
+            return Err(ApiException::bad_request(
+                "INVALID_LEGEND_ENTRY",
+                "图例条目无效：编码不能为空且数量不能为负",
+            ));
+        }
+    }
+    let (bp, _, _) = state.service.get_blueprint(id).map_err(to_api)?;
+    state.service.replace_legend_entries(bp.job_id, &entries).map_err(to_api)?;
+    Ok(Json(LegendSaveCount { count: entries.len() as i64 }))
+}
+
+async fn export_blueprint_legend(
+    State(state): State<Arc<AppState>>,
+    AxumPath(id): AxumPath<Uuid>,
+) -> Result<Response, ApiException> {
+    let entries = state.service.get_legend_entries_for_blueprint(id).map_err(to_api)?;
+    let confirmed: Vec<LegendEntryDto> = entries.into_iter().filter(|e| e.confirmed).collect();
+    if confirmed.is_empty() {
+        return Err(ApiException::bad_request("NO_LEGEND_ENTRIES", "没有已确认的图例条目"));
+    }
+    let (bp, job, _) = state.service.get_blueprint(id).map_err(to_api)?;
+    let path = state.uploads_dir.join(&job.input_image_path);
+    let img = image::ImageReader::open(&path)
+        .map_err(|_| ApiException::new(500, "IMAGE_DECODE_FAILED", "原图解码失败"))?
+        .decode()
+        .map_err(|_| ApiException::new(500, "IMAGE_DECODE_FAILED", "原图解码失败"))?
+        .to_rgb8();
+    let crops: Vec<crate::export::LegendSampleCrop> = confirmed
+        .iter()
+        .map(|e| crate::export::LegendSampleCrop {
+            row: e.row_index,
+            col: e.col_index,
+            code: e.code.clone(),
+            count: e.count,
+            bbox: (e.bbox.x, e.bbox.y, e.bbox.width, e.bbox.height),
+        })
+        .collect();
+    let zip_bytes = crate::export::build_legend_samples_zip(&img, &crops)
+        .map_err(|e| ApiException::new(500, "EXPORT_FAILED", e.to_string()))?;
+    let _ = bp;
+    let stamp = chrono::Utc::now().format("%Y-%m-%d").to_string();
+    let filename = format!("legend-samples-{}-{stamp}.zip", id.to_string().get(..8).unwrap_or(""));
+    let disp = format!("attachment; filename={filename}");
+    Ok((
+        [
+            (header::CONTENT_TYPE, "application/zip"),
+            (header::CONTENT_DISPOSITION, disp.as_str()),
+        ],
+        zip_bytes,
+    )
+        .into_response())
 }

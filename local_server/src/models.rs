@@ -227,6 +227,55 @@ pub struct BlueprintDetail {
     pub created_at: DateTime<Utc>,
 }
 
+// Legend entry DTOs (图例识别与对比) — persisted per job, read via
+// blueprint (1:1). `LegendEntryDto` doubles as the save-request item.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LegendBboxDto {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LegendEntryDto {
+    /// Stable per-job ordering (frontend assigns; UNIQUE with job_id).
+    pub ordinal: i64,
+    pub row_index: i64,
+    pub col_index: i64,
+    pub code: String,
+    pub count: i64,
+    /// accepted | needs_confirmation | manual
+    #[serde(default = "default_legend_status")]
+    pub status: String,
+    /// rec | manual | edit
+    #[serde(default = "default_legend_source")]
+    pub source: String,
+    #[serde(default)]
+    pub confirmed: bool,
+    /// Source-image crop rect (for sample export).
+    #[serde(default = "default_legend_bbox")]
+    pub bbox: LegendBboxDto,
+}
+
+fn default_legend_status() -> String {
+    "accepted".to_string()
+}
+fn default_legend_source() -> String {
+    "manual".to_string()
+}
+fn default_legend_bbox() -> LegendBboxDto {
+    LegendBboxDto { x: 0.0, y: 0.0, width: 0.0, height: 0.0 }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LegendSaveCount {
+    pub count: i64,
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BlueprintCellDto {

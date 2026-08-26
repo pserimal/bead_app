@@ -21,6 +21,7 @@ describe('Layout — navigation rendering', () => {
     expect(within(nav).getByText('上传图纸')).toBeInTheDocument();
     expect(within(nav).getByText('任务历史')).toBeInTheDocument();
     expect(within(nav).getByText('颜色库')).toBeInTheDocument();
+    expect(within(nav).queryByText('物料清单录入')).not.toBeInTheDocument();
   });
 
   it('renders the app title', () => {

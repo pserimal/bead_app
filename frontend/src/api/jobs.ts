@@ -1,7 +1,7 @@
 import apiClient from './client';
 import type { JobDetail, JobEventDto, JobSummary, PageResponse } from '../types/api';
 
-/** 007：创建任务（multipart：image + cropBox + rows/cols + codes + name） */
+/** 007：创建任务（multipart：image + cropBox + rows/cols + codes + name + legend?） */
 export async function createJob(params: {
   image: File;
   cropBoxX: number;
@@ -12,6 +12,8 @@ export async function createJob(params: {
   cols: number;
   codes?: string;
   name?: string;
+  /** 开始识别前框选的物料清单（可选，随创建一并落库） */
+  legend?: import('./materials').LegendEntry[];
 }): Promise<JobDetail> {
   const formData = new FormData();
   formData.append('image', params.image);
@@ -23,6 +25,7 @@ export async function createJob(params: {
   formData.append('cols', String(params.cols));
   if (params.codes) formData.append('codes', params.codes);
   if (params.name?.trim()) formData.append('name', params.name.trim());
+  if (params.legend?.length) formData.append('legend', JSON.stringify(params.legend));
   const { data } = await apiClient.post<JobDetail>('/jobs', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });

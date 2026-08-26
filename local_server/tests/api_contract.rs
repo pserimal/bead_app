@@ -43,6 +43,7 @@ fn test_app() -> (Router, Arc<AppState>) {
         },
         models_dir: std::env::temp_dir().join("bead-test-models"),
         model_current_file: std::env::temp_dir().join("bead-test-model-current.txt"),
+        legend_rec: None,
     });
     (router(state.clone()), state)
 }
@@ -178,6 +179,7 @@ async fn create_job_without_model_returns_503() {
         },
         models_dir: std::env::temp_dir().join("bead-test-models"),
         model_current_file: std::env::temp_dir().join("bead-test-model-current.txt"),
+        legend_rec: None,
     });
     let app = router(state.clone());
     let (status, body) = send(&app, multipart_create("")).await;
