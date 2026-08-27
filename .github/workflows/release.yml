@@ -49,6 +49,12 @@ jobs:
           npm run build
         shell: pwsh
 
+      - name: Frontend tests (vitest)
+        run: |
+          cd frontend
+          npm test
+        shell: pwsh
+
       - name: Setup Rust (MSVC)
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -70,6 +76,7 @@ jobs:
           cd local_server
           cargo test --locked --lib
           cargo test --locked --test api_contract
+          cargo test --locked --test legend_box_contract
         shell: pwsh
 
       - name: Download onnxruntime ${{ env.ORT_VERSION }}

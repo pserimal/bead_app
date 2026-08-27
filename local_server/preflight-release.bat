@@ -44,6 +44,11 @@ if errorlevel 1 (
     echo [FAIL] Rust contract 测试失败，中止发布
     exit /b 1
 )
+cargo test --locked --test legend_box_contract
+if errorlevel 1 (
+    echo [FAIL] Rust legend contract 测试失败，中止发布
+    exit /b 1
+)
 
 echo.
 echo [OK] 全部检查通过，可以打 tag 发布
