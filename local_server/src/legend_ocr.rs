@@ -105,7 +105,13 @@ impl LegendRecModel {
     }
 
     /// Recognize one crop rect `(x0,y0,x1,y1)` from a full BGR u8 image
-    /// (row-major h×w×3). Returns `(text, mean_softmax_confidence)`.
+    /// (row-major h×w×3). Returns the fused `(text, mean_softmax_confidence)`.
+    ///
+    /// Pipeline (legend_enhance): plan text-band views (pill-band / otsu /
+    /// doc-band / baseline), rec each with early-stop on (code, count)
+    /// agreement, optionally re-read the count region from the right half of
+    /// the best band, then fuse behind the mard vocabulary parser. With no
+    /// band views the result is identical to the legacy single-shot path.
     pub fn recognize(
         &mut self,
         img_bgr: &[u8],
@@ -115,12 +121,64 @@ impl LegendRecModel {
         y0: usize,
         x1: usize,
         y1: usize,
+        mard: &HashSet<String>,
     ) -> Result<(String, f64)> {
         let (crop, cw, ch) =
             crate::ocr::preprocess::crop_bgr(img_bgr, img_w, img_h, x0, y0, x1, y1);
-        let chw = preprocess_rec(&crop, cw, ch);
+        let plans = crate::legend_enhance::plan_views(&crop, cw, ch);
+
+        // Phase 1: rec each view; stop as soon as two views agree on a full
+        // (code, count) pair.
+        let mut reads: Vec<crate::legend_enhance::ViewRead> = Vec::new();
+        for plan in &plans {
+            let (text, conf) = self.infer(&plan.feed, plan.feed_w, plan.feed_h)?;
+            let parse = parse_card_text(&text, mard);
+            reads.push(crate::legend_enhance::ViewRead {
+                kind: plan.kind,
+                text,
+                conf,
+                parse,
+                rect: plan.rect,
+            });
+            let mut agreement: std::collections::HashMap<(String, i64), usize> =
+                std::collections::HashMap::new();
+            for r in &reads {
+                if let (Some(c), Some(n)) = (&r.parse.code, r.parse.count) {
+                    *agreement.entry((c.clone(), n)).or_insert(0) += 1;
+                }
+            }
+            if agreement.values().any(|&v| v >= 2) {
+                break;
+            }
+        }
+
+        // Phase 2: fuse; when the count is missing or contested, re-read the
+        // right half of the best band (count digits sit at the line end) and
+        // fuse again.
+        let mut fused = crate::legend_enhance::fuse(&reads, mard, None);
+        if fused.needs_focus {
+            if let Some((feed, fw)) =
+                crate::legend_enhance::focused_count_feed(&crop, cw, &reads, &fused)
+            {
+                if let Ok((ftext, fconf)) = self.infer(&feed, fw, REC_H) {
+                    fused = crate::legend_enhance::fuse(&reads, mard, Some((&ftext, fconf)));
+                }
+            }
+        }
+        Ok((fused.text, fused.conf))
+    }
+
+    /// Run the rec model over a pre-built u8 feed crop.
+    fn infer(&mut self, feed: &[u8], w: usize, h: usize) -> Result<(String, f64)> {
+        let chw = preprocess_rec(feed, w, h);
         let arr = ndarray::Array4::from_shape_vec((1, 3, REC_H, REC_W), chw)
             .context("rec input shape")?;
+        self.infer_chw(arr)
+    }
+
+    /// Run the model on a ready `(1, 3, REC_H, REC_W)` CHW input
+    /// (used by the bench to also score the legacy single-shot path).
+    pub fn infer_chw(&mut self, arr: ndarray::Array4<f32>) -> Result<(String, f64)> {
         let value = ort::value::Tensor::from_array(arr)?;
         let outputs = self
             .session
@@ -273,7 +331,7 @@ pub fn parse_card_text(text: &str, mard_codes: &HashSet<String>) -> CardParse {
         code_end,
     };
 
-    let mut pass = |rescue: bool| -> CardParse {
+    let pass = |rescue: bool| -> CardParse {
         for (tok_start, token) in code_tokens(&raw) {
             let cs: Vec<char> = token.chars().collect();
             for cut in (2..=cs.len()).rev() {

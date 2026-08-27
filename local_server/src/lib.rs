@@ -8,6 +8,7 @@ pub mod api;
 pub mod db;
 pub mod export;
 pub mod legend;
+pub mod legend_enhance;
 pub mod legend_ocr;
 pub mod models;
 pub mod ocr;

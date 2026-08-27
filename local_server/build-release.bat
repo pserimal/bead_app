@@ -53,7 +53,9 @@ if exist "%~dp0.stage-zip" rmdir /s /q "%~dp0.stage-zip"
 mkdir "%~dp0.stage-zip\bead-local-server"
 xcopy /e /i /y "%OUT%\*" "%~dp0.stage-zip\bead-local-server\" >nul
 rem ── 清空 staged models（release\models 可能有本地运行时模型，不能进 zip）──
-for /d %%d in ("%~dp0.stage-zip\bead-local-server\models\*") do rmdir /s /q "%%d"
+rem ── 清空 staged models（整目录移除：目录与散文件 ppocrv5* 都不进 zip）──
+rmdir /s /q "%~dp0.stage-zip\bead-local-server\models"
+mkdir "%~dp0.stage-zip\bead-local-server\models"
 rem 排除运行数据（db 与上传图片），zip 保持干净；release\ 目录不受影响
 for %%F in ("%~dp0.stage-zip\bead-local-server\data\bead-local.db*" "%~dp0.stage-zip\bead-local-server\data\server*.log" "%~dp0.stage-zip\bead-local-server\data\model-current.txt" "%~dp0.stage-zip\bead-local-server\uploads\*.*") do del /q "%%F" 2>nul
 copy /y ..\README.md "%~dp0.stage-zip\bead-local-server\README.md" >nul
@@ -61,7 +63,7 @@ copy /y ..\README.md "%~dp0.stage-zip\bead-local-server\README.md" >nul
 rmdir /s /q "%~dp0.stage-zip"
 
 echo.
-echo 发布目录: %OUT%  （自包含，可整体拷贝到任意 Windows 机器）
-echo 压缩包  : %ZIP%
+echo [ok] release dir : %OUT%  (self-contained, copy to any Windows box)
+echo [ok] zip         : %ZIP%
 echo 部署: 拷贝 %OUT% 或解压 %ZIP% 到目标机器，双击 start-local.bat，浏览器访问 http://^<IP^>:5173
 echo 注意: 打包不影响 %OUT%\data\bead-local.db（运行数据原样保留）

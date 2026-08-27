@@ -231,7 +231,7 @@ export default function MaterialsCapturePage() {
         <div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--color-text-muted)', letterSpacing: '.12em' }}>MATERIALS · 物料清单录入</div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-3xl)', fontWeight: 800 }}>框选物料清单·按格拆豆</h1>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: 14 }}>圈住底部清单，按行列拆格并逐格校正识别结果。</p>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: 14 }}>圈住底部清单，按行列拆格并逐格校正识别结果。拆格 / 框选尽量贴住文字本身，避免把整块色底圈进格子。</p>
         </div>
         <Button variant="secondary" onClick={blueprintId ? () => navigate(`/blueprints/${blueprintId}/correct`) : finish}>返回</Button>
       </header>

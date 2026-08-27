@@ -106,7 +106,7 @@ ai_dou/
 - **Checkpoint 元数据**（010 R2）：hard-check format_version/model_arch/num_classes/input_size/input_channels/blank_index/charset_hash
 - **`PaginatedResponse[T]` 镜像**：`local_server/src/models.rs` ↔ `frontend/src/types/api.ts` — keep aligned
 - **ESLint flat config** — `frontend/eslint.config.js`（v10+）；**Tailwind v4 CSS-based**；无 Prettier
-- **测试**：local_server 18（3 unit + 14 contract + 1 parity）；frontend 186（vitest）；训练 eval 见 eval_acceptance
+- **测试**：local_server 66（39 lib 单测含 16 个 legend_enhance + 15 legend_box 契约 + 11 api 契约 + 1 parity）；frontend 221（vitest）；训练 eval 见 eval_acceptance
 
 ## ANTI-PATTERNS (THIS PROJECT)
 
@@ -179,7 +179,7 @@ export PATH="/d/repos/cargo/bin:$PATH" RUSTUP_HOME='D:\devtools\rust' CARGO_HOME
 ORT_DYLIB_PATH=E:\devtools\conda\envs\bead-train\Lib\site-packages\onnxruntime\capi\onnxruntime.dll \
   cargo run    # env 覆盖：BEAD_PORT/BEAD_DB_PATH/BEAD_UPLOADS_DIR/BEAD_ARTIFACT_DIR
 
-# 测试（18 个：3 unit + 14 contract + 1 parity）：
+# 测试（39 lib + 15 legend_box 契约 + 11 api 契约 + 1 parity）：
 ORT_DYLIB_PATH=... cargo test
 # Rust 端验收门禁（4 真实集，参照值硬编码在 bin）：
 ORT_DYLIB_PATH=... cargo run --release --bin bench_acceptance

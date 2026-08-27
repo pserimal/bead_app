@@ -83,6 +83,10 @@ fn main() -> anyhow::Result<()> {
     let mut ok_code = 0usize;
     let mut ok_count = 0usize;
     let mut ok_both = 0usize;
+    // legacy (single-shot) counters for the before/after comparison
+    let mut leg_ok_code = 0usize;
+    let mut leg_ok_count = 0usize;
+    let mut leg_ok_both = 0usize;
 
     for path in &files {
         let name = path.file_name().unwrap().to_string_lossy().to_string();
@@ -95,13 +99,26 @@ fn main() -> anyhow::Result<()> {
         for px in raw_img.chunks_exact_mut(3) {
             px.swap(0, 2);
         }
-        let (text, conf) = model.recognize(&raw_img, w, h, 0, 0, w, h)?;
+        let (text, conf) = model.recognize(&raw_img, w, h, 0, 0, w, h, &mard)?;
+        // legacy path for comparison: plain crop → preprocess → rec
+        let leg_text = {
+            let chw = bead_local_server::legend_ocr::preprocess_rec(&raw_img, w, h);
+            let arr = ndarray::Array4::from_shape_vec((1, 3, 48, 320), chw).unwrap();
+            let (t, _) = model.infer_chw(arr)?;
+            t
+        };
         let parsed = bead_local_server::legend_ocr::parse_card_text(&text, &mard);
         let code_ok = parsed.code.as_deref() == Some(gcode.as_str());
         let count_ok = parsed.count.map(|c| c.to_string()) == Some(gcount.clone());
         ok_code += code_ok as usize;
         ok_count += count_ok as usize;
         ok_both += (code_ok && count_ok) as usize;
+        let leg_parsed = bead_local_server::legend_ocr::parse_card_text(&leg_text, &mard);
+        let lcode_ok = leg_parsed.code.as_deref() == Some(gcode.as_str());
+        let lcount_ok = leg_parsed.count.map(|c| c.to_string()) == Some(gcount.clone());
+        leg_ok_code += lcode_ok as usize;
+        leg_ok_count += lcount_ok as usize;
+        leg_ok_both += (lcode_ok && lcount_ok) as usize;
         if !(code_ok && count_ok) {
             let pc = parsed.code.clone().unwrap_or_default();
             let pn = parsed.count.map(|c| c.to_string()).unwrap_or_default();
@@ -109,14 +126,20 @@ fn main() -> anyhow::Result<()> {
                 "{name}\tgt={gcode}/{gcount}\tparsed={pc}/{pn}\traw={text:?}\tconf={conf:.3}"
             ));
         }
+        if (lcode_ok && lcount_ok) && !(code_ok && count_ok) {
+            rows.push(format!("  [regression] {name} legacy=OK enhanced=MISS"));
+        }
     }
 
     let n = files.len();
     let pct = |k: usize| format!("{:.1}%", k as f64 * 100.0 / n as f64);
     println!("\ncards={n}");
-    println!("code   {}  ({ok_code}/{n})", pct(ok_code));
-    println!("count  {}  ({ok_count}/{n})", pct(ok_count));
-    println!("both   {}  ({ok_both}/{n})", pct(ok_both));
+    println!("enhanced code  {}  ({ok_code}/{n})", pct(ok_code));
+    println!("enhanced count {}  ({ok_count}/{n})", pct(ok_count));
+    println!("enhanced both  {}  ({ok_both}/{n})", pct(ok_both));
+    println!("legacy   code  {}  ({leg_ok_code}/{n})", pct(leg_ok_code));
+    println!("legacy   count {}  ({leg_ok_count}/{n})", pct(leg_ok_count));
+    println!("legacy   both  {}  ({leg_ok_both}/{n})", pct(leg_ok_both));
     if !rows.is_empty() {
         println!("\nfailures:");
         for r in rows {

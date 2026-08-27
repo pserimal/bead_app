@@ -1064,9 +1064,10 @@ async fn legend_box(
         expanded.width.ceil() as usize,
         expanded.height.ceil() as usize,
     );
+    let mard_for_rec = mard_set.clone();
     let recognized = tokio::task::spawn_blocking(move || {
         let mut e = engine.lock().map_err(|_| anyhow::anyhow!("legend engine poisoned"))?;
-        e.recognize(&bgr, iw, ih, ex.min(iw), ey.min(ih), (ex + ew).min(iw), (ey + eh).min(ih))
+        e.recognize(&bgr, iw, ih, ex.min(iw), ey.min(ih), (ex + ew).min(iw), (ey + eh).min(ih), &mard_for_rec)
     })
     .await;
     let (text, conf) = match recognized {
@@ -1236,9 +1237,10 @@ async fn legend_grid(
             let (text, conf) = if x0 < x1 && y0 < y1 {
                 let eng = engine.clone();
                 let bgr = bgr.clone();
+                let mard_for_rec = mard_set.clone();
                 match tokio::task::spawn_blocking(move || {
                     let mut e = eng.lock().map_err(|_| anyhow::anyhow!("poisoned"))?;
-                    e.recognize(&bgr, iw, ih, x0, y0, x1, y1)
+                    e.recognize(&bgr, iw, ih, x0, y0, x1, y1, &mard_for_rec)
                 })
                 .await
                 {
