@@ -25,8 +25,32 @@ type Props = {
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 const MIN_SCALE = 0.01;
 const MAX_SCALE = 8;
-const ZOOM_FACTOR = 1.12;
+export const ZOOM_FACTOR = 1.12;
 const ZOOM_OUT_FACTOR = 1 / ZOOM_FACTOR;
+
+/**
+ * 视图边界约束：图片与视口始终有交集——大图贴边不能拖出，小图完全可见滑移。
+ * 图片左缘 = view.x，右缘 = view.x + imageW×scale；交集要求左缘 ∈ [min(0, W−iW), max(0, W−iW)]。
+ */
+function clampView(
+  view: View,
+  stageW: number,
+  stageH: number,
+  imageW: number,
+  imageH: number,
+): View {
+  const iw = imageW * view.scale;
+  const ih = imageH * view.scale;
+  const loX = Math.min(0, stageW - iw);
+  const hiX = Math.max(0, stageW - iw);
+  const loY = Math.min(0, stageH - ih);
+  const hiY = Math.max(0, stageH - ih);
+  return {
+    scale: view.scale,
+    x: Math.min(hiX, Math.max(loX, view.x)),
+    y: Math.min(hiY, Math.max(loY, view.y)),
+  };
+}
 
 const MaterialsCanvas = memo(function MaterialsCanvas({
   imageUrl,
@@ -179,11 +203,19 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
         const scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, active.startScale * (dist / active.startDist)));
         const ratio = scale / active.startScale;
         const sv = active.startView;
-        onView({
-          scale,
-          x: midX - (midX - sv.x) * ratio,
-          y: midY - (midY - sv.y) * ratio,
-        });
+        onView(
+          clampView(
+            {
+              scale,
+              x: midX - (midX - sv.x) * ratio,
+              y: midY - (midY - sv.y) * ratio,
+            },
+            rect.width,
+            rect.height,
+            imageW,
+            imageH,
+          ),
+        );
       });
       return;
     }
@@ -204,11 +236,20 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
       if (!d.handle) {
         // movementX/Y 在 Pointer Capture、触摸和部分浏览器事件中可能恒为 0；
         // 用同一拖动序列的 client 坐标差计算，避免放大后看起来无法平移。
-        onView({
-          ...d.view,
-          x: d.view.x + d.lastClientX - d.clientX,
-          y: d.view.y + d.lastClientY - d.clientY,
-        });
+        const rect = stageRef.current?.getBoundingClientRect();
+        onView(
+          clampView(
+            {
+              ...d.view,
+              x: d.view.x + d.lastClientX - d.clientX,
+              y: d.view.y + d.lastClientY - d.clientY,
+            },
+            rect?.width ?? 0,
+            rect?.height ?? 0,
+            imageW,
+            imageH,
+          ),
+        );
         return;
       }
       const p = pointAt(d.lastClientX, d.lastClientY);
@@ -261,12 +302,20 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
     const nextScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, view.scale * factor));
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
-    onView({
-      scale: nextScale,
-      x: x - (x - view.x) * nextScale / view.scale,
-      y: y - (y - view.y) * nextScale / view.scale,
-    });
-  }, [onView, stageRef, view]);
+    onView(
+      clampView(
+        {
+          scale: nextScale,
+          x: x - (x - view.x) * nextScale / view.scale,
+          y: y - (y - view.y) * nextScale / view.scale,
+        },
+        rect.width,
+        rect.height,
+        imageW,
+        imageH,
+      ),
+    );
+  }, [imageH, imageW, onView, stageRef, view]);
 
   useEffect(() => {
     const stage = stageRef.current;
@@ -274,6 +323,29 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
     stage.addEventListener('wheel', handleWheel, { passive: false });
     return () => stage.removeEventListener('wheel', handleWheel);
   }, [handleWheel, stageRef]);
+
+  const zoomByButton = (factor: number) => {
+    const stage = stageRef.current;
+    const rect = stage?.getBoundingClientRect();
+    const nextScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, view.scale * factor));
+    const ratio = nextScale / view.scale;
+    // 围绕视口中心缩放（中心点对应的图片坐标不变）
+    const cx = (rect?.width ?? 0) / 2;
+    const cy = (rect?.height ?? 0) / 2;
+    onView(
+      clampView(
+        {
+          scale: nextScale,
+          x: cx - (cx - view.x) * ratio,
+          y: cy - (cy - view.y) * ratio,
+        },
+        rect?.width ?? 0,
+        rect?.height ?? 0,
+        imageW,
+        imageH,
+      ),
+    );
+  };
 
   const screenBox = (target: Box) => ({
     left: view.x + target.x * view.scale,
@@ -349,9 +421,9 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
         />
       )}
       <div className="absolute right-3 bottom-3 flex gap-1.5">
-        <button type="button" aria-label="缩小" onPointerDown={(event) => event.stopPropagation()} onClick={() => onView({ ...view, scale: Math.max(MIN_SCALE, view.scale * ZOOM_OUT_FACTOR) })}>−</button>
+        <button type="button" aria-label="缩小" onPointerDown={(event) => event.stopPropagation()} onClick={() => zoomByButton(ZOOM_OUT_FACTOR)}>−</button>
         <button type="button" aria-label="恢复适应窗口" title="恢复适应窗口" onPointerDown={(event) => event.stopPropagation()} onClick={onFit}>{Math.round(view.scale * 100)}%</button>
-        <button type="button" aria-label="放大" onPointerDown={(event) => event.stopPropagation()} onClick={() => onView({ ...view, scale: Math.min(MAX_SCALE, view.scale * ZOOM_FACTOR) })}>+</button>
+        <button type="button" aria-label="放大" onPointerDown={(event) => event.stopPropagation()} onClick={() => zoomByButton(ZOOM_FACTOR)}>+</button>
       </div>
     </div>
   );

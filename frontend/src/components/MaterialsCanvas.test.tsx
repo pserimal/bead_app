@@ -1,7 +1,7 @@
 import { createRef, useState } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import MaterialsCanvas from './MaterialsCanvas';
+import MaterialsCanvas, { ZOOM_FACTOR } from './MaterialsCanvas';
 import type { Box, View } from '../hooks/useMaterialsCapture';
 
 const box: Box = { x: 10, y: 10, w: 80, h: 60 };
@@ -26,6 +26,10 @@ function renderCanvas(onView = vi.fn(), onFit = vi.fn(), currentView = view) {
   );
   const stage = screen.getByRole('application');
   Object.defineProperty(stage, 'setPointerCapture', { value: vi.fn() });
+  // jsdom rect 默认 0×0；mock 一个真实视口尺寸（clamp 依赖 stage 大小）
+  Object.defineProperty(stage, 'getBoundingClientRect', {
+    value: () => ({ left: 0, top: 0, width: 800, height: 600, right: 800, bottom: 600, x: 0, y: 0, toJSON: () => ({}) }),
+  });
   return stage;
 }
 
@@ -210,7 +214,8 @@ describe('MaterialsCanvas interactions', () => {
 
   it('pinches to zoom around the midpoint of two fingers', async () => {
     const onView = vi.fn();
-    const stage = renderCanvas(onView); // view = { scale: 2, x: 10, y: 20 }
+    // view 在图片居中位置（scale 2 → 屏幕 200×160，stage 800×600，clamp 界 [0,600]×[0,440]）
+    const stage = renderCanvas(onView, vi.fn(), { scale: 2, x: 300, y: 200 });
 
     // 双指按下：相距 100px，中点 (150, 100)
     fireEvent.pointerDown(stage, { pointerId: 1, clientX: 100, clientY: 100 });
@@ -219,10 +224,10 @@ describe('MaterialsCanvas interactions', () => {
     fireEvent.pointerMove(stage, { pointerId: 2, clientX: 250, clientY: 100 });
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
-    // scale = 2 × (150/100) = 3；ratio = 1.5
-    // 中点对应图片坐标：imgX = (175 − 10) / 2 = 82.5, imgY = (100 − 20) / 2 = 40
-    // 缩放后：x' = 175 − 82.5×1.5 = −72.5, y' = 100 − 40×1.5 = −20
-    expect(onView).toHaveBeenLastCalledWith({ scale: 3, x: -72.5, y: -20 });
+    // scale = 3；ratio = 1.5
+    // x' = midX − (midX − x)×ratio = 175 − (175−300)×1.5 = 362.5
+    // y' = midY − (midY − y)×ratio = 100 − (100−200)×1.5 = 250
+    expect(onView).toHaveBeenLastCalledWith({ scale: 3, x: 362.5, y: 250 });
   });
 
   it('pinch overrides single-finger pan and lifting one finger restores pan', async () => {
@@ -250,6 +255,47 @@ describe('MaterialsCanvas interactions', () => {
 
     // 拖 delta (50, 20)：基于当前 props view (scale 2, x 10, y 20)
     expect(onView).toHaveBeenLastCalledWith({ scale: 2, x: 60, y: 40 });
+  });
+
+  it('button zoom anchors the viewport center, not the origin', async () => {
+    // stage 800×600，中心 (400,300)；view = { scale: 4, x: 300, y: 200 }（图片 400×320，clamp 界 [0,400]×[0,280]）
+    // 放大：scale 4→4.48，ratio 1.12；x' = 400 − (400−300)×1.12 = 288, y' = 300 − (300−200)×1.12 = 188
+    const onView = vi.fn();
+    renderCanvas(onView, vi.fn(), { scale: 4, x: 300, y: 200 });
+
+    fireEvent.click(screen.getByRole('button', { name: '放大' }));
+
+    const call = onView.mock.lastCall?.[0] as View;
+    expect(call.scale).toBeCloseTo(4 * ZOOM_FACTOR);
+    expect(call.x).toBeCloseTo(288);
+    expect(call.y).toBeCloseTo(188);
+  });
+
+  it('pan clamps at the image edge so the image cannot leave the viewport', async () => {
+    const onView = vi.fn();
+    const stage = renderCanvas(onView); // view scale=2, x=10, y=20; image 100x80 → 屏幕 200x160，stage 800×600
+    // 允许范围：x ∈ [0, 800−200]=[0,600]，y ∈ [0, 600−160]=[0,440]
+
+    fireEvent.pointerDown(stage, { pointerId: 1, clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(stage, { pointerId: 1, clientX: 10000, clientY: 10000 }); // 向右下猛拖
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    const call = onView.mock.lastCall?.[0] as View;
+    expect(call.x).toBe(600); // 图片左缘 600：右缘 800 = stage 右缘（贴右缘）
+    expect(call.y).toBe(440);
+  });
+
+  it('pan clamps at the opposite edge (top-left direction)', async () => {
+    const onView = vi.fn();
+    const stage = renderCanvas(onView);
+
+    fireEvent.pointerDown(stage, { pointerId: 1, clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(stage, { pointerId: 1, clientX: -10000, clientY: -10000 }); // 向左上猛拖
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    const call = onView.mock.lastCall?.[0] as View;
+    expect(call.x).toBe(0); // clamp 到左边界：图片左缘 0
+    expect(call.y).toBe(0);
   });
 
   it('pinch in drawing mode suspends the in-progress box and zooms', async () => {
