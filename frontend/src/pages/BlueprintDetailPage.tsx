@@ -187,14 +187,6 @@ export default function BlueprintDetailPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigate(`/materials?blueprint=${id}`)}
-              style={{ ...controlStyle(), fontWeight: 600, color: 'var(--color-accent)', borderColor: 'var(--color-accent)' }}
-              title="重新框选/识别并按需修改物料清单（复用物料清单录入界面）"
-            >
-              修改物料清单
-            </button>
-            <button
-              type="button"
               onClick={() => setImmersive(true)}
               style={{ ...controlStyle(), fontWeight: 600, color: '#fff', background: 'var(--color-accent)', borderColor: 'var(--color-accent)' }}
               title="全屏浏览拼豆图纸：点击格子查看并锁定其编码"
