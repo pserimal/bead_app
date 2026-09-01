@@ -195,7 +195,11 @@ export default function HistoryPage() {
               return (
                 <div
                   key={job.id}
-                  onClick={() => navigate(`/jobs/${job.id}`)}
+                  onClick={() =>
+                    (job.status === 'SUCCEEDED' || job.status === 'SUCCEEDED_WITH_WARNINGS') && job.blueprintId
+                      ? navigate(`/blueprints/${job.blueprintId}`)
+                      : navigate(`/jobs/${job.id}`)
+                  }
                   className="flex items-center gap-3 px-4 py-3.5 rounded-xl cursor-pointer transition"
                   style={{
                     background: 'var(--color-card)',
