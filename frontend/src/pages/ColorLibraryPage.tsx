@@ -30,8 +30,8 @@ export default function ColorLibraryPage() {
     <div className="max-w-4xl mx-auto px-4 lg:px-6">
       <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
         <motion.div variants={staggerItem}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 700 }}>颜色库</h1>
-          <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', marginTop: 4 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 700, lineHeight: 1.2 }}>颜色库</h1>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', marginTop: 2 }}>
             默认颜色库快照（只读）· 共 {data?.total ?? '—'} 色
           </p>
         </motion.div>

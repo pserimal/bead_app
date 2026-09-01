@@ -242,13 +242,12 @@ export default function MaterialsCapturePage() {
 
   return (
     <main className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-6 space-y-4">
-      <header className="flex flex-wrap items-center justify-between gap-3">
+      <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--color-text-muted)', letterSpacing: '.12em' }}>MATERIALS · 物料清单录入</div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(var(--text-xl), 4vw, var(--text-3xl))', fontWeight: 800 }}>框选物料清单·按格拆豆</h1>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>圈住底部清单，按行列拆格并逐格校正识别结果。拆格 / 框选尽量贴住文字本身，避免把整块色底圈进格子。</p>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-text-muted)', letterSpacing: '.12em' }}>MATERIALS · 物料清单</div>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 800, lineHeight: 1.2 }}>框选清单 · 按格拆豆</h1>
         </div>
-        <Button variant="secondary" size="sm" onClick={blueprintId ? () => navigate(`/blueprints/${blueprintId}/correct`) : finish}>返回</Button>
+        <Button variant="secondary" size="sm" className="!border !border-[var(--color-border-strong)]" onClick={blueprintId ? () => navigate(`/blueprints/${blueprintId}/correct`) : finish}>返回</Button>
       </header>
 
       <section style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
@@ -269,7 +268,7 @@ export default function MaterialsCapturePage() {
           {blueprintId ? (
             <>
               <Button variant="secondary" size="sm" onClick={exportSamples} disabled={!confirmedCount}>导出已确认样本（{confirmedCount}）</Button>
-              <Button variant="ghost" size="sm" onClick={() => navigate(`/blueprints/${blueprintId}/correct`)}>完成，返回校正</Button>
+              <Button variant="secondary" size="sm" className="!border !border-[var(--color-border-strong)]" onClick={() => navigate(`/blueprints/${blueprintId}/correct`)}>完成，返回校正</Button>
               <span className="ml-auto self-center text-xs" style={{ color: saveState === 'error' ? 'var(--color-error)' : saveState === 'saving' ? 'var(--color-text-muted)' : 'var(--color-success)', minWidth: 56 }}>
                 {saveState === 'saving' ? '保存中…' : saveState === 'error' ? '保存失败' : saveState === 'saved' ? '已保存' : ''}
               </span>

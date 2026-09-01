@@ -544,13 +544,13 @@ export default function CropPage() {
       <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-4">
         <motion.div variants={staggerItem} className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 700 }}>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 700, lineHeight: 1.2 }}>
               裁剪图纸区域
             </h1>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', marginTop: 4 }}>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', marginTop: 2 }}>
               {typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
-                ? '单指拖动图片 · 双指缩放 · 四角手柄调框'
-                : '拖动平移图片 · 滚轮缩放 · 四角手柄调框 · 方向键微调'}
+                ? '单指拖动 · 双指缩放 · 手柄调框'
+                : '拖动平移 · 滚轮缩放 · 手柄调框 · 方向键微调'}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>

@@ -170,13 +170,13 @@ export default function BlueprintDetailPage() {
       <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-4">
         <motion.div variants={staggerItem} className="flex flex-col sm:flex-row sm:flex-wrap sm:items-start sm:justify-between gap-2 sm:gap-4">
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 700 }}>图纸详情</h1>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', marginTop: 3 }}>
-              {blueprint.rows} × {blueprint.cols} · {blueprint.cells.length.toLocaleString()} 格 · 创建于 {new Date(blueprint.createdAt).toLocaleString()} · 可校正
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 700, lineHeight: 1.2 }}>图纸详情</h1>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', marginTop: 2 }}>
+              {blueprint.rows} × {blueprint.cols} · {blueprint.cells.length.toLocaleString()} 格
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/blueprints')}>← 任务历史</Button>
+            <Button variant="secondary" size="sm" className="!border !border-[var(--color-border-strong)]" onClick={() => navigate('/blueprints')}>← 任务历史</Button>
             <Button variant="primary" size="sm" onClick={() => navigate(`/blueprints/${id}/correct`)}>
               校正{reviewCount > 0 ? `（${reviewCount}）` : ''}
             </Button>

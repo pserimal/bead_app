@@ -136,9 +136,9 @@ export default function HistoryPage() {
       <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
         <motion.div variants={staggerItem} className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 700 }}>识别任务历史</h1>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)', marginTop: 4 }}>
-              点击任务查看详情 · 勾选后可批量删除（真删）
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 700, lineHeight: 1.2 }}>识别任务历史</h1>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', marginTop: 2 }}>
+              勾选后可批量删除
             </p>
           </div>
           {selected.size > 0 && (

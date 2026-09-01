@@ -430,13 +430,13 @@ export default function CorrectionPage() {
       <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-3">
         <motion.div variants={staggerItem} className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-2 sm:gap-3">
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 700 }}>图纸校正</h1>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', marginTop: 3 }}>
-              {blueprint.rows} × {blueprint.cols} · {blueprint.cells.length.toLocaleString()} 格 · 勾选后批量设为编码或恢复原码
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 700, lineHeight: 1.2 }}>图纸校正</h1>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', marginTop: 2 }}>
+              {blueprint.rows} × {blueprint.cols} · {blueprint.cells.length.toLocaleString()} 格
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate(`/blueprints/${id}`)}>← 返回详情</Button>
+            <Button variant="secondary" size="sm" className="!border !border-[var(--color-border-strong)]" onClick={() => navigate(`/blueprints/${id}`)}>← 返回详情</Button>
             <Button variant="secondary" size="sm" onClick={() => navigate(`/materials?blueprint=${id}`)} title="重新框选/识别并按需修改物料清单（复用物料清单录入界面），保存后回到此处对比">修改物料清单</Button>
             <Button
               variant="primary"

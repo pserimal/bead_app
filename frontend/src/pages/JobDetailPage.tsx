@@ -1,6 +1,7 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useJob } from '../hooks/useJobs';
+import Button from '../components/Button';
 import { staggerContainer, staggerItem } from '../lib/animations';
 import type { JobStatus } from '../types/api';
 
@@ -26,14 +27,12 @@ export default function JobDetailPage() {
       <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
         <motion.div variants={staggerItem} className="flex items-center justify-between">
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 700 }}>任务追踪</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 700, lineHeight: 1.2 }}>任务追踪</h1>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', marginTop: 2 }}>
-              {id} · React Query 每 2s 轮询 · 心跳每 30s
+              {id}
             </p>
           </div>
-          <button onClick={() => navigate('/blueprints')} style={{ fontSize: 'var(--text-sm)', color: 'var(--color-accent)' }}>
-            ← 返回历史
-          </button>
+          <Button variant="secondary" size="sm" className="!border !border-[var(--color-border-strong)]" onClick={() => navigate('/blueprints')}>← 返回历史</Button>
         </motion.div>
 
         {isLoading && <p style={{ color: 'var(--color-text-muted)' }}>加载中…</p>}
