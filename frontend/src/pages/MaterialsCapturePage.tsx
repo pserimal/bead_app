@@ -20,6 +20,7 @@ import {
   type Material,
   type View,
 } from '../hooks/useMaterialsCapture';
+import { SerialSaveQueue } from '../lib/saveQueue';
 
 const inputStyle: React.CSSProperties = {
   width: 52,
@@ -154,20 +155,37 @@ export default function MaterialsCapturePage() {
 
   /** 把当前 inventory 持久化到服务端（自动保存 + 导出前可复用）。
    *  无效条目（缺编码/数量）静默跳过，不落库也不打断编辑——用户补全后自然再次触发。
-   *  注意：并发/时序控制（连续修改的乱序、返回前 flush）由后续 ticket 负责，这里保持简单。 */
+   *  并发控制：SerialSaveQueue 串行化——同一时刻最多一个 POST；in-flight 期间的
+   *  新修改挂起，当前请求完成后自动补发最新数据（latest-wins，避免旧请求晚到覆盖）。
+   *  返回导航无需特殊处理：POST 在组件卸载后继续完成，最终落库的是最后一次修改。 */
+  const saveQueueRef = useRef(new SerialSaveQueue<Material[]>());
   const persist = useCallback(async (inventory: Material[]) => {
     if (!blueprintId) return;
-    const payload = toEntries(inventory);
-    if (payload.length === 0) return; // 全无效/空清单：等待补全，不发送
-    setSaveState('saving');
-    try {
-      await saveBlueprintLegend(blueprintId, payload);
-      queryClient.setQueryData(['legend', blueprintId], payload);
-      await queryClient.invalidateQueries({ queryKey: ['legend', blueprintId] });
-      setSaveState('saved');
-    } catch (error) {
-      setSaveState('error');
-      toast(error instanceof Error ? error.message : '保存失败', 'error');
+    // 串行发送：同一时刻一个 POST；in-flight 期间的新修改挂起，完成后自动补发
+    // 最新数据（latest-wins，旧请求晚到不会覆盖）。返回导航后 POST 继续完成，
+    // 最终落库的是最后一次修改。
+    let current = inventory;
+    while (true) {
+      const payload = toEntries(current);
+      if (payload.length === 0) {
+        // 空清单不发送：不占用也不触碰队列（in-flight 的挂起数据由在跑请求负责补发）
+        return;
+      }
+      if (!saveQueueRef.current.submit(current)) return; // 已有 in-flight：挂起，由补发覆盖
+      setSaveState('saving');
+      try {
+        await saveBlueprintLegend(blueprintId, payload);
+        queryClient.setQueryData(['legend', blueprintId], payload);
+        await queryClient.invalidateQueries({ queryKey: ['legend', blueprintId] });
+        setSaveState('saved');
+      } catch (error) {
+        setSaveState('error');
+        toast(error instanceof Error ? error.message : '保存失败', 'error');
+      }
+      // 无论成败：挂起期间累积的最新修改立即补发（失败也不丢）
+      const next = saveQueueRef.current.finish();
+      if (next == null) return;
+      current = next;
     }
   }, [blueprintId, queryClient, toast]);
 
