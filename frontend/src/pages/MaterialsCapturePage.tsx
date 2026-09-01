@@ -1,18 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import Button from '../components/Button';
 import MaterialsCanvas from '../components/MaterialsCanvas';
 import { GridPanel } from '../components/MaterialsPanels';
 import { useToast } from '../components/ToastContext';
-import { exportLegendSamples, saveBlueprintLegend, type LegendEntry } from '../api/materials';
+import { exportLegendSamples, saveBlueprintLegend } from '../api/materials';
 import {
   savePendingWizard,
   type PendingWizardState,
 } from '../lib/pendingUpload';
 import {
-  normalizeMaterialCode,
   sortMaterials,
+  toEntries,
   useMaterialsCapture,
   type Box,
   type CaptureInput,
@@ -30,22 +30,6 @@ const inputStyle: React.CSSProperties = {
   background: 'var(--color-bg-primary)',
   fontSize: 16,
 };
-
-function toEntries(items: Material[]): LegendEntry[] {
-  return sortMaterials(items)
-    .map((item, index) => ({
-      ordinal: index,
-      rowIndex: item.row ?? 0,
-      colIndex: item.col ?? index,
-      code: normalizeMaterialCode(item.code),
-      count: Math.round(item.count),
-      status: item.confirmed ? 'accepted' : 'needs_confirmation',
-      source: 'manual',
-      confirmed: item.confirmed,
-      bbox: { x: item.bbox?.x ?? 0, y: item.bbox?.y ?? 0, width: item.bbox?.w ?? 0, height: item.bbox?.h ?? 0 },
-    }))
-    .filter((entry) => entry.code.length > 0 && entry.count > 0);
-}
 
 function wizardSnapshot(input: CaptureInput, box: Box, inventory: Material[], step: PendingWizardState['step']): PendingWizardState {
   return {
@@ -76,12 +60,15 @@ export default function MaterialsCapturePage() {
   const { state, dispatch, stageRef, fit, recognize, recognizeGrid, retryGridCell } = useMaterialsCapture(blueprintId);
   const [rowsText, setRowsText] = useState(() => String(state.rows));
   const [colsText, setColsText] = useState(() => String(state.cols));
-  const [saving, setSaving] = useState(false);
+  // 自动保存状态：idle（无变更）/ saving（POST 进行中）/ saved（已保存）/ error（保存失败）
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [autoFocusId, setAutoFocusId] = useState<string | null>(null);
   const [highlightedBox, setHighlightedBox] = useState<Box | null>(null);
   // 重新框选模式：点「重新框选」后在画布上按下拖动重画框选区域，画完自动退出
   const [redrawing, setRedrawing] = useState(false);
   const input = state.input;
+  // 跳过首次挂载（补录模式拉取已保存清单 → dispatch inventory → 不应触发一次无谓保存）
+  const skipFirstSaveRef = useRef(true);
 
   // Keep the whole wizard resumable while this page is open. File bytes live in
   // IndexedDB; this snapshot intentionally contains only serializable metadata.
@@ -165,6 +152,36 @@ export default function MaterialsCapturePage() {
     setHighlightedBox(null);
   }, []);
 
+  /** 把当前 inventory 持久化到服务端（自动保存 + 导出前可复用）。
+   *  无效条目（缺编码/数量）静默跳过，不落库也不打断编辑——用户补全后自然再次触发。
+   *  注意：并发/时序控制（连续修改的乱序、返回前 flush）由后续 ticket 负责，这里保持简单。 */
+  const persist = useCallback(async (inventory: Material[]) => {
+    if (!blueprintId) return;
+    const payload = toEntries(inventory);
+    if (payload.length === 0) return; // 全无效/空清单：等待补全，不发送
+    setSaveState('saving');
+    try {
+      await saveBlueprintLegend(blueprintId, payload);
+      queryClient.setQueryData(['legend', blueprintId], payload);
+      await queryClient.invalidateQueries({ queryKey: ['legend', blueprintId] });
+      setSaveState('saved');
+    } catch (error) {
+      setSaveState('error');
+      toast(error instanceof Error ? error.message : '保存失败', 'error');
+    }
+  }, [blueprintId, queryClient, toast]);
+
+  // 自动保存：任何修改（逐格编辑/增删/确认/清空/识别结果）都会更新 inventory，
+  // 这里统一监听并立即 POST（无 debounce）。跳过首次挂载的初始加载。
+  useEffect(() => {
+    if (!blueprintId) return;
+    if (skipFirstSaveRef.current) {
+      skipFirstSaveRef.current = false;
+      return;
+    }
+    void persist(state.inventory);
+  }, [blueprintId, persist, state.inventory]);
+
   if (!input || !input.imageUrl || !input.imageW || !input.imageH) {
     return <div className="max-w-4xl mx-auto p-6" style={{ color: 'var(--color-text-muted)' }}>正在恢复图纸…</div>;
   }
@@ -194,26 +211,6 @@ export default function MaterialsCapturePage() {
     };
     savePendingWizard(wizardSnapshot({ ...input, ...result }, state.box, sortMaterials(state.inventory), 'upload'));
     navigate('/', { state: result });
-  };
-
-  const save = async () => {
-    if (!blueprintId) return;
-    const payload = toEntries(state.inventory);
-    if (payload.length !== state.inventory.length) {
-      toast('请先补全有效的编码和数量', 'error');
-      return;
-    }
-    setSaving(true);
-    try {
-      await saveBlueprintLegend(blueprintId, payload);
-      queryClient.setQueryData(['legend', blueprintId], payload);
-      await queryClient.invalidateQueries({ queryKey: ['legend', blueprintId] });
-      toast('物料清单已保存', 'success');
-    } catch (error) {
-      toast(error instanceof Error ? error.message : '保存失败', 'error');
-    } finally {
-      setSaving(false);
-    }
   };
 
   const exportSamples = () => {
@@ -253,9 +250,11 @@ export default function MaterialsCapturePage() {
         <div className="flex flex-wrap gap-2 p-3" style={{ borderTop: '1px solid var(--color-border)' }}>
           {blueprintId ? (
             <>
-              <Button onClick={save} disabled={saving}>{saving ? '保存中…' : '保存物料清单'}</Button>
               <Button variant="secondary" onClick={exportSamples} disabled={!confirmedCount}>导出已确认样本（{confirmedCount}）</Button>
-              <Button variant="ghost" onClick={() => navigate(`/blueprints/${blueprintId}/correct`)} disabled={saving}>完成，返回校正</Button>
+              <Button variant="ghost" onClick={() => navigate(`/blueprints/${blueprintId}/correct`)}>完成，返回校正</Button>
+              <span className="ml-auto self-center text-xs" style={{ color: saveState === 'error' ? 'var(--color-error)' : saveState === 'saving' ? 'var(--color-text-muted)' : 'var(--color-success)', minWidth: 56 }}>
+                {saveState === 'saving' ? '保存中…' : saveState === 'error' ? '保存失败' : saveState === 'saved' ? '已保存' : ''}
+              </span>
             </>
           ) : (
             <Button onClick={finish}>完成，返回上传页（{state.inventory.length} 项）</Button>

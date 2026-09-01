@@ -6,6 +6,7 @@ import {
   recognizeLegendBox,
   recognizeLegendGrid,
   type LegendBoxResult,
+  type LegendEntry,
 } from '../api/materials';
 import {
   loadPendingUpload,
@@ -125,6 +126,24 @@ export function sortMaterials(items: Material[]): Material[] {
       return colA - colB || a.index - b.index;
     })
     .map(({ item }) => item);
+}
+
+/** 把库存条目转为服务端清单 payload：排序 + 过滤无效条目（缺编码/数量不落库）。
+ *  自动保存与手动保存共用此入口。 */
+export function toEntries(items: Material[]): LegendEntry[] {
+  return sortMaterials(items)
+    .map((item, index) => ({
+      ordinal: index,
+      rowIndex: item.row ?? 0,
+      colIndex: item.col ?? index,
+      code: normalizeMaterialCode(item.code),
+      count: Math.round(item.count),
+      status: item.confirmed ? 'accepted' : 'needs_confirmation',
+      source: 'manual',
+      confirmed: item.confirmed,
+      bbox: { x: item.bbox?.x ?? 0, y: item.bbox?.y ?? 0, width: item.bbox?.w ?? 0, height: item.bbox?.h ?? 0 },
+    }))
+    .filter((entry) => entry.code.length > 0 && entry.count > 0);
 }
 
 export function isGridFailure(result: LegendBoxResult | null): boolean {
