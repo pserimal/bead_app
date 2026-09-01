@@ -81,13 +81,23 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
     view: View;
     handle: string | null;
   } | null>(null);
-  // 活跃指针表 + 捏合状态：双指按下进入 pinch，围绕两指中点缩放
-  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  // 活跃指针表 + 捏合状态：双指按下进入 pinch，围绕两指中点缩放。
+  // 指针带时间戳：移动端 pinch 快速松开时 pointerup/cancel 可能丢失，残留指针会
+  // 让后续单指按下被误判为双指捏合（拖不动）——按下/移动前清理陈旧指针。
+  const pointersRef = useRef<Map<number, { x: number; y: number; t: number }>>(new Map());
   const pinchRef = useRef<{
     startDist: number;
     startScale: number;
     startView: View;
   } | null>(null);
+
+  /** 清理超过 400ms 未活跃的指针（丢失 up/cancel 的残留指针） */
+  const pruneStalePointers = () => {
+    const now = performance.now();
+    for (const [id, p] of pointersRef.current) {
+      if (now - p.t > 400) pointersRef.current.delete(id);
+    }
+  };
   // 拖拽期间用 rAF 节流：每帧最多应用一次视图/选框更新，避免 pointermove
   // 高频率同步 dispatch 导致整个页面重渲染卡顿。
   const rafRef = useRef<number | null>(null);
@@ -139,7 +149,9 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
 
   const handlePointerDown = (event: PointerEvent) => {
     if ((event.target as HTMLElement).closest('button')) return;
-    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    // 先清理残留指针，避免把上次丢失 up 的指头算进本次手势
+    pruneStalePointers();
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY, t: performance.now() });
     // 第二指按下 → 进入捏合：挂起单指操作（未完成画框丢弃）
     if (pointersRef.current.size >= 2) {
       const [a, b] = [...pointersRef.current.values()];
@@ -187,38 +199,44 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
     // 双指捏合：围绕两指中点缩放（基于 pinch 起始的 view，不依赖渲染时序）
     const pinch = pinchRef.current;
     if (pinch && pointersRef.current.has(event.pointerId)) {
-      pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
-      schedule(() => {
-        const active = pinchRef.current;
-        if (!active) return;
-        const points = [...pointersRef.current.values()];
-        if (points.length < 2) return;
-        const [a, b] = points;
-        const dist = Math.hypot(b.x - a.x, b.y - a.y);
-        if (dist <= 0) return;
-        const stage = stageRef.current;
-        if (!stage) return;
-        const rect = stage.getBoundingClientRect();
-        const midX = (a.x + b.x) / 2 - rect.left;
-        const midY = (a.y + b.y) / 2 - rect.top;
-        const scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, active.startScale * (dist / active.startDist)));
-        const ratio = scale / active.startScale;
-        const sv = active.startView;
-        onView(
-          clampView(
-            {
-              scale,
-              x: midX - (midX - sv.x) * ratio,
-              y: midY - (midY - sv.y) * ratio,
-            },
-            rect.width,
-            rect.height,
-            imageW,
-            imageH,
-          ),
-        );
-      });
-      return;
+      pruneStalePointers();
+      // 残留清理后若不足两指 → 捏合失效，退回单指拖动
+      if (pointersRef.current.size < 2) {
+        pinchRef.current = null;
+      } else {
+        pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY, t: performance.now() });
+        schedule(() => {
+          const active = pinchRef.current;
+          if (!active) return;
+          const points = [...pointersRef.current.values()];
+          if (points.length < 2) return;
+          const [a, b] = points;
+          const dist = Math.hypot(b.x - a.x, b.y - a.y);
+          if (dist <= 0) return;
+          const stage = stageRef.current;
+          if (!stage) return;
+          const rect = stage.getBoundingClientRect();
+          const midX = (a.x + b.x) / 2 - rect.left;
+          const midY = (a.y + b.y) / 2 - rect.top;
+          const scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, active.startScale * (dist / active.startDist)));
+          const ratio = scale / active.startScale;
+          const sv = active.startView;
+          onView(
+            clampView(
+              {
+                scale,
+                x: midX - (midX - sv.x) * ratio,
+                y: midY - (midY - sv.y) * ratio,
+              },
+              rect.width,
+              rect.height,
+              imageW,
+              imageH,
+            ),
+          );
+        });
+        return;
+      }
     }
     const current = drag.current;
     if (!current) return;
@@ -291,6 +309,8 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
     pointersRef.current.delete(event.pointerId);
     // 任一手指抬起 → 捏合结束；剩余单指恢复为普通拖动（需重新按下）
     if (pinchRef.current && pointersRef.current.size < 2) pinchRef.current = null;
+    // 清掉本次手势中丢失 up 的残留指针（双指快速松开时常见）
+    pruneStalePointers();
     endDrag();
   };
 
@@ -367,6 +387,7 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
       onPointerMove={handlePointerMove}
       onPointerUp={finishPointer}
       onPointerCancel={finishPointer}
+      onLostPointerCapture={finishPointer}
       onBlur={(event) => {
         // 焦点在画布内部元素（缩放按钮等）间移动时不算离开
         const related = event.relatedTarget as Node | null;

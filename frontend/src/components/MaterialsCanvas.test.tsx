@@ -298,6 +298,31 @@ describe('MaterialsCanvas interactions', () => {
     expect(call.y).toBe(0);
   });
 
+  it('stale pointer from a lost pointerup does not trap single-finger pan', async () => {
+    const onView = vi.fn();
+    const stage = renderCanvas(onView);
+
+    // 双指捏合（pointerId 1 + 2）
+    fireEvent.pointerDown(stage, { pointerId: 1, clientX: 100, clientY: 100 });
+    fireEvent.pointerDown(stage, { pointerId: 2, clientX: 200, clientY: 100 });
+    fireEvent.pointerMove(stage, { pointerId: 2, clientX: 250, clientY: 100 });
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    // 只剩一根手指的 up（另一根 up 丢失）——lostpointercapture 兜底清理
+    fireEvent.pointerUp(stage, { pointerId: 1, clientX: 100, clientY: 100 });
+    fireEvent.lostPointerCapture(stage, { pointerId: 2, clientX: 250, clientY: 100 });
+
+    // 重新单指按下并拖动 → 应正常平移（不是 pinch）
+    onView.mockClear();
+    fireEvent.pointerDown(stage, { pointerId: 3, clientX: 300, clientY: 200 });
+    fireEvent.pointerMove(stage, { pointerId: 3, clientX: 360, clientY: 230 });
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    const call = onView.mock.lastCall?.[0] as View;
+    expect(call.scale).toBe(2); // 无缩放——纯平移
+    expect(call.x).toBe(70); // 300→360：x = 10 + 60
+    expect(call.y).toBe(50); // 200→230：y = 20 + 30
+  });
+
   it('pinch in drawing mode suspends the in-progress box and zooms', async () => {
     const onBox = vi.fn();
     const onView = vi.fn();
