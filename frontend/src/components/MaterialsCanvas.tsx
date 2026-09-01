@@ -56,6 +56,13 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
     view: View;
     handle: string | null;
   } | null>(null);
+  // 活跃指针表 + 捏合状态：双指按下进入 pinch，围绕两指中点缩放
+  const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchRef = useRef<{
+    startDist: number;
+    startScale: number;
+    startView: View;
+  } | null>(null);
   // 拖拽期间用 rAF 节流：每帧最多应用一次视图/选框更新，避免 pointermove
   // 高频率同步 dispatch 导致整个页面重渲染卡顿。
   const rafRef = useRef<number | null>(null);
@@ -107,6 +114,19 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
 
   const handlePointerDown = (event: PointerEvent) => {
     if ((event.target as HTMLElement).closest('button')) return;
+    pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    // 第二指按下 → 进入捏合：挂起单指操作（未完成画框丢弃）
+    if (pointersRef.current.size >= 2) {
+      const [a, b] = [...pointersRef.current.values()];
+      drag.current = null;
+      pinchRef.current = {
+        startDist: Math.max(1, Math.hypot(b.x - a.x, b.y - a.y)),
+        startScale: view.scale,
+        startView: view,
+      };
+      capturePointer(event);
+      return;
+    }
     const position = pointAt(event.clientX, event.clientY);
     if (drawing) {
       // 画框模式：按下即从起点开画（不移动视图、不动旧框）
@@ -139,6 +159,34 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
   };
 
   const handlePointerMove = (event: PointerEvent) => {
+    // 双指捏合：围绕两指中点缩放（基于 pinch 起始的 view，不依赖渲染时序）
+    const pinch = pinchRef.current;
+    if (pinch && pointersRef.current.has(event.pointerId)) {
+      pointersRef.current.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      schedule(() => {
+        const active = pinchRef.current;
+        if (!active) return;
+        const points = [...pointersRef.current.values()];
+        if (points.length < 2) return;
+        const [a, b] = points;
+        const dist = Math.hypot(b.x - a.x, b.y - a.y);
+        if (dist <= 0) return;
+        const stage = stageRef.current;
+        if (!stage) return;
+        const rect = stage.getBoundingClientRect();
+        const midX = (a.x + b.x) / 2 - rect.left;
+        const midY = (a.y + b.y) / 2 - rect.top;
+        const scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, active.startScale * (dist / active.startDist)));
+        const ratio = scale / active.startScale;
+        const sv = active.startView;
+        onView({
+          scale,
+          x: midX - (midX - sv.x) * ratio,
+          y: midY - (midY - sv.y) * ratio,
+        });
+      });
+      return;
+    }
     const current = drag.current;
     if (!current) return;
     current.lastClientX = event.clientX;
@@ -197,6 +245,13 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
     drag.current = null;
   };
 
+  const finishPointer = (event: PointerEvent) => {
+    pointersRef.current.delete(event.pointerId);
+    // 任一手指抬起 → 捏合结束；剩余单指恢复为普通拖动（需重新按下）
+    if (pinchRef.current && pointersRef.current.size < 2) pinchRef.current = null;
+    endDrag();
+  };
+
   const handleWheel = useCallback((event: globalThis.WheelEvent) => {
     event.preventDefault();
     const stage = stageRef.current;
@@ -237,8 +292,8 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
       tabIndex={0}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
-      onPointerUp={endDrag}
-      onPointerCancel={endDrag}
+      onPointerUp={finishPointer}
+      onPointerCancel={finishPointer}
       onBlur={(event) => {
         // 焦点在画布内部元素（缩放按钮等）间移动时不算离开
         const related = event.relatedTarget as Node | null;
