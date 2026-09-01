@@ -8,6 +8,7 @@ import { getColors } from '../api/colors';
 import { getBlueprintLegend } from '../api/materials';
 import apiClient from '../api/client';
 import { useToast } from '../components/ToastContext';
+import Button from '../components/Button';
 import { staggerContainer, staggerItem } from '../lib/animations';
 import CellThumb from '../components/CellThumb';
 import CorrectionEditorModal from '../components/CorrectionEditorModal';
@@ -426,8 +427,8 @@ export default function CorrectionPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 lg:px-6">
-      <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-4">
-        <motion.div variants={staggerItem} className="flex flex-wrap items-center justify-between gap-3">
+      <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-3">
+        <motion.div variants={staggerItem} className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-2 sm:gap-3">
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 700 }}>图纸校正</h1>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', marginTop: 3 }}>
@@ -435,40 +436,36 @@ export default function CorrectionPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" onClick={() => navigate(`/blueprints/${id}`)} style={{ fontSize: 'var(--text-sm)', color: 'var(--color-accent)', padding: '6px 8px' }}>← 返回详情</button>
-            <button
-              type="button"
-              onClick={() => navigate(`/materials?blueprint=${id}`)}
-              style={{ ...controlStyle(), fontWeight: 600, color: 'var(--color-accent)', borderColor: 'var(--color-accent)' }}
-              title="重新框选/识别并按需修改物料清单（复用物料清单录入界面），保存后回到此处对比"
-            >
-              修改物料清单
-            </button>
-            <button
-              type="button"
+            <Button variant="ghost" size="sm" onClick={() => navigate(`/blueprints/${id}`)}>← 返回详情</Button>
+            <Button variant="secondary" size="sm" onClick={() => navigate(`/materials?blueprint=${id}`)} title="重新框选/识别并按需修改物料清单（复用物料清单录入界面），保存后回到此处对比">修改物料清单</Button>
+            <Button
+              variant="primary"
+              size="sm"
               onClick={exportCorrections}
               disabled={correctedCount === 0}
-              style={{ ...controlStyle(), fontWeight: 600, color: '#fff', background: correctedCount > 0 ? 'var(--color-success)' : undefined, borderColor: correctedCount > 0 ? 'var(--color-success)' : undefined, opacity: correctedCount === 0 ? 0.45 : 1, cursor: correctedCount === 0 ? 'not-allowed' : 'pointer' }}
+              className={correctedCount > 0 ? '!bg-[var(--color-success)]' : ''}
               title="导出全部已校正格子（zip：manifest.csv + 格子裁剪图），供模型训练"
             >
               导出校正数据{correctedCount > 0 ? `（${correctedCount}）` : ''}
-            </button>
+            </Button>
           </div>
         </motion.div>
 
         <motion.div variants={staggerItem} className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--color-border)' }}>
+          <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--color-border)', height: 32 }}>
             {([['all', '全部'], ['unfixed', '仅未修正'], ['fixed', '仅已修正']] as const).map(([value, label]) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => setFixFilter(value)}
                 style={{
-                  padding: '8px 14px',
+                  padding: '0 12px',
                   fontSize: 'var(--text-xs)',
                   background: fixFilter === value ? 'var(--color-accent)' : 'transparent',
                   color: fixFilter === value ? '#fff' : 'var(--color-text)',
                   cursor: 'pointer',
+                  fontWeight: fixFilter === value ? 600 : 400,
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {label}
@@ -480,7 +477,7 @@ export default function CorrectionPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="搜坐标 1:23 或编码 A10"
-            style={{ ...controlStyle(), minWidth: 180, flex: '1 1 180px', maxWidth: 320 }}
+            style={{ ...controlStyle(), minWidth: 160, flex: '1 1 160px', maxWidth: 320, height: 32 }}
             aria-label="搜索格子"
           />
 
@@ -528,7 +525,7 @@ export default function CorrectionPage() {
                         key={code}
                         type="button"
                         onClick={() => { setSelectedCode(code); }}
-                        className="shrink-0 lg:w-full flex items-center justify-between gap-1.5 px-2 py-2 rounded-md lg:mb-0.5 text-left transition-colors hover:bg-[var(--color-surface-hover)]"
+                        className="shrink-0 lg:w-full flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-md lg:mb-0.5 text-left transition-colors hover:bg-[var(--color-surface-hover)]"
                         style={{
                           background: selected ? 'var(--color-accent)' : 'transparent',
                           color: selected ? 'var(--color-text-inverse)' : 'var(--color-text)',

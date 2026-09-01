@@ -11,6 +11,7 @@ import type { HoverCell } from '../lib/boardCanvas';
 import { useBoardViewer } from '../hooks/useBoardViewer';
 import CorrectionEditorModal from '../components/CorrectionEditorModal';
 import { useToast } from '../components/ToastContext';
+import Button from '../components/Button';
 import ImmersionBoard from '../components/ImmersionBoard';
 
 function controlStyle(): React.CSSProperties {
@@ -166,8 +167,8 @@ export default function BlueprintDetailPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 lg:px-6">
-      <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-5">
-        <motion.div variants={staggerItem} className="flex flex-wrap items-start justify-between gap-4">
+      <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-4">
+        <motion.div variants={staggerItem} className="flex flex-col sm:flex-row sm:flex-wrap sm:items-start sm:justify-between gap-2 sm:gap-4">
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-2xl)', fontWeight: 700 }}>图纸详情</h1>
             <p style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)', marginTop: 3 }}>
@@ -175,27 +176,26 @@ export default function BlueprintDetailPage() {
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <button type="button" onClick={() => navigate('/blueprints')} style={{ fontSize: 'var(--text-sm)', color: 'var(--color-accent)', padding: '6px 8px' }}>← 任务历史</button>
-            <button
-              type="button"
-              onClick={() => navigate(`/blueprints/${id}/correct`)}
-              style={{ ...controlStyle(), fontWeight: 600, color: '#fff', background: 'var(--color-accent)', borderColor: 'var(--color-accent)' }}
-            >
+            <Button variant="ghost" size="sm" onClick={() => navigate('/blueprints')}>← 任务历史</Button>
+            <Button variant="primary" size="sm" onClick={() => navigate(`/blueprints/${id}/correct`)}>
               校正{reviewCount > 0 ? `（${reviewCount}）` : ''}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
               onClick={() => setImmersive(true)}
-              style={{ ...controlStyle(), fontWeight: 600, color: '#fff', background: 'var(--color-accent)', borderColor: 'var(--color-accent)' }}
+              className="!text-[var(--color-accent)] !border !border-[var(--color-accent)]"
               title="全屏浏览拼豆图纸：点击格子查看并锁定其编码"
             >
               沉浸模式
-            </button>
-            <button type="button" onClick={() => viewer.zoomBy(0.8)} style={controlStyle()} aria-label="缩小">−</button>
-            <button type="button" onClick={viewer.resetView} style={controlStyle()} aria-label="100%">100%</button>
-            <span style={{ minWidth: 48, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>{Math.round(view.scale * 100)}%</span>
-            <button type="button" onClick={() => viewer.zoomBy(1.25)} style={controlStyle()} aria-label="放大">+</button>
-            <button type="button" onClick={viewer.fitView} style={{ ...controlStyle(), fontFamily: 'var(--font-body)' }}>适应窗口</button>
+            </Button>
+            <div className="flex items-center gap-1">
+              <button type="button" onClick={() => viewer.zoomBy(0.8)} style={controlStyle()} aria-label="缩小">−</button>
+              <button type="button" onClick={viewer.resetView} style={controlStyle()} aria-label="100%">100%</button>
+              <span style={{ minWidth: 40, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>{Math.round(view.scale * 100)}%</span>
+              <button type="button" onClick={() => viewer.zoomBy(1.25)} style={controlStyle()} aria-label="放大">+</button>
+              <button type="button" onClick={viewer.fitView} style={{ ...controlStyle(), fontFamily: 'var(--font-body)' }}>适应窗口</button>
+            </div>
           </div>
         </motion.div>
 

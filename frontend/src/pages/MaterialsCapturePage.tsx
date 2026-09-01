@@ -245,10 +245,10 @@ export default function MaterialsCapturePage() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--color-text-muted)', letterSpacing: '.12em' }}>MATERIALS · 物料清单录入</div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-3xl)', fontWeight: 800 }}>框选物料清单·按格拆豆</h1>
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: 14 }}>圈住底部清单，按行列拆格并逐格校正识别结果。拆格 / 框选尽量贴住文字本身，避免把整块色底圈进格子。</p>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(var(--text-xl), 4vw, var(--text-3xl))', fontWeight: 800 }}>框选物料清单·按格拆豆</h1>
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: 13 }}>圈住底部清单，按行列拆格并逐格校正识别结果。拆格 / 框选尽量贴住文字本身，避免把整块色底圈进格子。</p>
         </div>
-        <Button variant="secondary" onClick={blueprintId ? () => navigate(`/blueprints/${blueprintId}/correct`) : finish}>返回</Button>
+        <Button variant="secondary" size="sm" onClick={blueprintId ? () => navigate(`/blueprints/${blueprintId}/correct`) : finish}>返回</Button>
       </header>
 
       <section style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
@@ -259,23 +259,23 @@ export default function MaterialsCapturePage() {
           <label htmlFor="materials-cols">列 <input id="materials-cols" name="materialsCols" style={inputStyle} inputMode="numeric" value={colsText} onChange={(event) => setSize('cols', event.target.value)} onBlur={() => setColsText(String(state.cols))} /></label>
           <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{state.rows}×{state.cols} = {state.rows * state.cols} 格</span>
           <span className="ml-auto flex gap-2">
-            <Button variant="secondary" onClick={() => setRedrawing(true)} disabled={redrawing || state.loading || state.gridLoading} title="在图上按下拖动，画出新的框选区域后重新识别">重新框选</Button>
-            <Button variant="secondary" onClick={recognize} disabled={state.loading || state.gridLoading || redrawing}>{state.loading ? '识别中…' : '单格识别'}</Button>
-            <Button onClick={recognizeGrid} disabled={state.loading || state.gridLoading || redrawing}>{state.gridLoading ? '网格识别中…' : '网格识别'}</Button>
+            <Button variant="secondary" size="sm" onClick={() => setRedrawing(true)} disabled={redrawing || state.loading || state.gridLoading} title="在图上按下拖动，画出新的框选区域后重新识别">重新框选</Button>
+            <Button variant="secondary" size="sm" onClick={recognize} disabled={state.loading || state.gridLoading || redrawing}>{state.loading ? '识别中…' : '单格识别'}</Button>
+            <Button size="sm" onClick={recognizeGrid} disabled={state.loading || state.gridLoading || redrawing}>{state.gridLoading ? '网格识别中…' : '网格识别'}</Button>
           </span>
         </div>
         <MaterialsCanvas imageUrl={input.imageUrl} imageW={input.imageW} imageH={input.imageH} box={state.box} highlightBox={highlightedBox} view={state.view} rows={state.rows} cols={state.cols} stageRef={stageRef} drawing={redrawing} onBox={onBox} onView={onView} onFit={fit} onDrawingEnd={() => setRedrawing(false)} onFocusLeave={onFocusLeave} />
         <div className="flex flex-wrap gap-2 p-3" style={{ borderTop: '1px solid var(--color-border)' }}>
           {blueprintId ? (
             <>
-              <Button variant="secondary" onClick={exportSamples} disabled={!confirmedCount}>导出已确认样本（{confirmedCount}）</Button>
-              <Button variant="ghost" onClick={() => navigate(`/blueprints/${blueprintId}/correct`)}>完成，返回校正</Button>
+              <Button variant="secondary" size="sm" onClick={exportSamples} disabled={!confirmedCount}>导出已确认样本（{confirmedCount}）</Button>
+              <Button variant="ghost" size="sm" onClick={() => navigate(`/blueprints/${blueprintId}/correct`)}>完成，返回校正</Button>
               <span className="ml-auto self-center text-xs" style={{ color: saveState === 'error' ? 'var(--color-error)' : saveState === 'saving' ? 'var(--color-text-muted)' : 'var(--color-success)', minWidth: 56 }}>
                 {saveState === 'saving' ? '保存中…' : saveState === 'error' ? '保存失败' : saveState === 'saved' ? '已保存' : ''}
               </span>
             </>
           ) : (
-            <Button onClick={finish}>完成，返回上传页（{state.inventory.length} 项）</Button>
+            <Button size="sm" onClick={finish}>完成，返回上传页（{state.inventory.length} 项）</Button>
           )}
         </div>
       </section>
