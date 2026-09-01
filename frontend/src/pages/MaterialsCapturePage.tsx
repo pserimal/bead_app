@@ -255,7 +255,7 @@ export default function MaterialsCapturePage() {
             <>
               <Button onClick={save} disabled={saving}>{saving ? '保存中…' : '保存物料清单'}</Button>
               <Button variant="secondary" onClick={exportSamples} disabled={!confirmedCount}>导出已确认样本（{confirmedCount}）</Button>
-              <Button variant="ghost" onClick={() => navigate(`/blueprints/${blueprintId}/correct`)}>完成，返回校正</Button>
+              <Button variant="ghost" onClick={() => navigate(`/blueprints/${blueprintId}/correct`)} disabled={saving}>完成，返回校正</Button>
             </>
           ) : (
             <Button onClick={finish}>完成，返回上传页（{state.inventory.length} 项）</Button>

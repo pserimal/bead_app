@@ -355,6 +355,51 @@ export function useMaterialsCapture(blueprintId: string | null) {
   }, [blueprintId, restoredWizard, state.input]);
 
   //补录模式从服务端读取原图与已保存清单；清单不存在时仍允许手工录入。
+  // 图片加载与清单加载解耦：清单加载只依赖 blueprintId（不随 state.input 变化
+  // 重跑/取消）——否则图片 onload dispatch input 会触发 effect 清理，把
+  // 尚未返回的清单 fetch 标记 inactive，导致保存过的清单“有概率”不展示。
+  useEffect(() => {
+    if (!blueprintId) return;
+    let active = true;
+    void (async () => {
+      try {
+        const saved = await getBlueprintLegend(blueprintId);
+        if (!active) return;
+        dispatch({
+          type: 'inventory',
+          inventory: saved.map((entry) => ({
+            code: entry.code,
+            count: entry.count,
+            confirmed: entry.confirmed,
+            row: entry.rowIndex,
+            col: entry.colIndex,
+            bbox: { x: entry.bbox.x, y: entry.bbox.y, w: entry.bbox.width, h: entry.bbox.height },
+          })),
+        });
+        // 恢复图例区域框：已保存格子（有真实坐标）的外接矩形 = 之前的框选位置。
+        // 仅当画布框仍是初始占位（用户尚未拖动/重画）时应用，避免覆盖用户操作。
+        const boxes = saved
+          .map((entry) => ({ x: entry.bbox.x, y: entry.bbox.y, w: entry.bbox.width, h: entry.bbox.height }))
+          .filter((b) => b.w > 0 && b.h > 0);
+        const current = boxRef.current;
+        const isPlaceholder = !current || (current.x <= 0 && current.y <= 0 && current.w <= 100 && current.h <= 100);
+        if (boxes.length > 0 && isPlaceholder) {
+          const minX = Math.min(...boxes.map((b) => b.x));
+          const minY = Math.min(...boxes.map((b) => b.y));
+          const maxX = Math.max(...boxes.map((b) => b.x + b.w));
+          const maxY = Math.max(...boxes.map((b) => b.y + b.h));
+          dispatch({ type: 'box', box: { x: minX, y: minY, w: maxX - minX, h: maxY - minY } });
+        }
+      } catch {
+        // An absent saved list is a valid补录 starting point.
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [blueprintId]);
+
+  // 补录模式加载原图（独立于清单加载；清单在挂载即拉取，不受图片时序影响）
   useEffect(() => {
     if (!blueprintId || state.input) return;
     let active = true;
@@ -383,38 +428,6 @@ export function useMaterialsCapture(blueprintId: string | null) {
           });
         };
         image.src = url;
-        try {
-          const saved = await getBlueprintLegend(blueprintId);
-          if (active) {
-            dispatch({
-              type: 'inventory',
-              inventory: saved.map((entry) => ({
-                code: entry.code,
-                count: entry.count,
-                confirmed: entry.confirmed,
-                row: entry.rowIndex,
-                col: entry.colIndex,
-                bbox: { x: entry.bbox.x, y: entry.bbox.y, w: entry.bbox.width, h: entry.bbox.height },
-              })),
-            });
-            // 恢复图例区域框：已保存格子（有真实坐标）的外接矩形 = 之前的框选位置。
-            // 仅当画布框仍是初始占位（用户尚未拖动/重画）时应用，避免覆盖用户操作。
-            const boxes = saved
-              .map((entry) => ({ x: entry.bbox.x, y: entry.bbox.y, w: entry.bbox.width, h: entry.bbox.height }))
-              .filter((b) => b.w > 0 && b.h > 0);
-            const current = boxRef.current;
-            const isPlaceholder = !current || (current.x <= 0 && current.y <= 0 && current.w <= 100 && current.h <= 100);
-            if (boxes.length > 0 && isPlaceholder) {
-              const minX = Math.min(...boxes.map((b) => b.x));
-              const minY = Math.min(...boxes.map((b) => b.y));
-              const maxX = Math.max(...boxes.map((b) => b.x + b.w));
-              const maxY = Math.max(...boxes.map((b) => b.y + b.h));
-              dispatch({ type: 'box', box: { x: minX, y: minY, w: maxX - minX, h: maxY - minY } });
-            }
-          }
-        } catch {
-          // An absent saved list is a valid补录 starting point.
-        }
       } catch (error) {
         if (active) dispatch({ type: 'error', error: errorText(error) || '原图加载失败（权限或网络）' });
       }
