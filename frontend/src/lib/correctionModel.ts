@@ -38,23 +38,14 @@ export function naturalCompare(a: string, b: string): number {
   return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 }
 
-/** 待复核：UNMAPPED 无条件进列表，其余 conf < threshold；已修正的格子不计入（复核完成后计数归零） */
-export function computeReviewCells(cells: BlueprintCellDto[], threshold: number): BlueprintCellDto[] {
-  return cells.filter(
-    (c) => c.correctedCode == null && (c.status === 'UNMAPPED' || (c.confidence != null && c.confidence < threshold)),
-  );
-}
-
-/** 可见格：模式（待复核/全部）+ 搜索（仅全部模式）+ 三态修正筛选 */
+/** 可见格：搜索（坐标/编码）+ 三态修正筛选（全部/仅未修正/仅已修正） */
 export function computeVisibleCells(
   allCells: BlueprintCellDto[],
-  reviewCells: BlueprintCellDto[],
-  mode: 'review' | 'all',
   search: string,
   fixFilter: 'all' | 'unfixed' | 'fixed',
 ): BlueprintCellDto[] {
-  let list = mode === 'review' ? reviewCells : allCells;
-  if (mode === 'all' && search.trim()) {
+  let list = allCells;
+  if (search.trim()) {
     const q = search.trim().toUpperCase();
     list = list.filter((c) => {
       const coord = `${c.row + 1}:${c.col + 1}`;
@@ -66,7 +57,7 @@ export function computeVisibleCells(
   return list;
 }
 
-/** 全量编码计数：按有效码统计全部格子（对比结果显示始终基于全量格子，而非当前筛选/待复核子集） */
+/** 全量编码计数：按有效码统计全部格子（对比结果显示始终基于全量格子，而非当前筛选子集） */
 export function buildAllCodeCounts(cells: BlueprintCellDto[]): Map<string, number> {
   const map = new Map<string, number>();
   for (const cell of cells) {

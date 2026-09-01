@@ -64,12 +64,10 @@ export default function BlueprintDetailPage() {
     }
     return best;
   }, [blueprint]);
-  // 待复核数（详情页角标；与校正页默认档位 90% 一致；已修正的格子不再计入）
+  // 未修正数（详情页角标：仍待修正的格子数）
   const reviewCount = useMemo(() => {
     if (!blueprint) return 0;
-    return blueprint.cells.filter(
-      (c) => c.correctedCode == null && (c.status === 'UNMAPPED' || (c.confidence != null && c.confidence < 0.9)),
-    ).length;
+    return blueprint.cells.filter((c) => c.correctedCode == null).length;
   }, [blueprint]);
 
   // 点击单元格 → 打开单格修正弹窗（编辑坐标与 hover tooltip 同一来源）

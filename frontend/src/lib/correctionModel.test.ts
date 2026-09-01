@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildAllCodeCounts,
-  computeReviewCells,
   computeVisibleCells,
   legendDiff,
   rangeKeys,
@@ -73,37 +72,27 @@ describe('legendDiff（清单-图纸差异）', () => {
   });
 });
 
-describe('computeReviewCells（待复核名单：低置信度/库外且未修正）', () => {
-  const cells = [
-    cell('A1', { confidence: 0.95 }), // 高置信：不进名单
-    cell('A2', { confidence: 0.8 }), // 低置信未修正 → 待复核
-    cell('A3', { confidence: 0.8, correctedCode: 'B1' }), // 低置信已修正 → 不再待复核
-    cell('X9', { status: 'UNMAPPED' }), // 库外未修正 → 待复核
-    cell('Y9', { status: 'UNMAPPED', correctedCode: 'A1' }), // 库外已修正 → 不再待复核
-  ];
-
-  it('待复核：低于阈值或 UNMAPPED，且未修正（复核完成计数归零）', () => {
-    expect(computeReviewCells(cells, 0.9).map((c) => c.code)).toEqual(['A2', 'X9']);
-  });
-});
-
-describe('computeVisibleCells（模式 + 搜索 + 修正筛选）', () => {
+describe('computeVisibleCells（搜索 + 修正筛选）', () => {
   const all = [
     cell('A1'),
     cell('B1'),
     cell('B1', { correctedCode: 'C1' }),
     cell('BLANK', { status: 'BLANK' }),
   ];
-  const review = all.filter((c) => c.code !== 'BLANK');
 
-  it('待复核模式：只取待复核名单，修正筛选仍生效', () => {
-    expect(computeVisibleCells(all, review, 'review', '', 'all')).toEqual(review);
-    expect(computeVisibleCells(all, review, 'review', '', 'fixed')).toEqual([all[2]]);
+  it('无搜索无筛选：返回全部格子', () => {
+    expect(computeVisibleCells(all, '', 'all')).toEqual(all);
   });
 
-  it('全部模式：全部格子 + 搜索过滤', () => {
-    expect(computeVisibleCells(all, [], 'all', '', 'all')).toEqual(all);
-    expect(computeVisibleCells(all, [], 'all', 'B1', 'all')).toEqual([all[1], all[2]]);
+  it('搜索过滤：按编码/修正码匹配', () => {
+    expect(computeVisibleCells(all, 'B1', 'all')).toEqual([all[1], all[2]]);
+  });
+
+  it('修正筛选：仅未修正 / 仅已修正，与搜索叠加', () => {
+    expect(computeVisibleCells(all, '', 'unfixed')).toEqual([all[0], all[1], all[3]]);
+    expect(computeVisibleCells(all, '', 'fixed')).toEqual([all[2]]);
+    // 搜索 'B' 匹配 code 含 B：B1、BLANK（'BLANK'.includes('B')）；再筛未修正 → B1、BLANK
+    expect(computeVisibleCells(all, 'B', 'unfixed')).toEqual([all[1], all[3]]);
   });
 });
 

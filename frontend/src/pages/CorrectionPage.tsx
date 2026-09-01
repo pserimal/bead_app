@@ -15,7 +15,6 @@ import {
   buildAllCodeCounts,
   buildCodeList,
   computeBreakdown,
-  computeReviewCells,
   computeVisibleCells,
   legendDiff,
   naturalCompare,
@@ -25,10 +24,6 @@ import {
 } from '../lib/correctionModel';
 import type { BlueprintCellDto, CellCorrectionUpdate, ColorDto } from '../types/api';
 
-// 置信度档位：标记 conf < 档位的 MAPPED/BLANK 格（UNMAPPED 无条件进列表）
-const THRESHOLDS = [0.9, 0.8, 0.7] as const;
-const DEFAULT_THRESHOLD: (typeof THRESHOLDS)[number] = 0.9;
-
 /** 与 ocr_core.inference 相同的格子裁剪数学（含 10% 内缩跳过网格线） */
 export default function CorrectionPage() {
   const { id } = useParams<{ id: string }>();
@@ -37,8 +32,6 @@ export default function CorrectionPage() {
   const { toast } = useToast();
   const { data: blueprint, isLoading, error } = useBlueprint(id ?? null);
 
-  const [threshold, setThreshold] = useState<(typeof THRESHOLDS)[number]>(DEFAULT_THRESHOLD);
-  const [mode, setMode] = useState<'review' | 'all'>('review');
   const [fixFilter, setFixFilter] = useState<'all' | 'unfixed' | 'fixed'>('all');
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -108,7 +101,7 @@ export default function CorrectionPage() {
     return map;
   }, [blueprint]);
 
-  // 全量编码计数：待复核/搜索/筛选只影响左栏列表内容，对比数值始终基于全部格子的有效码
+  // 全量编码计数：搜索/筛选只影响左栏列表内容，对比数值始终基于全部格子的有效码
   const allCodeCounts = useMemo(() => {
     if (!blueprint) return new Map<string, number>();
     return buildAllCodeCounts(blueprint.cells);
@@ -184,18 +177,13 @@ export default function CorrectionPage() {
     return [...list].sort((a, b) => hue(a.hex) - hue(b.hex));
   }, [validCodeList, colorsByCode]);
 
-  const reviewCells = useMemo(() => {
-    if (!blueprint) return [];
-    return computeReviewCells(blueprint.cells, threshold);
-  }, [blueprint, threshold]);
-
   const visibleCells = useMemo(() => {
     if (!blueprint) return [];
-    return computeVisibleCells(blueprint.cells, reviewCells, mode, search, fixFilter);
-  }, [blueprint, mode, reviewCells, search, fixFilter]);
+    return computeVisibleCells(blueprint.cells, search, fixFilter);
+  }, [blueprint, search, fixFilter]);
 
   // 左栏编码列表：全部格子 + 清单独有码（双向对比完整：图纸有清单无 → A1 20(-20)；清单有图纸无 → C11 0(+8)）。
-  // 全部模式的搜索只收窄列表与右栏格子，待复核/全部模式保持全量，避免对比列表跳变
+  // 搜索只收窄列表与右栏格子，对比数值始终基于全部格子
   const codeList = useMemo(() => {
     const list = buildCodeList(blueprint?.cells ?? []);
     if (hasLegend) {
@@ -205,20 +193,18 @@ export default function CorrectionPage() {
       }
       list.sort((a, b) => naturalCompare(a.code, b.code));
     }
-    if (mode === 'all' && search.trim()) {
+    if (search.trim()) {
       const q = search.trim().toUpperCase();
       const visibleCodes = new Set(visibleCells.map((c) => c.correctedCode ?? c.code));
       return list.filter((l) => visibleCodes.has(l.code) || l.code.includes(q));
     }
     return list;
-  }, [blueprint, hasLegend, expectedByCode, visibleCells, mode, search]);
+  }, [blueprint, hasLegend, expectedByCode, visibleCells, search]);
   // 默认选中第一个「当前列表中有格子」的码（避免默认落在 0 格的空面板上）
   const firstVisibleCode = useMemo(() => {
     if (!blueprint) return null;
-    if (mode === 'all') return codeList[0]?.code ?? null;
-    const codes = new Set(visibleCells.map((c) => c.correctedCode ?? c.code));
-    return codeList.find((l) => codes.has(l.code))?.code ?? codeList[0]?.code ?? null;
-  }, [blueprint, mode, visibleCells, codeList]);
+    return codeList[0]?.code ?? null;
+  }, [blueprint, codeList]);
   const activeCode = selectedCode != null && codeList.some((l) => l.code === selectedCode)
     ? selectedCode
     : firstVisibleCode;
@@ -472,41 +458,6 @@ export default function CorrectionPage() {
 
         <motion.div variants={staggerItem} className="flex flex-wrap items-center gap-2">
           <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--color-border)' }}>
-            {([
-              ['review', `待复核（${reviewCells.length}）`],
-              ['all', `全部（${blueprint.cells.length.toLocaleString()}）`],
-            ] as const).map(([m, label]) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMode(m)}
-                style={{
-                  padding: '6px 14px',
-                  fontSize: 'var(--text-sm)',
-                  background: mode === m ? 'var(--color-accent)' : 'transparent',
-                  color: mode === m ? '#fff' : 'var(--color-text)',
-                }}
-                title={m === 'review' ? '待复核：低于置信度阈值且未修正的格子，修正后自动移出' : '全部：图纸上每一个格子'}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {mode === 'review' && (
-            <select
-              value={String(threshold)}
-              onChange={(e) => setThreshold(Number(e.target.value) as (typeof THRESHOLDS)[number])}
-              style={controlStyle()}
-              aria-label="置信度阈值"
-            >
-              {THRESHOLDS.map((t) => (
-                <option key={t} value={String(t)}>置信度 &lt; {Math.round(t * 100)}%</option>
-              ))}
-            </select>
-          )}
-
-          <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--color-border)' }}>
             {([['all', '全部'], ['unfixed', '仅未修正'], ['fixed', '仅已修正']] as const).map(([value, label]) => (
               <button
                 key={value}
@@ -525,15 +476,13 @@ export default function CorrectionPage() {
             ))}
           </div>
 
-          {mode === 'all' && (
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="搜坐标 1:23 或编码 A10"
-              style={{ ...controlStyle(), minWidth: 180 }}
-              aria-label="搜索格子"
-            />
-          )}
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="搜坐标 1:23 或编码 A10"
+            style={{ ...controlStyle(), minWidth: 180 }}
+            aria-label="搜索格子"
+          />
 
           {imageError && (
             <motion.p variants={staggerItem} className="px-3 py-2 rounded-lg text-sm" style={{ background: 'var(--color-error-light)', border: '1px solid var(--color-error)', color: 'var(--color-error)' }}>
@@ -543,20 +492,14 @@ export default function CorrectionPage() {
 
           {unmappedCount > 0 && (
             <span className="text-xs px-2 py-1 rounded" style={{ background: 'var(--color-warning-light)', color: 'var(--color-warning)' }}>
-              ⚠ {unmappedCount} 格颜色库外（已全部列入待复核）
+              ⚠ {unmappedCount} 格颜色库外
             </span>
           )}
         </motion.div>
 
-        {mode === 'review' && reviewCells.length === 0 && codeList.length > 0 && (
-          <motion.div variants={staggerItem} className="px-4 py-2.5 rounded-lg text-sm" style={{ background: 'var(--color-success-light)', border: '1px solid var(--color-success)', color: 'var(--color-success)' }}>
-            🎉 没有需要复核的格子。如清单与图纸仍有差异，可「修改物料清单」重新识别，或切「全部」查看已修正格子。
-          </motion.div>
-        )}
-
         {codeList.length === 0 && (
           <motion.div variants={staggerItem} className="py-12 text-center" style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-            {mode === 'all' ? '没有匹配的格子' : '没有需要复核的格子 🎉'}
+            没有匹配的格子
           </motion.div>
         )}
 
@@ -634,9 +577,8 @@ export default function CorrectionPage() {
                       {(() => {
                         const boardCount = allCodeCounts.get(activeCode) ?? 0;
                         const want = expectedByCode.get(activeCode);
-                        if (mode === 'all' && search.trim()) return '无匹配';
+                        if (search.trim()) return '无匹配';
                         if (boardCount === 0 && want != null && want > 0) return `清单需要 ${want} 个，图纸中未找到`;
-                        if (mode === 'review') return '该码格子已全部复核，可在「全部」中查看已修正格子';
                         return '无匹配';
                       })()}
                     </span>
