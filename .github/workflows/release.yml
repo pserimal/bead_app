@@ -128,15 +128,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: bead-local-server-${{ github.ref_name }}.zip
-          body: |
-            ## ${{ github.ref_name }} 发布说明
-
-            ### 新增：物料清单
-            - 录入：框选图纸底部编码+数量表，按行列识别物料编码与数量（ppocrv5 模型）
-            - 失败格可单格重试；支持手工添加物料、筛选/确认未确认项
-            - 校正页与实际用豆数量对比，录入更准
-
-            ### 其他改进
-            - 图例/物料卡识别增强（文字带提取 + 多视角融合）
-            - 前端性能优化：校正格窗口化渲染 + 低端设备滚动流畅度
-            - 发布流程修复与文档完善
+          generate_release_notes: true
+          # 说明：此处的 body 仅为自动生成占位（commit 列表）。正式发布说明
+          # 由 AI 从 git log 总结中文版 → 用户确认 → PATCH 覆盖到 Release。
