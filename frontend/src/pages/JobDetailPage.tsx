@@ -112,9 +112,7 @@ export default function JobDetailPage() {
                 <div className="flex gap-3 pt-1">
                   {job.blueprintId && (
                     <Link to={`/blueprints/${job.blueprintId}`}>
-                      <button className="px-4 py-2 rounded-lg text-sm text-white" style={{ background: 'var(--color-accent)' }}>
-                        查看图纸
-                      </button>
+                      <Button>查看图纸</Button>
                     </Link>
                   )}
                 </div>

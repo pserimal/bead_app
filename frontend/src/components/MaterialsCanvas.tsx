@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useRef } from 'react';
 import type { PointerEvent, RefObject } from 'react';
 import { motion } from 'framer-motion';
 import type { Box, View } from '../hooks/useMaterialsCapture';
+import { toolButtonStyle } from './Button';
 
 type Props = {
   imageUrl: string;
@@ -421,9 +422,9 @@ const MaterialsCanvas = memo(function MaterialsCanvas({
         />
       )}
       <div className="absolute right-3 bottom-3 flex gap-1.5">
-        <button type="button" aria-label="缩小" onPointerDown={(event) => event.stopPropagation()} onClick={() => zoomByButton(ZOOM_OUT_FACTOR)}>−</button>
-        <button type="button" aria-label="恢复适应窗口" title="恢复适应窗口" onPointerDown={(event) => event.stopPropagation()} onClick={onFit}>{Math.round(view.scale * 100)}%</button>
-        <button type="button" aria-label="放大" onPointerDown={(event) => event.stopPropagation()} onClick={() => zoomByButton(ZOOM_FACTOR)}>+</button>
+        <button type="button" aria-label="缩小" onPointerDown={(event) => event.stopPropagation()} onClick={() => zoomByButton(ZOOM_OUT_FACTOR)} style={toolButtonStyle()}>−</button>
+        <button type="button" aria-label="恢复适应窗口" title="恢复适应窗口" onPointerDown={(event) => event.stopPropagation()} onClick={onFit} style={toolButtonStyle()}>{Math.round(view.scale * 100)}%</button>
+        <button type="button" aria-label="放大" onPointerDown={(event) => event.stopPropagation()} onClick={() => zoomByButton(ZOOM_FACTOR)} style={toolButtonStyle()}>+</button>
       </div>
     </div>
   );

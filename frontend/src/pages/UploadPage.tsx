@@ -443,8 +443,8 @@ export default function UploadPage() {
         {!confirmLegend && legendEntries.length > 0 && (
           <motion.div variants={staggerItem} className="mb-3 px-4 py-2 rounded-full inline-flex items-center gap-2" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', width: 'fit-content' }}>
             🏷️ 已记录物料清单 ×{legendEntries.length}
-            <button type="button" onClick={() => { setLegendEntries([]); setSkipLegendPrompt(false); }} style={{ color: 'var(--color-error)', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 'var(--text-xs)' }}>清除</button>
-            <button type="button" onClick={() => navigate('/materials', { state: buildLegendNavState() })} style={{ color: 'var(--color-accent)', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 'var(--text-xs)' }}>查看/修改</button>
+            <Button type="button" variant="ghost" size="sm" className="!p-0 !text-[var(--color-error)]" onClick={() => { setLegendEntries([]); setSkipLegendPrompt(false); }}>清除</Button>
+            <Button type="button" variant="ghost" size="sm" className="!p-0 !text-[var(--color-accent)]" onClick={() => navigate('/materials', { state: buildLegendNavState() })}>查看/修改</Button>
           </motion.div>
         )}
         <motion.div variants={staggerItem} className="flex flex-wrap items-center justify-between gap-3">

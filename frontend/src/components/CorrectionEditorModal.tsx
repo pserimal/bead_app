@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { BlueprintCellDto, ColorDto } from '../types/api';
 import { computeBreakdown, naturalCompare } from '../lib/correctionModel';
+import Button from './Button';
 
 function controlStyle(): React.CSSProperties {
   return {
@@ -13,20 +14,6 @@ function controlStyle(): React.CSSProperties {
     color: 'var(--color-text)',
     fontFamily: 'var(--font-body)',
     fontSize: 'var(--text-sm)',
-  };
-}
-
-function actionBtn(color: string, disabled = false): React.CSSProperties {
-  return {
-    padding: '8px 16px',
-    borderRadius: 'var(--radius-md)',
-    border: 'none',
-    background: color,
-    color: '#fff',
-    fontSize: 'var(--text-sm)',
-    fontWeight: 600,
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.5 : 1,
   };
 }
 
@@ -277,19 +264,14 @@ export default function CorrectionEditorModal({
                 </span>
               )}
             </div>
-            <button
+            <Button
               type="button"
               onClick={() => void commit(upper)}
               disabled={!valid || busy}
-              style={{
-                ...actionBtn('var(--color-accent)', !valid || busy),
-                height: 42,
-                padding: '0 20px',
-                whiteSpace: 'nowrap',
-              }}
+              className="!h-[42px] !px-5 !text-sm !whitespace-nowrap"
             >
               {valid && upper ? `设为 ${upper}` : '设为…'}
-            </button>
+            </Button>
           </div>
           {open && (
             <div
@@ -337,30 +319,22 @@ export default function CorrectionEditorModal({
 
         {/* 次级操作：恢复原码（弱化，muted 文字按钮）+ 空白格（描边） */}
         <div className="mt-4 flex items-center gap-3">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => void handleRevert()}
             disabled={busy}
-            style={{
-              border: 'none',
-              background: 'transparent',
-              padding: '6px 2px',
-              color: 'var(--color-text-muted)',
-              fontSize: 'var(--text-sm)',
-              cursor: busy ? 'not-allowed' : 'pointer',
-              opacity: busy ? 0.5 : 1,
-              textDecoration: 'underline',
-              textUnderlineOffset: 3,
-            }}
+            className="!p-0 !ring-offset-0 !underline !underline-offset-[3px] !text-[var(--color-text-muted)]"
           >
             恢复原码
-          </button>
+          </Button>
           <span style={{ width: 1, height: 14, background: 'var(--color-border)' }} />
-          <button
+          <Button
             type="button"
+            variant="secondary"
             onClick={() => { setCode('BLANK'); setOpen(false); inputRef.current?.focus(); }}
-            style={{ padding: '7px 14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-strong)', background: 'transparent', color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', fontWeight: 500, cursor: 'pointer' }}
-          >设为空白</button>
+            className="!border !border-[var(--color-border-strong)]"
+          >设为空白</Button>
         </div>
       </div>
     </div>,

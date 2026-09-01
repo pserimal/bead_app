@@ -452,11 +452,12 @@ export default function CorrectionPage() {
         </motion.div>
 
         <motion.div variants={staggerItem} className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--color-border)', height: 32 }}>
+          <div role="group" aria-label="按修正状态筛选" className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--color-border)', height: 32 }}>
             {([['all', '全部'], ['unfixed', '仅未修正'], ['fixed', '仅已修正']] as const).map(([value, label]) => (
               <button
                 key={value}
                 type="button"
+                aria-pressed={fixFilter === value}
                 onClick={() => setFixFilter(value)}
                 style={{
                   padding: '0 12px',
@@ -477,7 +478,7 @@ export default function CorrectionPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="搜坐标 1:23 或编码 A10"
-            style={{ ...controlStyle(), minWidth: 160, flex: '1 1 160px', maxWidth: 320, height: 32 }}
+            style={{ minWidth: 160, flex: '1 1 160px', maxWidth: 320, height: 32, padding: '0 10px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', background: 'var(--color-surface)', color: 'var(--color-text)', fontFamily: 'var(--font-body)', fontSize: 'var(--text-sm)' }}
             aria-label="搜索格子"
           />
 
@@ -580,14 +581,15 @@ export default function CorrectionPage() {
                       })()}
                     </span>
                   )}
-                  <button
+                  <Button
                     type="button"
                     onClick={toggleCodeAll}
                     disabled={codeCells.length === 0}
-                    style={smallBtn()}
+                    variant="ghost"
+                    size="sm"
                   >
                     {codeCells.length > 0 && codeCells.every((c) => selected.has(`${c.row}:${c.col}`)) ? '取消全选' : '全选'}
-                  </button>
+                  </Button>
                   <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Shift+点击：连选/取下当前编码格子</span>
                 </div>
                 <div ref={listRef} className="max-h-[calc(70vh-53px)] overflow-y-auto p-3" style={{ scrollbarWidth: 'thin' }} onScroll={onRightScroll}>
@@ -629,9 +631,9 @@ export default function CorrectionPage() {
               {selectedBreakdown.slice(0, 3).map((b) => `${b.code}×${b.count}`).join(' ')}
             </span>
           )}
-          <button type="button" onClick={() => openEditor(selectedKeys)} style={actionBtn('var(--color-accent)')}>设为编码…</button>
-          <button type="button" onClick={() => openEditor(selectedKeys)} style={actionBtn('var(--color-success)')}>恢复原码</button>
-          <button type="button" onClick={() => setSelected(new Set())} style={actionBtn('var(--color-text-muted)')}>清除全部</button>
+          <Button type="button" onClick={() => openEditor(selectedKeys)}>设为编码…</Button>
+          <Button type="button" variant="danger" onClick={() => openEditor(selectedKeys)}>恢复原码</Button>
+          <Button type="button" variant="ghost" onClick={() => setSelected(new Set())}>清除全部</Button>
         </div>
       )}
 
@@ -707,48 +709,7 @@ export default function CorrectionPage() {
   );
 }
 
-function controlStyle(): React.CSSProperties {
-  return {
-    height: 34,
-    padding: '0 10px',
-    border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-md)',
-    background: 'var(--color-surface)',
-    color: 'var(--color-text)',
-    fontFamily: 'var(--font-body)',
-    fontSize: 'var(--text-sm)',
-  };
-}
-
 /** 右栏网格每行格数：与 flex-wrap 实际排布一致（容器 clientWidth，p-3=12px×2 padding，56px 格 + 8px gap） */
 function gridCols(containerWidth: number): number {
   return Math.max(1, Math.floor((containerWidth - 16) / 64));
-}
-
-function smallBtn(): React.CSSProperties {
-  return {
-    padding: '5px 12px',
-    border: '1px solid var(--color-border)',
-    borderRadius: 'var(--radius-md)',
-    background: 'transparent',
-    color: 'var(--color-text-secondary)',
-    fontSize: 'var(--text-xs)',
-    cursor: 'pointer',
-    transition: 'background 0.15s',
-  };
-}
-
-function actionBtn(color: string, disabled = false): React.CSSProperties {
-  return {
-    padding: '8px 12px',
-    borderRadius: 'var(--radius-md)',
-    border: 'none',
-    background: color,
-    color: '#fff',
-    fontSize: 'var(--text-sm)',
-    fontWeight: 600,
-    whiteSpace: 'nowrap',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.5 : 1,
-  };
 }

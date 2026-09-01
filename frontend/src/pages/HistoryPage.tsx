@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useJobs, useRenameJob, useDeleteJobs } from '../hooks/useJobs';
 import { staggerContainer, staggerItem } from '../lib/animations';
+import Button from '../components/Button';
 import type { JobStatus } from '../types/api';
 
 const STATUS_FILTERS: Array<{ value: JobStatus | ''; label: string }> = [
@@ -58,19 +59,6 @@ function ProgressBar({ processed, total, status }: { processed: number; total: n
       </span>
     </span>
   );
-}
-
-function baseBtn(disabled = false): React.CSSProperties {
-  return {
-    padding: '7px 14px',
-    borderRadius: 'var(--radius-md)',
-    border: '1px solid var(--color-border-strong)',
-    background: 'var(--color-surface)',
-    color: 'var(--color-text)',
-    fontSize: 'var(--text-sm)',
-    cursor: disabled ? 'not-allowed' : 'pointer',
-    opacity: disabled ? 0.45 : 1,
-  };
 }
 
 export default function HistoryPage() {
@@ -147,17 +135,16 @@ export default function HistoryPage() {
               style={{ background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border)' }}
             >
               <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>已选 {selected.size} 项</span>
-              <button type="button" onClick={clearSelection} disabled={deleteJobs.isPending} style={baseBtn(deleteJobs.isPending)}>
-                取消全选
-              </button>
-              <button
+              <Button type="button" variant="ghost" size="sm" className="!ring-offset-0" onClick={clearSelection} disabled={deleteJobs.isPending}>取消全选</Button>
+              <Button
                 type="button"
+                variant="danger"
+                size="sm"
                 onClick={() => setConfirmDelete(true)}
                 disabled={deleteJobs.isPending}
-                style={{ ...baseBtn(), background: 'var(--color-error)', borderColor: 'var(--color-error)', color: '#fff', fontWeight: 600 }}
               >
                 删除所选
-              </button>
+              </Button>
             </div>
           )}
         </motion.div>
@@ -178,13 +165,15 @@ export default function HistoryPage() {
             </button>
           ))}
           {data && data.items.length > 0 && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={allVisibleSelected ? clearSelection : selectAllVisible}
-              style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', border: 'none', background: 'transparent', cursor: 'pointer', padding: '6px 4px' }}
+              className="!ring-offset-0"
             >
               {allVisibleSelected ? '取消全选' : '全选本页'}
-            </button>
+            </Button>
           )}
         </motion.div>
 
@@ -241,51 +230,33 @@ export default function HistoryPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={(e) => { e.stopPropagation(); setRenameTarget({ id: job.id, name: job.name ?? '' }); }}
-                      style={{
-                        border: 'none',
-                        background: 'transparent',
-                        color: 'var(--color-text-muted)',
-                        fontSize: 'var(--text-xs)',
-                        cursor: 'pointer',
-                        padding: '4px 2px',
-                        textDecoration: 'underline',
-                        textUnderlineOffset: 3,
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-accent)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+                      className="!p-0 !ring-offset-0 !underline !underline-offset-[3px] !text-[var(--color-text-muted)]"
                       title="重命名任务"
                       aria-label={`重命名 ${job.name ?? job.id.slice(0, 8)}`}
                     >
                       重命名
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
                         // 单任务删除：选中该项并弹出确认框
                         setSelected(new Set([job.id]));
                         setConfirmDelete(true);
                       }}
-                      style={{
-                        border: 'none',
-                        background: 'transparent',
-                        color: 'var(--color-text-muted)',
-                        fontSize: 'var(--text-xs)',
-                        cursor: 'pointer',
-                        padding: '4px 2px',
-                        textDecoration: 'underline',
-                        textUnderlineOffset: 3,
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-error)')}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+                      className="!p-0 !ring-offset-0 !underline !underline-offset-[3px] !text-[var(--color-text-muted)]"
                       title="删除任务"
                       aria-label={`删除 ${job.name ?? job.id.slice(0, 8)}`}
                     >
                       删除
-                    </button>
+                    </Button>
                     <div className="text-right shrink-0" style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
                       {new Date(job.createdAt).toLocaleString([], {
                         month: 'numeric',
@@ -304,22 +275,24 @@ export default function HistoryPage() {
                 共 {data.total} 条 · 第 {data.page}/{Math.max(data.totalPages, 1)} 页
               </span>
               <div className="flex gap-2">
-                <button
-                  className="px-3 py-1.5 rounded-lg text-sm"
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
-                  style={{ border: '1px solid var(--color-border)', opacity: page <= 1 ? 0.4 : 1 }}
                 >
                   上一页
-                </button>
-                <button
-                  className="px-3 py-1.5 rounded-lg text-sm"
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
                   disabled={page >= data.totalPages}
                   onClick={() => setPage((p) => p + 1)}
-                  style={{ border: '1px solid var(--color-border)', opacity: page >= data.totalPages ? 0.4 : 1 }}
                 >
                   下一页
-                </button>
+                </Button>
               </div>
             </div>
           </motion.div>
@@ -353,17 +326,15 @@ export default function HistoryPage() {
               将永久删除所选任务及其识别事件与生成的图纸（真删，不可恢复）。
             </p>
             <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setConfirmDelete(false)} disabled={deleteJobs.isPending} style={baseBtn()}>
-                取消
-              </button>
-              <button
+              <Button type="button" variant="secondary" onClick={() => setConfirmDelete(false)} disabled={deleteJobs.isPending}>取消</Button>
+              <Button
                 type="button"
+                variant="danger"
                 onClick={() => void handleDelete()}
                 disabled={deleteJobs.isPending}
-                style={{ ...baseBtn(), background: 'var(--color-error)', borderColor: 'var(--color-error)', color: '#fff', fontWeight: 600 }}
               >
                 {deleteJobs.isPending ? '删除中…' : '确认删除'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -419,15 +390,14 @@ function RenameModal({
           aria-label="任务名称"
         />
         <div className="mt-5 flex justify-end gap-2">
-          <button type="button" onClick={onCancel} disabled={busy} style={baseBtn()}>取消</button>
-          <button
+          <Button type="button" variant="secondary" onClick={onCancel} disabled={busy}>取消</Button>
+          <Button
             type="button"
             onClick={() => void onConfirm(name)}
             disabled={!name.trim() || busy}
-            style={{ ...baseBtn(!name.trim() || busy), background: 'var(--color-accent)', borderColor: 'var(--color-accent)', color: '#fff', fontWeight: 600 }}
           >
             {busy ? '保存中…' : '保存'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

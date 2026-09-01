@@ -11,22 +11,11 @@ import type { HoverCell } from '../lib/boardCanvas';
 import { useBoardViewer } from '../hooks/useBoardViewer';
 import CorrectionEditorModal from '../components/CorrectionEditorModal';
 import { useToast } from '../components/ToastContext';
-import Button from '../components/Button';
+import Button, { toolButtonStyle } from '../components/Button';
 import ImmersionBoard from '../components/ImmersionBoard';
 
-function controlStyle(): React.CSSProperties {
-  return {
-    minWidth: 34,
-    height: 32,
-    padding: '0 9px',
-    border: '1px solid var(--color-border)',
-    borderRadius: 8,
-    background: 'var(--color-card)',
-    color: 'var(--color-text)',
-    fontFamily: 'var(--font-mono)',
-    fontSize: 'var(--text-xs)',
-    cursor: 'pointer',
-  };
+function toolBtnFont(fontFamily: string): React.CSSProperties {
+  return { ...toolButtonStyle(), fontFamily };
 }
 
 export default function BlueprintDetailPage() {
@@ -190,11 +179,11 @@ export default function BlueprintDetailPage() {
               沉浸模式
             </Button>
             <div className="flex items-center gap-1">
-              <button type="button" onClick={() => viewer.zoomBy(0.8)} style={controlStyle()} aria-label="缩小">−</button>
-              <button type="button" onClick={viewer.resetView} style={controlStyle()} aria-label="100%">100%</button>
+              <button type="button" onClick={() => viewer.zoomBy(0.8)} style={toolButtonStyle()} aria-label="缩小">−</button>
+              <button type="button" onClick={viewer.resetView} style={toolButtonStyle()} aria-label="100%">100%</button>
               <span style={{ minWidth: 40, textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>{Math.round(view.scale * 100)}%</span>
-              <button type="button" onClick={() => viewer.zoomBy(1.25)} style={controlStyle()} aria-label="放大">+</button>
-              <button type="button" onClick={viewer.fitView} style={{ ...controlStyle(), fontFamily: 'var(--font-body)' }}>适应窗口</button>
+              <button type="button" onClick={() => viewer.zoomBy(1.25)} style={toolButtonStyle()} aria-label="放大">+</button>
+              <button type="button" onClick={viewer.fitView} style={toolBtnFont('var(--font-body)')}>适应窗口</button>
             </div>
           </div>
         </motion.div>
