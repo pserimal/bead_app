@@ -464,7 +464,7 @@ export default function CorrectionPage() {
                 type="button"
                 onClick={() => setFixFilter(value)}
                 style={{
-                  padding: '6px 12px',
+                  padding: '8px 14px',
                   fontSize: 'var(--text-xs)',
                   background: fixFilter === value ? 'var(--color-accent)' : 'transparent',
                   color: fixFilter === value ? '#fff' : 'var(--color-text)',
@@ -480,7 +480,7 @@ export default function CorrectionPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="搜坐标 1:23 或编码 A10"
-            style={{ ...controlStyle(), minWidth: 180 }}
+            style={{ ...controlStyle(), minWidth: 180, flex: '1 1 180px', maxWidth: 320 }}
             aria-label="搜索格子"
           />
 
@@ -528,7 +528,7 @@ export default function CorrectionPage() {
                         key={code}
                         type="button"
                         onClick={() => { setSelectedCode(code); }}
-                        className="shrink-0 lg:w-full flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-md lg:mb-0.5 text-left transition-colors hover:bg-[var(--color-surface-hover)]"
+                        className="shrink-0 lg:w-full flex items-center justify-between gap-1.5 px-2 py-2 rounded-md lg:mb-0.5 text-left transition-colors hover:bg-[var(--color-surface-hover)]"
                         style={{
                           background: selected ? 'var(--color-accent)' : 'transparent',
                           color: selected ? 'var(--color-text-inverse)' : 'var(--color-text)',
@@ -623,7 +623,7 @@ export default function CorrectionPage() {
       {/* 底部操作条（surface 卡片，与全局一致） */}
       {selectedCount > 0 && (
         <div
-          className="fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3 px-4 py-2.5 rounded-xl z-20 max-w-[calc(100vw-2rem)]"
+          className="fixed bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 sm:gap-3 px-3 sm:px-4 py-2.5 rounded-xl z-20 max-w-[calc(100vw-1.5rem)]"
           style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)' }}
         >
           <span className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>已选 <b>{selectedCount}</b> 格</span>
@@ -730,7 +730,7 @@ function gridCols(containerWidth: number): number {
 
 function smallBtn(): React.CSSProperties {
   return {
-    padding: '3px 10px',
+    padding: '5px 12px',
     border: '1px solid var(--color-border)',
     borderRadius: 'var(--radius-md)',
     background: 'transparent',
@@ -743,13 +743,14 @@ function smallBtn(): React.CSSProperties {
 
 function actionBtn(color: string, disabled = false): React.CSSProperties {
   return {
-    padding: '8px 16px',
+    padding: '8px 12px',
     borderRadius: 'var(--radius-md)',
     border: 'none',
     background: color,
     color: '#fff',
     fontSize: 'var(--text-sm)',
     fontWeight: 600,
+    whiteSpace: 'nowrap',
     cursor: disabled ? 'not-allowed' : 'pointer',
     opacity: disabled ? 0.5 : 1,
   };
