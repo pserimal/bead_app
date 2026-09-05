@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import apiClient from '../api/client';
+import { getBlueprint, saveBlueprintMaterialsConfig } from '../api/blueprints';
 import {
   getBlueprintLegend,
   recognizeLegendBox,
@@ -338,6 +339,35 @@ export function useMaterialsCapture(blueprintId: string | null) {
     };
   }, [state.box, state.input]);
 
+  // 03: 挂在 blueprint 下时，框选位置 + 行列数自动保存到服务端（防抖 500ms；
+  // 只在已有有效框、且值与上次保存不同时发 PATCH——拖框高频变化避免刷请求）。
+  // 无 blueprint（上传流程中途）不触发：仍走上面的 localStorage 兑底。
+  const savedServerRef = useRef<string>('');
+  useEffect(() => {
+    if (!blueprintId || !state.input?.imageW || !state.input.imageH) return;
+    const { imageW, imageH } = state.input;
+    const box = state.box;
+    if (box.w <= 0 || box.h <= 0) return;
+    const normalized = {
+      materialsBox: { x: box.x / imageW, y: box.y / imageH, w: box.w / imageW, h: box.h / imageH },
+      materialsRows: state.rows,
+      materialsCols: state.cols,
+    };
+    const key = JSON.stringify(normalized);
+    if (key === savedServerRef.current) return;
+    const timer = window.setTimeout(async () => {
+      try {
+        await saveBlueprintMaterialsConfig(blueprintId, normalized);
+        savedServerRef.current = key;
+      } catch {
+        // 网络/权限失败：静默忽略（下次变化会重试）；不回滚本地状态
+      }
+    }, 500);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [blueprintId, state.box, state.cols, state.input, state.rows]);
+
   // Supplement a restored location/session snapshot with the File kept in IndexedDB.
   useEffect(() => {
     if (blueprintId || !state.input || state.input.imageUrl) return;
@@ -419,6 +449,11 @@ export function useMaterialsCapture(blueprintId: string | null) {
   }, [blueprintId]);
 
   // 补录模式加载原图（独立于清单加载；清单在挂载即拉取，不受图片时序影响）
+  // 03: 同一次进页顺带读取服务端已存的拆分配置（归一化框 + 行列数）。
+  // 服务端存过 → 优先于 location/wizard/localStorage（跨浏览器/清缓存仍能恢复）；
+  // 未存（旧数据 null）→ 保留本地缺省初值，不迁移不报错。
+  // 图片 onload 前 dispatch 的初值会被 reducer 'input' 的合并语义覆盖，故在此
+  // 组合进 input 一次下发，保证后续 onload 只带尺寸字段、不冲掉恢复值。
   useEffect(() => {
     if (!blueprintId || state.input) return;
     let active = true;
@@ -438,12 +473,44 @@ export function useMaterialsCapture(blueprintId: string | null) {
           file = new File([response.data], `blueprint-${blueprintId}.jpg`, { type: response.data.type || 'image/jpeg' });
           url = cacheImageFile(cacheKey, file);
         }
+        // 服务端拆分配置（详情 GET 与图片 GET 并行/串行均可；失败静默降级本地路径）
+        // 注意：服务端存归一化 0..1；defaultBox/reducer 期望源图像素坐标，故在 onload
+        // 拿到自然尺寸后再还原成像素框（归一化框不落 input，避免被 defaultBox 当像素用）。
+        let serverRows: number | undefined;
+        let serverCols: number | undefined;
+        let serverNormBox: { x: number; y: number; w: number; h: number } | undefined;
+        try {
+          const bp = await getBlueprint(blueprintId);
+          const { materialsBox, materialsRows, materialsCols } = bp;
+          const hasRows = Number.isFinite(materialsRows) && (materialsRows ?? 0) > 0;
+          const hasCols = Number.isFinite(materialsCols) && (materialsCols ?? 0) > 0;
+          if (materialsBox && materialsBox.width > 0 && materialsBox.height > 0) {
+            serverNormBox = { x: materialsBox.x, y: materialsBox.y, w: materialsBox.width, h: materialsBox.height };
+          }
+          if (hasRows) serverRows = materialsRows as number;
+          if (hasCols) serverCols = materialsCols as number;
+        } catch {
+          // 网络/权限失败：不阻塞录入——保持本地缺省路径（等价于旧行为）
+        }
         const image = new Image();
         image.onload = () => {
           if (!active) return;
+          const iw = image.naturalWidth;
+          const ih = image.naturalHeight;
+          const pixelBox = serverNormBox
+            ? { x: serverNormBox.x * iw, y: serverNormBox.y * ih, w: serverNormBox.w * iw, h: serverNormBox.h * ih }
+            : undefined;
           dispatch({
             type: 'input',
-            input: { imageUrl: url, imageW: image.naturalWidth, imageH: image.naturalHeight, imageFile: file },
+            input: {
+              imageUrl: url,
+              imageW: iw,
+              imageH: ih,
+              imageFile: file,
+              ...(pixelBox ? { materialsBox: pixelBox } : {}),
+              ...(serverRows !== undefined ? { materialsRows: serverRows } : {}),
+              ...(serverCols !== undefined ? { materialsCols: serverCols } : {}),
+            },
           });
         };
         image.src = url;

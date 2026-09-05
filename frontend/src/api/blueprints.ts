@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { BlueprintDetail, BlueprintSummary, CellCorrectionResponse, CellCorrectionUpdate, PageResponse } from '../types/api';
+import type { BlueprintDetail, BlueprintMaterialsConfig, BlueprintSummary, CellCorrectionResponse, CellCorrectionUpdate, PageResponse } from '../types/api';
 
 /** 007：图纸列表（摘要） */
 export async function getBlueprints(page = 1, pageSize = 12): Promise<PageResponse<BlueprintSummary>> {
@@ -19,5 +19,14 @@ export async function updateBlueprintCells(
   updates: CellCorrectionUpdate[],
 ): Promise<CellCorrectionResponse> {
   const { data } = await apiClient.patch(`/blueprints/${id}/cells`, { updates });
+  return data;
+}
+
+/** 03：保存物料拆分配置（归一化框 + 行列），PATCH 幂等整体重写 */
+export async function saveBlueprintMaterialsConfig(
+  id: string,
+  config: BlueprintMaterialsConfig,
+): Promise<BlueprintDetail> {
+  const { data } = await apiClient.patch<BlueprintDetail>(`/blueprints/${id}`, config);
   return data;
 }

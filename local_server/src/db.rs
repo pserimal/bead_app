@@ -69,9 +69,12 @@ CREATE TABLE IF NOT EXISTS blueprint (
     rows        INTEGER NOT NULL,
     cols        INTEGER NOT NULL,
     valid_codes TEXT,
+    -- 03: 物料清单「框选位置 + 行列数」按蓝图持久化（可选，旧数据为 NULL，不迁移）
+    materials_box  TEXT,
+    materials_rows INTEGER,
+    materials_cols INTEGER,
     created_at  TEXT NOT NULL
 );
-
 CREATE TABLE IF NOT EXISTS blueprint_cell (
     blueprint_id TEXT NOT NULL REFERENCES blueprint(id),
     row          INTEGER NOT NULL,
@@ -120,6 +123,11 @@ CREATE INDEX IF NOT EXISTS idx_job_heartbeat ON recognition_job(status, heartbea
 CREATE INDEX IF NOT EXISTS idx_bp_cells ON blueprint_cell(blueprint_id);
 "#,
     )?;
+    // 03 迁移：为旧库补拆分配置列（新库已在 CREATE TABLE 中带上；ALTER 幂等——
+    // 列已存在会报 duplicate column，忽略即可，其余列继续）。
+    for col in ["materials_box", "materials_rows", "materials_cols"] {
+        let _ = conn.execute(&format!("ALTER TABLE blueprint ADD COLUMN {col} TEXT"), []);
+    }
     Ok(())
 }
 

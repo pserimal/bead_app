@@ -450,3 +450,76 @@ async fn color_library_list_and_single() {
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(body["code"], "COLOR_NOT_FOUND");
 }
+
+#[tokio::test]
+async fn blueprint_materials_config_defaults_null_on_old_data() {
+    // 旧数据兼容：未保存过拆分配置的 blueprint，字段为 null（0/缺省），不报错。
+    let (app, state) = test_app();
+    let bp_id = complete_blueprint(&app, &state).await;
+    let (status, bp) = send(&app, get(&app, &format!("/api/v1/blueprints/{bp_id}"))).await;
+    assert_eq!(status, StatusCode::OK);
+    assert!(bp["materialsBox"].is_null(), "materialsBox: {bp}");
+    assert!(bp["materialsRows"].is_null() || bp["materialsRows"] == 0);
+    assert!(bp["materialsCols"].is_null() || bp["materialsCols"] == 0);
+}
+
+#[tokio::test]
+async fn blueprint_materials_config_roundtrip_and_validation() {
+    let (app, state) = test_app();
+    let bp_id = complete_blueprint(&app, &state).await;
+
+    // PATCH 保存归一化框 + 行列 → 详情回读一致
+    let req = r#"{"materialsBox":{"x":0.02,"y":0.72,"w":0.96,"h":0.24},"materialsRows":3,"materialsCols":8}"#;
+    let (status, body) = send(&app, patch_json(&app, &format!("/api/v1/blueprints/{bp_id}"), req)).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["materialsBox"]["x"], 0.02);
+    assert_eq!(body["materialsBox"]["h"], 0.24);
+    assert_eq!(body["materialsRows"], 3);
+    assert_eq!(body["materialsCols"], 8);
+    assert_eq!(body["cells"].as_array().unwrap().len(), 4); // 仍是完整详情
+
+    // 幂等重存（前端每次调整都整体重写）
+    let (status, _) = send(&app, patch_json(&app, &format!("/api/v1/blueprints/{bp_id}"), req)).await;
+    assert_eq!(status, StatusCode::OK);
+
+    // 只更新行列（box 缺省不动）：{rows:null} 会清掉——验证“整体重写”语义
+    let req2 = r#"{"materialsBox":{"x":0.05,"y":0.7,"w":0.9,"h":0.3},"materialsRows":4,"materialsCols":5}"#;
+    let (_, body) = send(&app, patch_json(&app, &format!("/api/v1/blueprints/{bp_id}"), req2)).await;
+    assert_eq!(body["materialsRows"], 4);
+    assert_eq!(body["materialsCols"], 5);
+    assert_eq!(body["materialsBox"]["x"], 0.05);
+
+    // 清空（用户清除保存）→ null
+    let req3 = r#"{}"#;
+    let (_, body) = send(&app, patch_json(&app, &format!("/api/v1/blueprints/{bp_id}"), req3)).await;
+    assert!(body["materialsBox"].is_null());
+    assert!(body["materialsRows"].is_null());
+
+    // 非法输入 → 400 契约错误
+    let bad = r#"{"materialsBox":{"x":1.5,"y":0,"w":0.1,"h":0.1}}"#;
+    let (status, body) = send(&app, patch_json(&app, &format!("/api/v1/blueprints/{bp_id}"), bad)).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(body["code"], "INVALID_MATERIALS_BOX");
+    let bad = r#"{"materialsRows":21,"materialsCols":8}"#;
+    let (status, body) = send(&app, patch_json(&app, &format!("/api/v1/blueprints/{bp_id}"), bad)).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(body["code"], "INVALID_MATERIALS_GRID");
+
+    // 未知蓝图 → 404
+    let (status, body) = send(&app, patch_json(&app, &format!("/api/v1/blueprints/{}", Uuid::new_v4()), req)).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body["code"], "BLUEPRINT_NOT_FOUND");
+}
+
+#[tokio::test]
+async fn blueprint_list_remains_unchanged_by_materials_config() {
+    // 列表摘要不含拆分配置字段（恢复只走详情），保存后列表照常可用。
+    let (app, state) = test_app();
+    let bp_id = complete_blueprint(&app, &state).await;
+    let req = r#"{"materialsBox":{"x":0.1,"y":0.6,"w":0.8,"h":0.2},"materialsRows":2,"materialsCols":9}"#;
+    let (_, _) = send(&app, patch_json(&app, &format!("/api/v1/blueprints/{bp_id}"), req)).await;
+    let (status, body) = send(&app, get(&app, "/api/v1/blueprints")).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(body["items"].as_array().unwrap().len(), 1);
+    assert_eq!(body["items"][0]["id"], bp_id.to_string());
+}

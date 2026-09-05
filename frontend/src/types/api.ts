@@ -111,7 +111,18 @@ export interface BlueprintDetail {
   validCodes: string[] | null;
   cells: BlueprintCellDto[];
   cropBox: CropBoxDto | null;
+  /** 03：物料拆分配置（框选位置 + 行列数，服务端持久化；旧数据为 null） */
+  materialsBox: CropBoxDto | null;
+  materialsRows: number | null;
+  materialsCols: number | null;
   createdAt: string;
+}
+
+/** 03：保存物料的拆分配置（归一化框 0..1 + 网格行列 0..20） */
+export interface BlueprintMaterialsConfig {
+  materialsBox?: { x: number; y: number; w: number; h: number } | null;
+  materialsRows?: number | null;
+  materialsCols?: number | null;
 }
 
 /** 低置信度校正：单格更新（code = null 恢复原识别码；BLANK 标记空白格） */

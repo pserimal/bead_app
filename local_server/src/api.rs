@@ -238,7 +238,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/api/v1/jobs/{id}", get(job_detail).patch(rename_job))
         .route("/api/v1/jobs", delete(delete_jobs))
         .route("/api/v1/blueprints", get(list_blueprints))
-        .route("/api/v1/blueprints/{id}", get(blueprint_detail))
+        .route("/api/v1/blueprints/{id}", get(blueprint_detail).patch(update_blueprint_materials_config))
         .route("/api/v1/blueprints/{id}/cells", patch(update_blueprint_cells))
         .route("/api/v1/blueprints/{id}/image", get(blueprint_image))
         .route("/api/v1/blueprints/{id}/cells/export-corrections", get(export_corrections))
@@ -847,6 +847,52 @@ async fn blueprint_detail(
         valid_codes: bp.valid_codes.clone(),
         cells: cells.iter().map(bp_cell_to_dto).collect(),
         crop_box: Some(job.crop_box),
+        materials_box: bp.materials_box,
+        materials_rows: bp.materials_rows,
+        materials_cols: bp.materials_cols,
+        created_at: bp.created_at,
+    }))
+}
+
+/// 03: 保存物料清单的框选位置 + 行列数（PATCH /blueprints/{id}）。
+/// 归一化矩形，0..=1；行列 0..=20；非法数值返回 400 契约错误。
+async fn update_blueprint_materials_config(
+    State(state): State<Arc<AppState>>,
+    AxumPath(id): AxumPath<Uuid>,
+    Json(req): Json<BlueprintMaterialsConfig>,
+) -> Result<Json<BlueprintDetail>, ApiException> {
+    for v in [req.materials_rows, req.materials_cols].into_iter().flatten() {
+        if !(0..=20).contains(&v) {
+            return Err(ApiException::bad_request(
+                "INVALID_MATERIALS_GRID",
+                "物料清单行列数必须在 0-20",
+            ));
+        }
+    }
+    if let Some(b) = req.materials_box {
+        if !b.is_valid() {
+            return Err(ApiException::bad_request(
+                "INVALID_MATERIALS_BOX",
+                "物料清单框选矩形必须在 0-1 归一化范围内且宽高为正",
+            ));
+        }
+    }
+    state
+        .service
+        .update_blueprint_materials_config(id, &req)
+        .map_err(to_api)?;
+    let (bp, job, cells) = state.service.get_blueprint(id).map_err(to_api)?;
+    Ok(Json(BlueprintDetail {
+        id: bp.id,
+        job_id: bp.job_id,
+        rows: bp.rows,
+        cols: bp.cols,
+        valid_codes: bp.valid_codes.clone(),
+        cells: cells.iter().map(bp_cell_to_dto).collect(),
+        crop_box: Some(job.crop_box),
+        materials_box: bp.materials_box,
+        materials_rows: bp.materials_rows,
+        materials_cols: bp.materials_cols,
         created_at: bp.created_at,
     }))
 }

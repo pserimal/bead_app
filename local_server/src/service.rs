@@ -90,6 +90,28 @@ fn job_from_row(row: &rusqlite::Row) -> rusqlite::Result<Job> {
     })
 }
 
+/// Row mapping for the `blueprint` table — shared by every SELECT * site.
+/// Reads the optional materials-capture columns (03): NULL-safe, malformed
+/// JSON degrades to None (旧数据/坏数据不报错).
+fn bp_from_row(row: &rusqlite::Row) -> rusqlite::Result<Blueprint> {
+    let materials_box = row
+        .get::<_, Option<String>>("materials_box")?
+        .and_then(|v| crate::models::parse_materials_box(&v));
+    Ok(Blueprint {
+        id: Uuid::parse_str(&row.get::<_, String>("id")?).unwrap(),
+        job_id: Uuid::parse_str(&row.get::<_, String>("job_id")?).unwrap(),
+        rows: row.get("rows")?,
+        cols: row.get("cols")?,
+        valid_codes: row
+            .get::<_, Option<String>>("valid_codes")?
+            .and_then(|v| serde_json::from_str(&v).ok()),
+        materials_box,
+        materials_rows: row.get("materials_rows")?,
+        materials_cols: row.get("materials_cols")?,
+        created_at: crate::db::ts_from_sql(&row.get::<_, String>("created_at")?),   
+    })
+}
+
 fn bp_cell_from_row(row: &rusqlite::Row) -> rusqlite::Result<BlueprintCell> {
     Ok(BlueprintCell {
         blueprint_id: Uuid::parse_str(&row.get::<_, String>("blueprint_id")?).unwrap(),
@@ -391,8 +413,9 @@ impl JobService {
 
         let bp_id = Uuid::new_v4();
         tx.execute(
-            "INSERT INTO blueprint (id, job_id, rows, cols, valid_codes, created_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT INTO blueprint (id, job_id, rows, cols, valid_codes, materials_box,
+                materials_rows, materials_cols, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, NULL, NULL, NULL, ?6)",
             params![
                 bp_id.to_string(),
                 job.id.to_string(),
@@ -599,18 +622,7 @@ impl JobService {
             .query_row(
                 "SELECT * FROM blueprint WHERE id = ?1",
                 [id.to_string()],
-                |r| {
-                    Ok(Blueprint {
-                        id: Uuid::parse_str(&r.get::<_, String>(0)?).unwrap(),
-                        job_id: Uuid::parse_str(&r.get::<_, String>(1)?).unwrap(),
-                        rows: r.get(2)?,
-                        cols: r.get(3)?,
-                        valid_codes: r
-                            .get::<_, Option<String>>(4)?
-                            .and_then(|v| serde_json::from_str(&v).ok()),
-                        created_at: crate::db::ts_from_sql(&r.get::<_, String>(5)?),
-                    })
-                },
+                bp_from_row,
             )
             .optional()?
             .ok_or_else(|| anyhow!(ApiException::not_found("BLUEPRINT_NOT_FOUND", format!("图纸不存在: {id}"))))?;
@@ -629,18 +641,7 @@ impl JobService {
         let total: i64 = conn.query_row("SELECT COUNT(*) FROM blueprint", [], |r| r.get(0))?;
         let mut stmt = conn.prepare("SELECT * FROM blueprint ORDER BY created_at DESC, id LIMIT ?1 OFFSET ?2")?;
         let bps = stmt
-            .query_map(params![page_size, (page - 1) * page_size], |r| {
-                Ok(Blueprint {
-                    id: Uuid::parse_str(&r.get::<_, String>(0)?).unwrap(),
-                    job_id: Uuid::parse_str(&r.get::<_, String>(1)?).unwrap(),
-                    rows: r.get(2)?,
-                    cols: r.get(3)?,
-                    valid_codes: r
-                        .get::<_, Option<String>>(4)?
-                        .and_then(|v| serde_json::from_str(&v).ok()),
-                    created_at: crate::db::ts_from_sql(&r.get::<_, String>(5)?),
-                })
-            })?
+            .query_map(params![page_size, (page - 1) * page_size], bp_from_row)?
             .collect::<rusqlite::Result<Vec<_>>>()?;
         Ok((bps, total))
     }
@@ -714,20 +715,9 @@ impl JobService {
         let tx = conn.transaction()?;
         let bp = tx
             .query_row(
-                "SELECT id, job_id, rows, cols, valid_codes, created_at FROM blueprint WHERE id = ?1",
+                "SELECT * FROM blueprint WHERE id = ?1",
                 [id.to_string()],
-                |r| {
-                    Ok(Blueprint {
-                        id: Uuid::parse_str(&r.get::<_, String>(0)?).unwrap(),
-                        job_id: Uuid::parse_str(&r.get::<_, String>(1)?).unwrap(),
-                        rows: r.get(2)?,
-                        cols: r.get(3)?,
-                        valid_codes: r
-                            .get::<_, Option<String>>(4)?
-                            .and_then(|v| serde_json::from_str(&v).ok()),
-                        created_at: crate::db::ts_from_sql(&r.get::<_, String>(5)?),
-                    })
-                },
+                bp_from_row,
             )
             .optional()?
             .ok_or_else(|| anyhow!(ApiException::not_found("BLUEPRINT_NOT_FOUND", format!("图纸不存在: {id}"))))?;
@@ -852,18 +842,7 @@ impl JobService {
             .query_row(
                 "SELECT * FROM blueprint WHERE id = ?1",
                 [bp_id.to_string()],
-                |r| {
-                    Ok(Blueprint {
-                        id: Uuid::parse_str(&r.get::<_, String>(0)?).unwrap(),
-                        job_id: Uuid::parse_str(&r.get::<_, String>(1)?).unwrap(),
-                        rows: r.get(2)?,
-                        cols: r.get(3)?,
-                        valid_codes: r
-                            .get::<_, Option<String>>(4)?
-                            .and_then(|v| serde_json::from_str(&v).ok()),
-                        created_at: crate::db::ts_from_sql(&r.get::<_, String>(5)?),
-                    })
-                },
+                bp_from_row,
             )
             .optional()?
             .ok_or_else(|| anyhow!(ApiException::not_found("BLUEPRINT_NOT_FOUND", format!("图纸不存在: {bp_id}"))))?;
@@ -909,6 +888,29 @@ impl JobService {
                     ts,
                 ],
             )?;
+        }
+        Ok(())
+    }
+
+    /// 物料的拆分配置（框 + 行列数）随 job 创建一并传入（上传中途先在本地记忆，
+    /// 不落服务端）；job 完成后 blueprint 行才存在。此方法仅在首次创建 blueprint
+    /// 且提供配置时预置（normalized），其余时间 blueprint 已存在由 PATCH 通道维护。
+    pub fn update_blueprint_materials_config(&self, bp_id: Uuid, config: &BlueprintMaterialsConfig) -> Result<()> {
+        let mut conn = self.db.lock().unwrap();
+        let tx = conn.transaction()?;
+        let updated = tx.execute(
+            "UPDATE blueprint SET materials_box = ?2, materials_rows = ?3, materials_cols = ?4
+             WHERE id = ?1",
+            rusqlite::params![
+                bp_id.to_string(),
+                config.materials_box.map(|b| serde_json::to_string(&b).unwrap()),
+                config.materials_rows,
+                config.materials_cols,
+            ],
+        )?;
+        tx.commit()?;
+        if updated == 0 {
+            return Err(anyhow!(ApiException::not_found("BLUEPRINT_NOT_FOUND", format!("图纸不存在: {bp_id}"))));
         }
         Ok(())
     }

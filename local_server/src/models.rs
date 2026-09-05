@@ -43,6 +43,46 @@ pub struct CropBox {
     pub height: i64,
 }
 
+/// Normalized material-list capture rectangle (fractions of the source image,
+/// 0..=1). Mirrors the frontend Box {x,y,w,h} in image coordinates.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MaterialsBox {
+    pub x: f64,
+    pub y: f64,
+    pub w: f64,
+    pub h: f64,
+}
+
+/// 归一化矩形：无值/非法时保持 None；坐标会被限制到 [0,1]。
+pub fn parse_materials_box(s: &str) -> Option<MaterialsBox> {
+    let b: MaterialsBox = serde_json::from_str(s).ok()?;
+    Some(b.clamped())
+}
+
+impl MaterialsBox {
+    /// 归一化矩形必须位于 [0,1]² 且宽高为正；非法时返回 None（调用方按未保存处理）。
+    pub fn clamped(self) -> MaterialsBox {
+        let x = self.x.clamp(0.0, 1.0);
+        let y = self.y.clamp(0.0, 1.0);
+        let w = self.w.clamp(0.0, 1.0 - x);
+        let h = self.h.clamp(0.0, 1.0 - y);
+        MaterialsBox { x, y, w, h }
+    }
+    pub fn is_valid(&self) -> bool {
+        self.x.is_finite()
+            && self.y.is_finite()
+            && self.w.is_finite()
+            && self.h.is_finite()
+            && (0.0..=1.0).contains(&self.x)
+            && (0.0..=1.0).contains(&self.y)
+            && (0.0..=1.0).contains(&self.w)
+            && (0.0..=1.0).contains(&self.h)
+            && self.w > 0.0
+            && self.h > 0.0
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Job {
     pub id: Uuid,
@@ -89,6 +129,11 @@ pub struct Blueprint {
     pub rows: i64,
     pub cols: i64,
     pub valid_codes: Option<Vec<String>>,
+    /// Optional material-list capture config persisted with the blueprint
+    /// (None for old data / never saved). Stored normalized (0..=1).
+    pub materials_box: Option<MaterialsBox>,
+    pub materials_rows: Option<i64>,
+    pub materials_cols: Option<i64>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -224,6 +269,10 @@ pub struct BlueprintDetail {
     pub valid_codes: Option<Vec<String>>,
     pub cells: Vec<BlueprintCellDto>,
     pub crop_box: Option<CropBox>,
+    /// 物料拆分配置（框选位置 + 行列数），归一化存储；旧数据为 null/None。
+    pub materials_box: Option<MaterialsBox>,
+    pub materials_rows: Option<i64>,
+    pub materials_cols: Option<i64>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -287,6 +336,21 @@ pub struct BlueprintCellDto {
     pub confidence: Option<f64>,
     pub corrected_code: Option<String>,
     pub corrected_at: Option<DateTime<Utc>>,
+}
+
+// 拆分配置（归一化材料框 + 网格行列数）——blueprint 可选持久化字段。
+// 保存请求：PATCH /blueprints/{id}（与摘要/详情共用同一套字段名）。
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BlueprintMaterialsConfig {
+    /// 归一化框选矩形（源图坐标比例 0..=1）。
+    #[serde(default)]
+    pub materials_box: Option<MaterialsBox>,
+    /// 网格行数/列数（1..=20，0 表示未设置）。
+    #[serde(default)]
+    pub materials_rows: Option<i64>,
+    #[serde(default)]
+    pub materials_cols: Option<i64>,
 }
 
 #[derive(Deserialize)]
