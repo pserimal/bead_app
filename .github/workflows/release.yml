@@ -128,6 +128,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: bead-local-server-${{ github.ref_name }}.zip
-          generate_release_notes: true
-          # 说明：此处的 body 仅为自动生成占位（commit 列表）。正式发布说明
-          # 由 AI 从 git log 总结中文版 → 用户确认 → PATCH 覆盖到 Release。
+          # 发布说明：打 tag 前必须定稿并写入 release-notes/<tag>.md（中文，随代码提交），
+          # 由 AI 从 git log 总结 → 用户确认后定稿。无文件则回退自动生成占位。
+          body_path: release-notes/${{ github.ref_name }}.md
+          fail_on_unmatched_files: false
+          generate_release_notes: false
