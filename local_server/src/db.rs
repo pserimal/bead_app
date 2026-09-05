@@ -172,3 +172,79 @@ pub fn ts_from_sql(s: &str) -> chrono::DateTime<chrono::Utc> {
         .map(|d| d.with_timezone(&chrono::Utc))
         .unwrap_or_else(|_| chrono::Utc::now())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 回归：03 迁移曾把所有新列 ALTER 成 TEXT（materials_rows/cols 应为 INTEGER），
+    /// 旧库被误建 TEXT 后读 i64 会崩（"Invalid column type Text"）。迁移必须修正类型。
+    #[test]
+    fn migration_fixes_misbuilt_text_rows_cols_columns() {
+        let conn = Connection::open_in_memory().unwrap();
+        // 先建一个「旧库」：只有老的 blueprint 表（无 materials_* 列）
+        conn.execute_batch(
+            "CREATE TABLE recognition_job (
+                id TEXT PRIMARY KEY, status TEXT NOT NULL, stage TEXT NOT NULL,
+                uploaded_name TEXT, processed_cells INTEGER, total_cells INTEGER,
+                rows INTEGER, cols INTEGER, heartbeat_at TEXT, attempt INTEGER,
+                max_retries INTEGER, retry_count INTEGER, error TEXT, snapshot TEXT,
+                created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+             );
+             CREATE TABLE blueprint (
+                id TEXT PRIMARY KEY, job_id TEXT NOT NULL UNIQUE,
+                rows INTEGER NOT NULL, cols INTEGER NOT NULL,
+                valid_codes TEXT, created_at TEXT NOT NULL
+             );
+             CREATE TABLE blueprint_cell (
+                blueprint_id TEXT NOT NULL, row INTEGER NOT NULL, col INTEGER NOT NULL,
+                code TEXT NOT NULL, status TEXT NOT NULL, color_code TEXT, color_name TEXT,
+                color_hex TEXT, confidence REAL, corrected_code TEXT, corrected_at TEXT,
+                PRIMARY KEY (blueprint_id, row, col)
+             );",
+        )
+        .unwrap();
+        // 模拟旧版 buggy 迁移：把列加成 TEXT
+        conn.execute_batch(
+            "ALTER TABLE blueprint ADD COLUMN materials_box TEXT;
+             ALTER TABLE blueprint ADD COLUMN materials_rows TEXT;
+             ALTER TABLE blueprint ADD COLUMN materials_cols TEXT;",
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO blueprint (id, job_id, rows, cols, created_at) VALUES ('b1','j1',2,2,'2026-01-01T00:00:00+00:00')",
+            [],
+        )
+        .unwrap();
+
+        // 跑现版迁移 → 应修正类型
+        init_schema(&conn).unwrap();
+
+        // 修正后：INTEGER 列能正常按 i64 读（TEXT 会报 Invalid column type）
+        let mut stmt = conn
+            .prepare("SELECT materials_rows, materials_cols FROM blueprint WHERE id='b1'")
+            .unwrap();
+        let mut rows = stmt.query([]).unwrap();
+        let row = rows.next().unwrap().unwrap();
+        let r: Option<i64> = row.get(0).unwrap();
+        let c: Option<i64> = row.get(1).unwrap();
+        assert_eq!(r, None);
+        assert_eq!(c, None);
+
+        // 且新列类型确为 INTEGER
+        let mut info = conn
+            .prepare("SELECT name, type FROM pragma_table_info('blueprint')")
+            .unwrap();
+        let mut info_rows = info.query([]).unwrap();
+        let mut found = false;
+        while let Some(r) = info_rows.next().unwrap() {
+            let name: String = r.get(0).unwrap();
+            let ty: String = r.get(1).unwrap();
+            if name == "materials_rows" {
+                assert_eq!(ty, "INTEGER", "materials_rows 应为 INTEGER，实际 {ty}");
+                found = true;
+            }
+        }
+        assert!(found, "materials_rows 列不存在");
+    }
+}
