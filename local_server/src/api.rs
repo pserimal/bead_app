@@ -242,6 +242,7 @@ pub fn router(state: Arc<AppState>) -> Router {
         .route("/api/v1/blueprints/{id}/cells", patch(update_blueprint_cells))
         .route("/api/v1/blueprints/{id}/image", get(blueprint_image))
         .route("/api/v1/blueprints/{id}/cells/export-corrections", get(export_corrections))
+        .route("/api/v1/blueprints/{id}/cells/export-all", get(export_all_cells))
         .route(
             "/api/v1/blueprints/{id}/legend",
             get(get_blueprint_legend).post(save_blueprint_legend),
@@ -925,14 +926,16 @@ async fn blueprint_image(
     Ok(([(header::CONTENT_TYPE, content_type)], bytes).into_response())
 }
 
-async fn export_corrections(
-    State(state): State<Arc<AppState>>,
-    AxumPath(id): AxumPath<Uuid>,
-) -> Result<Response, ApiException> {
-    let (bp, cells) = state.service.corrected_cells(id).map_err(to_api)?;
-    if cells.is_empty() {
-        return Err(ApiException::bad_request("NO_CORRECTIONS", "没有已校正的格子"));
-    }
+/// Shared zip cell-export: decode the source image, crop every (row,col,code)
+/// cell into PNGs + manifest.csv, return (zip_bytes, default filename).
+/// 调用方负责空检查（各自错误码语义不同：NO_CORRECTIONS / NO_CELLS_TO_EXPORT）。
+async fn build_cell_export_zip(
+    state: &Arc<AppState>,
+    id: Uuid,
+    cells: Vec<(i64, i64, String)>,
+    prefix: &str,
+) -> Result<(Vec<u8>, String), ApiException> {
+    let (bp, _) = state.service.corrected_cells(id).map_err(to_api)?;
     let job = state.service.get_job(bp.job_id).map_err(to_api)?;
     let stored = job.input_image_path.clone();
     let path = state.uploads_dir.join(&stored);
@@ -941,14 +944,55 @@ async fn export_corrections(
         .decode()
         .map_err(|_| ApiException::new(500, "IMAGE_DECODE_FAILED", "原图解码失败"))?
         .to_rgb8();
+    let zip_bytes = crate::export::build_corrections_zip(&img, &job.crop_box, bp.rows, bp.cols, &cells)
+        .map_err(|e| ApiException::new(500, "EXPORT_FAILED", e.to_string()))?;
+    let stamp = chrono::Utc::now().format("%Y-%m-%d").to_string();
+    let filename = format!("{prefix}-{}-{stamp}.zip", id.to_string().get(..8).unwrap_or(""));
+    Ok((zip_bytes, filename))
+}
+
+async fn export_corrections(
+    State(state): State<Arc<AppState>>,
+    AxumPath(id): AxumPath<Uuid>,
+) -> Result<Response, ApiException> {
+    let (_, cells) = state.service.corrected_cells(id).map_err(to_api)?;
+    if cells.is_empty() {
+        return Err(ApiException::bad_request("NO_CORRECTIONS", "没有已校正的格子"));
+    }
     let corrected: Vec<(i64, i64, String)> = cells
         .iter()
         .map(|c| (c.row, c.col, c.corrected_code.clone().unwrap()))
         .collect();
-    let zip_bytes = crate::export::build_corrections_zip(&img, &job.crop_box, bp.rows, bp.cols, &corrected)
-        .map_err(|e| ApiException::new(500, "EXPORT_FAILED", e.to_string()))?;
-    let stamp = chrono::Utc::now().format("%Y-%m-%d").to_string();
-    let filename = format!("corrections-{}-{stamp}.zip", id.to_string().get(..8).unwrap_or(""));
+    let (zip_bytes, filename) = build_cell_export_zip(&state, id, corrected, "corrections").await?;
+    let disp = format!("attachment; filename={filename}");
+    Ok((
+        [
+            (header::CONTENT_TYPE, "application/zip"),
+            (header::CONTENT_DISPOSITION, disp.as_str()),
+        ],
+        zip_bytes,
+    )
+        .into_response())
+}
+
+/// 导出全部单元格数据：格式与导出校正数据一致（manifest.csv + 每格 PNG），
+/// 但覆盖所有有效内容格（MAPPED/UNMAPPED，未修正格用原识别码），BLANK 空位跳过。
+async fn export_all_cells(
+    State(state): State<Arc<AppState>>,
+    AxumPath(id): AxumPath<Uuid>,
+) -> Result<Response, ApiException> {
+    let (_, cells) = state.service.all_content_cells(id).map_err(to_api)?;
+    if cells.is_empty() {
+        return Err(ApiException::bad_request("NO_CELLS_TO_EXPORT", "没有可导出的格子"));
+    }
+    let all: Vec<(i64, i64, String)> = cells
+        .iter()
+        .map(|c| {
+            let code = c.corrected_code.clone().unwrap_or_else(|| c.code.clone());
+            (c.row, c.col, code)
+        })
+        .collect();
+    let (zip_bytes, filename) = build_cell_export_zip(&state, id, all, "cells-all").await?;
     let disp = format!("attachment; filename={filename}");
     Ok((
         [

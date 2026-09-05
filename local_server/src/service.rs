@@ -855,6 +855,37 @@ impl JobService {
         Ok((bp, cells))
     }
 
+    /// All content cells of a blueprint (for full-data zip export): every cell
+    /// whose final code (corrected_code ?? code) is a real color code — BLANK
+    /// empty-board positions are skipped. Uncorrected cells keep their original
+    /// recognition code.
+    pub fn all_content_cells(&self, bp_id: Uuid) -> Result<(Blueprint, Vec<BlueprintCell>)> {
+        let conn = self.db.lock().unwrap();
+        let bp = conn
+            .query_row(
+                "SELECT * FROM blueprint WHERE id = ?1",
+                [bp_id.to_string()],
+                bp_from_row,
+            )
+            .optional()?
+            .ok_or_else(|| anyhow!(ApiException::not_found("BLUEPRINT_NOT_FOUND", format!("图纸不存在: {bp_id}"))))?;
+        // 有效内容格：status 非 BLANK（MAPPED/UNMAPPED 均含）；修正码可能把格改/清空，
+        // 最终码 = COALESCE(corrected_code, code)——在 Rust 侧取以免 SQL 里 NULL 语义出错。
+        let mut stmt = conn.prepare(
+            "SELECT * FROM blueprint_cell WHERE blueprint_id = ?1 AND status != 'BLANK' ORDER BY row, col",
+        )?;
+        let cells = stmt
+            .query_map([bp_id.to_string()], bp_cell_from_row)?
+            .collect::<rusqlite::Result<Vec<_>>>()?
+            .into_iter()
+            .filter(|c: &BlueprintCell| {
+                let final_code = c.corrected_code.as_deref().unwrap_or(&c.code);
+                final_code != "BLANK" && !final_code.trim().is_empty()
+            })
+            .collect();
+        Ok((bp, cells))
+    }
+
     // ── Legend entries (persisted per job; blueprint reads through 1:1) ──
 
     /// Replace the whole legend entry set of a job (idempotent save).

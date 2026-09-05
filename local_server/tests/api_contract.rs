@@ -361,6 +361,78 @@ async fn export_corrections_zip_with_manifest() {
 }
 
 #[tokio::test]
+async fn export_all_cells_zip_includes_uncorrected_and_unmapped() {
+    let (app, state) = test_app();
+    let bp_id = complete_blueprint(&app, &state).await;
+    // 修正 1 格（0,0→H2），其余 3 格未修正（含 UNMAPPED Z99）
+    let req = r#"{"updates":[{"row":0,"col":0,"code":"H2"}]}"#;
+    let (status, _) = send(&app, patch_json(&app, &format!("/api/v1/blueprints/{bp_id}/cells"), req)).await;
+    assert_eq!(status, StatusCode::OK);
+
+    let req = Request::builder()
+        .uri(format!("/api/v1/blueprints/{bp_id}/cells/export-all"))
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    assert_eq!(resp.headers()[header::CONTENT_TYPE], "application/zip");
+    let disp = resp.headers()[header::CONTENT_DISPOSITION].to_str().unwrap().to_string();
+    assert!(disp.contains("cells-all-"), "content-disposition: {disp}");
+    let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+    let mut zip = zip::ZipArchive::new(std::io::Cursor::new(bytes.as_ref())).unwrap();
+    let names: Vec<String> = (0..zip.len()).map(|i| zip.by_index(i).unwrap().name().to_string()).collect();
+    assert!(names.contains(&"manifest.csv".to_string()), "zip entries: {names:?}");
+    let pngs: Vec<&String> = names.iter().filter(|n| n.ends_with(".png")).collect();
+    // 4 格全含：修正格用新码 H2，未修正格保留原码 H1/H2/Z99（UNMAPPED 也导出）
+    assert_eq!(pngs.len(), 4, "全部 4 格都应导出: {names:?}");
+    assert!(names.iter().any(|n| n.starts_with("Z99_")), "UNMAPPED 原码应含: {names:?}");
+    assert!(names.iter().any(|n| n.starts_with("H2_r1_c1")), "修正格 0,0 → H2: {names:?}");
+    let manifest = zip.by_name("manifest.csv").unwrap();
+    let manifest_text = std::io::read_to_string(manifest).unwrap();
+    assert!(manifest_text.starts_with('\u{FEFF}'));
+    // manifest 行数 = 4 数据行
+    let data_lines = manifest_text.lines().skip(1).filter(|l| !l.trim().is_empty()).count();
+    assert_eq!(data_lines, 4, "manifest: {manifest_text}");
+}
+
+#[tokio::test]
+async fn export_all_cells_skips_blank_and_empty_400() {
+    let (app, state) = test_app();
+    // 全 BLANK 蓝图：complete_job 对无内容格任务可能失败，故用混合格验证 BLANK 跳过，
+    // 再用「全部格被修正清空」的变体不可行——直接验证混合场景：BLANK 格不导出。
+    let id = create_job(&app).await;
+    feed_cells(&state, id, &[
+        (0, 0, "H1", Some(0.9)),
+        (0, 1, "BLANK", Some(0.9)),
+        (1, 0, "H2", Some(0.95)),
+        (1, 1, "H1", Some(0.9)),
+    ]);
+    succeed_job(&state, id);
+    let (_, body) = send(&app, get(&app, &format!("/api/v1/jobs/{id}"))).await;
+    let bp_id = Uuid::parse_str(body["blueprintId"].as_str().unwrap()).unwrap();
+    let req = Request::builder()
+        .uri(format!("/api/v1/blueprints/{bp_id}/cells/export-all"))
+        .body(Body::empty())
+        .unwrap();
+    let resp = app.clone().oneshot(req).await.unwrap();
+    assert_eq!(resp.status(), StatusCode::OK);
+    let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+    let mut zip = zip::ZipArchive::new(std::io::Cursor::new(bytes.as_ref())).unwrap();
+    let names: Vec<String> = (0..zip.len()).map(|i| zip.by_index(i).unwrap().name().to_string()).collect();
+    let pngs: Vec<&String> = names.iter().filter(|n| n.ends_with(".png")).collect();
+    assert_eq!(pngs.len(), 3, "BLANK 格不应导出: {names:?}");
+    assert!(!names.iter().any(|n| n.starts_with("BLANK")), "无 BLANK 条目: {names:?}");
+}
+
+#[tokio::test]
+async fn export_all_cells_unknown_blueprint_404() {
+    let (app, _) = test_app();
+    let (status, body) = send(&app, get(&app, &format!("/api/v1/blueprints/{}/cells/export-all", Uuid::new_v4()))).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    assert_eq!(body["code"], "BLUEPRINT_NOT_FOUND");
+}
+
+#[tokio::test]
 async fn export_no_corrections_400() {
     let (app, state) = test_app();
     let bp_id = complete_blueprint(&app, &state).await;

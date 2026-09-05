@@ -417,12 +417,32 @@ export default function CorrectionPage() {
     }
   }, [id, toast]);
 
+  const exportAllCells = useCallback(async () => {
+    if (!id) return;
+    try {
+      const res = await apiClient.get(`/blueprints/${id}/cells/export-all`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data as Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cells-all-${id.slice(0, 8)}-${new Date().toISOString().slice(0, 10)}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast('已导出全部单元格 zip（格式同校正数据；BLANK 空位已跳过）', 'success');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  }, [id, toast]);
+
   if (isLoading) return <p style={{ color: 'var(--color-text-muted)' }}>加载中…</p>;
   if (error) return <p style={{ color: 'var(--color-error)' }}>加载失败：{(error as Error).message}</p>;
   if (!blueprint) return null;
 
   const unmappedCount = blueprint.cells.filter((c) => c.status === 'UNMAPPED').length;
   const correctedCount = blueprint.cells.filter((c) => c.correctedCode != null).length;
+  // 可导出的内容格 = 非 BLANK 状态（BLANK 空位在服务端导出时跳过）
+  const contentCellCount = blueprint.cells.filter((c) => c.status !== 'BLANK').length;
   const selectedCount = selected.size;
 
   return (
@@ -438,6 +458,15 @@ export default function CorrectionPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="secondary" size="sm" className="!border !border-[var(--color-border-strong)]" onClick={() => navigate(`/blueprints/${id}`)}>← 返回详情</Button>
             <Button variant="secondary" size="sm" onClick={() => navigate(`/materials?blueprint=${id}`)} title="重新框选/识别并按需修改物料清单（复用物料清单录入界面），保存后回到此处对比">修改物料清单</Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="!border !border-[var(--color-border-strong)]"
+              onClick={exportAllCells}
+              title="导出全部单元格（含未修正格，用当前识别码；BLANK 空位跳过）。zip 格式与导出校正数据一致"
+            >
+              导出全部数据（{contentCellCount.toLocaleString()}）
+            </Button>
             <Button
               variant="primary"
               size="sm"
