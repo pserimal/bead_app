@@ -298,6 +298,49 @@ describe('MaterialsCanvas interactions', () => {
     expect(call.y).toBe(0);
   });
 
+  it('soft boundary: a zoomed-in image larger than the viewport can be dragged to leave only a quarter visible', async () => {
+    const onView = vi.fn();
+    // scale=10 → 图片 1000×800 屏幕像素，大于 stage 800×600。
+    // 软边界允许范围（margin = stage 的 1/4 = 200/150）：
+    //   x ∈ [−(1000−800)−200, 200] = [−400, 200]
+    //   y ∈ [−(800−600)−150, 150] = [−350, 150]
+    const stage = renderCanvas(onView, vi.fn(), { scale: 10, x: 0, y: 0 });
+
+    // 向左上猛拖：图片左缘/上缘应能拖出视口（软边界允许）
+    fireEvent.pointerDown(stage, { pointerId: 1, clientX: 300, clientY: 300 });
+    fireEvent.pointerMove(stage, { pointerId: 1, clientX: -10000, clientY: -10000 });
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    let call = onView.mock.lastCall?.[0] as View;
+    expect(call.x).toBe(-400); // 图右缘 600 = stage 右缘 − 余量 200（只剩 200px 在图内可见余量）
+    expect(call.y).toBe(-350); // 图下缘 450 = stage 下缘 − 余量 150
+
+    // 向右下猛拖：图左缘/上缘最多到视口 1/4 处，不会把图拖到彻底看不见（总留 1/4 余量）
+    fireEvent.pointerMove(stage, { pointerId: 1, clientX: 10000, clientY: 10000 });
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    call = onView.mock.lastCall?.[0] as View;
+    expect(call.x).toBe(200); // 图左缘最多 200 = margin
+    expect(call.y).toBe(150); // 图顶缘最多 150 = margin
+  });
+
+  it('soft boundary only relaxes when the image is larger than the viewport: small image still clamps fully', async () => {
+    const onView = vi.fn();
+    // scale=1 → 图片 100×80，远小于 stage 800×600 → 维持夹紧行为（x∈[0,700], y∈[0,520]）
+    const stage = renderCanvas(onView, vi.fn(), { scale: 1, x: 0, y: 0 });
+
+    fireEvent.pointerDown(stage, { pointerId: 1, clientX: 100, clientY: 100 });
+    fireEvent.pointerMove(stage, { pointerId: 1, clientX: -10000, clientY: -10000 }); // 向左上猛拖
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    expect((onView.mock.lastCall?.[0] as View).x).toBe(0); // 不能拖出左边界
+
+    fireEvent.pointerMove(stage, { pointerId: 1, clientX: 10000, clientY: 10000 }); // 向右下猛拖
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const call = onView.mock.lastCall?.[0] as View;
+    expect(call.x).toBe(700); // 图左缘最多 700 = stage 800 − 图 100（贴右缘，不能留空隙出右缘）
+    expect(call.y).toBe(520); // 600 − 80
+  });
+
   it('stale pointer from a lost pointerup does not trap single-finger pan', async () => {
     const onView = vi.fn();
     const stage = renderCanvas(onView);

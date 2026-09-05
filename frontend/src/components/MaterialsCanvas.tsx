@@ -42,10 +42,17 @@ function clampView(
 ): View {
   const iw = imageW * view.scale;
   const ih = imageH * view.scale;
-  const loX = Math.min(0, stageW - iw);
-  const hiX = Math.max(0, stageW - iw);
-  const loY = Math.min(0, stageH - ih);
-  const hiY = Math.max(0, stageH - ih);
+  // 软边界：图片放大后大于视口时，允许把图拖到只剩约 1/4 面积留在视口内
+  // （图片边缘的格子因此能移到视野中央操作）；但保留最小可见余量，图片不会
+  // 彻底拖丢——总能拖回来。图片小于等于视口时维持自动夹紧居中（现状）。
+  // 余量 = 视口尺寸的 1/4：大图可拖出的最大偏移 = 图片尺寸 - 视口尺寸 + 余量。
+  const marginX = stageW / 4;
+  const marginY = stageH / 4;
+  // 图片 > 视口（可软边界外拖）；否则硬夹紧（必须有交集）
+  const loX = iw > stageW ? -(iw - stageW + marginX) : Math.min(0, stageW - iw);
+  const hiX = iw > stageW ? marginX : Math.max(0, stageW - iw);
+  const loY = ih > stageH ? -(ih - stageH + marginY) : Math.min(0, stageH - ih);
+  const hiY = ih > stageH ? marginY : Math.max(0, stageH - ih);
   return {
     scale: view.scale,
     x: Math.min(hiX, Math.max(loX, view.x)),
