@@ -245,7 +245,7 @@ export default function MaterialsCapturePage() {
       <header className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--color-text-muted)', letterSpacing: '.12em' }}>MATERIALS · 物料清单</div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 800, lineHeight: 1.2 }}>框选清单 · 按格拆豆</h1>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--text-lg)', fontWeight: 800, lineHeight: 1.2 }}>框选物料清单</h1>
         </div>
         <Button variant="secondary" size="sm" className="!border !border-[var(--color-border-strong)]" onClick={blueprintId ? () => navigate(`/blueprints/${blueprintId}/correct`) : finish}>返回</Button>
       </header>
