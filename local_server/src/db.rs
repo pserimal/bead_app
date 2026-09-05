@@ -125,8 +125,37 @@ CREATE INDEX IF NOT EXISTS idx_bp_cells ON blueprint_cell(blueprint_id);
     )?;
     // 03 迁移：为旧库补拆分配置列（新库已在 CREATE TABLE 中带上；ALTER 幂等——
     // 列已存在会报 duplicate column，忽略即可，其余列继续）。
+    // 注意类型：materials_rows/cols 必须 INTEGER（旧库曾被 TEXT 误建过，需修正）。
+    let existing: Vec<(String, String)> = conn
+        .prepare("SELECT name, type FROM pragma_table_info('blueprint')")?
+        .query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, String>(1)?)))?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
+    let col_type = |c: &str| -> &str {
+        match c {
+            "materials_rows" | "materials_cols" => "INTEGER",
+            _ => "TEXT",
+        }
+    };
     for col in ["materials_box", "materials_rows", "materials_cols"] {
-        let _ = conn.execute(&format!("ALTER TABLE blueprint ADD COLUMN {col} TEXT"), []);
+        if existing.iter().any(|(n, _)| n == col) {
+            // 类型错误（历史 ALTER 加成 TEXT）→ 重建为正确类型
+            let t = col_type(col);
+            if t == "INTEGER" {
+                let _ = conn.execute(
+                    &format!("ALTER TABLE blueprint DROP COLUMN {col}"),
+                    [],
+                );
+                let _ = conn.execute(
+                    &format!("ALTER TABLE blueprint ADD COLUMN {col} {t}"),
+                    [],
+                );
+            }
+        } else {
+            let _ = conn.execute(
+                &format!("ALTER TABLE blueprint ADD COLUMN {col} {}", col_type(col)),
+                [],
+            );
+        }
     }
     Ok(())
 }
