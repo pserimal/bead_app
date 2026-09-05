@@ -343,6 +343,7 @@ export function useMaterialsCapture(blueprintId: string | null) {
   // 只在已有有效框、且值与上次保存不同时发 PATCH——拖框高频变化避免刷请求）。
   // 无 blueprint（上传流程中途）不触发：仍走上面的 localStorage 兑底。
   const savedServerRef = useRef<string>('');
+  const pendingServerSaveRef = useRef<{ key: string; normalized: { materialsBox: { x: number; y: number; w: number; h: number }; materialsRows: number; materialsCols: number } } | null>(null);
   useEffect(() => {
     if (!blueprintId || !state.input?.imageW || !state.input.imageH) return;
     const { imageW, imageH } = state.input;
@@ -355,7 +356,10 @@ export function useMaterialsCapture(blueprintId: string | null) {
     };
     const key = JSON.stringify(normalized);
     if (key === savedServerRef.current) return;
+    // 防抖期间的最新待存值记入 ref：卸载/切页时立即 flush（不丢 <500ms 内的调整）
+    pendingServerSaveRef.current = { key, normalized };
     const timer = window.setTimeout(async () => {
+      pendingServerSaveRef.current = null;
       try {
         await saveBlueprintMaterialsConfig(blueprintId, normalized);
         savedServerRef.current = key;
@@ -367,6 +371,26 @@ export function useMaterialsCapture(blueprintId: string | null) {
       window.clearTimeout(timer);
     };
   }, [blueprintId, state.box, state.cols, state.input, state.rows]);
+
+  // 卸载 flush：调整后很快离开页面（返回校正/详情）时，防抖 timer 被清理，
+  // 此处把最后一次未保存的配置立即发出，避免「二次进入微调选框后不保存」。
+  const blueprintIdRef = useRef(blueprintId);
+  blueprintIdRef.current = blueprintId;
+  const inputRef = useRef(state.input);
+  inputRef.current = state.input;
+  useEffect(() => {
+    // 卸载 flush：调整后很快离开页面（返回校正/详情）时，防抖 timer 被清理，
+    // 此处把最后一次未保存的配置立即发出，避免「二次进入微调选框后不保存」。
+    return () => {
+      const pending = pendingServerSaveRef.current;
+      const id = blueprintIdRef.current;
+      if (!pending || !id) return;
+      pendingServerSaveRef.current = null;
+      const input = inputRef.current;
+      if (!input?.imageW || !input.imageH) return;
+      void saveBlueprintMaterialsConfig(id, pending.normalized);
+    };
+  }, []);
 
   // Supplement a restored location/session snapshot with the File kept in IndexedDB.
   useEffect(() => {

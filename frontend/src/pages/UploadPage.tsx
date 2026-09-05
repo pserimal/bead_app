@@ -209,8 +209,6 @@ export default function UploadPage() {
       .finally(() => setModelSwitching(false));
   }, [currentModel, toast]);
 
-  const codeError = useMemoCodeError(codes);
-
   function applyCropResult(c: CropRect, url: string, w?: number, h?: number, nextRows?: number, nextCols?: number) {
     setCrop(c);
     if (url !== imageUrl) setImageUrl(url);
@@ -347,7 +345,7 @@ export default function UploadPage() {
   }
 
   const canSubmit =
-    !!imageFile && !!imageUrl && !!imageSize && !!crop && crop.w >= MIN_CROP && crop.h >= MIN_CROP && rows >= 1 && rows <= 500 && cols >= 1 && cols <= 500 && !codeError && jobName.trim().length > 0;
+    !!imageFile && !!imageUrl && !!imageSize && !!crop && crop.w >= MIN_CROP && crop.h >= MIN_CROP && rows >= 1 && rows <= 500 && cols >= 1 && cols <= 500 && jobName.trim().length > 0;
 
   async function handleSubmit() {
     if (!jobName.trim()) {
@@ -597,37 +595,8 @@ export default function UploadPage() {
               </div>
             </div>
           )}
-
-          {imageUrl && (
-            <div className="flex flex-wrap gap-4 mt-4">
-              <label className="flex flex-col gap-1 flex-1 min-w-48">
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>
-                  图纸级编码（可选，逗号分隔，如 A01,H12）
-                </span>
-                <input
-                  id="board-codes"
-                  name="boardCodes"
-                  type="text"
-                  value={codes}
-                  onChange={(e) => setCodes(e.target.value.toUpperCase())}
-                  placeholder="A01,H12"
-                  className="px-3 py-1.5 rounded-lg border"
-                  style={{ borderColor: codeError ? 'var(--color-error)' : 'var(--color-border)' }}
-                />
-                {codeError && <span style={{ color: 'var(--color-error)', fontSize: 'var(--text-xs)' }}>{codeError}</span>}
-              </label>
-            </div>
-          )}
         </motion.div>
       </motion.div>
     </div>
   );
-}
-
-function useMemoCodeError(codes: string): string | null {
-  if (!codes.trim()) return null;
-  const regex = /^[A-Za-z][0-9]{1,3}$/;
-  const parts = codes.split(',').map((s) => s.trim()).filter(Boolean);
-  const invalid = parts.filter((p) => !regex.test(p));
-  return invalid.length ? `非法编码格式: ${invalid.join(', ')}` : null;
 }

@@ -61,6 +61,10 @@ export default function MaterialsCapturePage() {
   const { state, dispatch, stageRef, fit, recognize, recognizeGrid, retryGridCell } = useMaterialsCapture(blueprintId);
   const [rowsText, setRowsText] = useState(() => String(state.rows));
   const [colsText, setColsText] = useState(() => String(state.cols));
+  const [rowsFocused, setRowsFocused] = useState(false);
+  const [colsFocused, setColsFocused] = useState(false);
+  // 服务端恢复是异步的（图片加载后才 set rows/cols），晚于挂载的 useState 初值；
+  // 输入框未聚焦时直接展示 state 值（恢复/重置即时可见），聚焦编辑中才用本地文本态。
   // 自动保存状态：idle（无变更）/ saving（POST 进行中）/ saved（已保存）/ error（保存失败）
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [autoFocusId, setAutoFocusId] = useState<string | null>(null);
@@ -253,9 +257,9 @@ export default function MaterialsCapturePage() {
       <section style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
         <div className="flex flex-wrap items-center gap-3 p-3" style={{ borderBottom: '1px solid var(--color-border)' }}>
           <b>网格</b>
-          <label htmlFor="materials-rows">行 <input id="materials-rows" name="materialsRows" style={inputStyle} inputMode="numeric" value={rowsText} onChange={(event) => setSize('rows', event.target.value)} onBlur={() => setRowsText(String(state.rows))} /></label>
+          <label htmlFor="materials-rows">行 <input id="materials-rows" name="materialsRows" style={inputStyle} inputMode="numeric" value={rowsFocused ? rowsText : String(state.rows)} onFocus={() => { setRowsText(String(state.rows)); setRowsFocused(true); }} onChange={(event) => setSize('rows', event.target.value)} onBlur={() => { setRowsFocused(false); setRowsText(String(state.rows)); }} /></label>
           <span>×</span>
-          <label htmlFor="materials-cols">列 <input id="materials-cols" name="materialsCols" style={inputStyle} inputMode="numeric" value={colsText} onChange={(event) => setSize('cols', event.target.value)} onBlur={() => setColsText(String(state.cols))} /></label>
+          <label htmlFor="materials-cols">列 <input id="materials-cols" name="materialsCols" style={inputStyle} inputMode="numeric" value={colsFocused ? colsText : String(state.cols)} onFocus={() => { setColsText(String(state.cols)); setColsFocused(true); }} onChange={(event) => setSize('cols', event.target.value)} onBlur={() => { setColsFocused(false); setColsText(String(state.cols)); }} /></label>
           <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{state.rows}×{state.cols} = {state.rows * state.cols} 格</span>
           <span className="ml-auto flex gap-2">
             <Button variant="secondary" size="sm" onClick={() => setRedrawing(true)} disabled={redrawing || state.loading || state.gridLoading} title="在图上按下拖动，画出新的框选区域后重新识别">重新框选</Button>
