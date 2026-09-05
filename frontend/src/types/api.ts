@@ -111,8 +111,9 @@ export interface BlueprintDetail {
   validCodes: string[] | null;
   cells: BlueprintCellDto[];
   cropBox: CropBoxDto | null;
-  /** 03：物料拆分配置（框选位置 + 行列数，服务端持久化；旧数据为 null） */
-  materialsBox: CropBoxDto | null;
+  /** 03：物料拆分配置（框选位置 + 行列数，服务端持久化；旧数据为 null）。
+   *  注意：服务端存的是归一化矩形 {x,y,w,h}（0..1），不是 CropBoxDto（像素 width/height）。 */
+  materialsBox: { x: number; y: number; w: number; h: number } | null;
   materialsRows: number | null;
   materialsCols: number | null;
   createdAt: string;

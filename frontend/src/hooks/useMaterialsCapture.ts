@@ -168,6 +168,17 @@ function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
+/** 服务端该 blueprint 是否已存物料框选配置（03 恢复协调：有则外接矩形恢复让位） */
+async function hasServerMaterialsBox(blueprintId: string): Promise<boolean> {
+  try {
+    const bp = await getBlueprint(blueprintId);
+    const b = bp.materialsBox;
+    return !!b && b.w > 0 && b.h > 0;
+  } catch {
+    return false; // 网络失败：不阻塞，维持原外接矩形路径
+  }
+}
+
 function initialState(input: CaptureInput | null): CaptureState {
   return {
     input,
@@ -451,6 +462,11 @@ export function useMaterialsCapture(blueprintId: string | null) {
         });
         // 恢复图例区域框：已保存格子（有真实坐标）的外接矩形 = 之前的框选位置。
         // 仅当画布框仍是初始占位（用户尚未拖动/重画）时应用，避免覆盖用户操作。
+        // 03 协调：服务端已存 materialsBox（用户上次保存的框，权威）时，
+        // 外接矩形恢复会让位——否则两 effect 并行，外接矩形可能覆盖服务端框，
+        // 随后被自动保存写回服务端（“二次进入框选位置不对/改了不保存”根因）。
+        const hasServerBox = await hasServerMaterialsBox(blueprintId);
+        if (!active || hasServerBox) return;
         const boxes = saved
           .map((entry) => ({ x: entry.bbox.x, y: entry.bbox.y, w: entry.bbox.width, h: entry.bbox.height }))
           .filter((b) => b.w > 0 && b.h > 0);
@@ -508,8 +524,8 @@ export function useMaterialsCapture(blueprintId: string | null) {
           const { materialsBox, materialsRows, materialsCols } = bp;
           const hasRows = Number.isFinite(materialsRows) && (materialsRows ?? 0) > 0;
           const hasCols = Number.isFinite(materialsCols) && (materialsCols ?? 0) > 0;
-          if (materialsBox && materialsBox.width > 0 && materialsBox.height > 0) {
-            serverNormBox = { x: materialsBox.x, y: materialsBox.y, w: materialsBox.width, h: materialsBox.height };
+          if (materialsBox && materialsBox.w > 0 && materialsBox.h > 0) {
+            serverNormBox = { x: materialsBox.x, y: materialsBox.y, w: materialsBox.w, h: materialsBox.h };
           }
           if (hasRows) serverRows = materialsRows as number;
           if (hasCols) serverCols = materialsCols as number;
@@ -536,6 +552,9 @@ export function useMaterialsCapture(blueprintId: string | null) {
               ...(serverCols !== undefined ? { materialsCols: serverCols } : {}),
             },
           });
+          // 服务端框是权威：image 恢复（通常最后完成）后显式再设一次 box，
+          // 避免与 legend 外接矩形恢复并行时被后者覆盖（“二次进入框位置不对/改了不存”根因）
+          if (pixelBox) dispatch({ type: 'box', box: pixelBox });
         };
         image.src = url;
       } catch (error) {
