@@ -506,13 +506,33 @@ export default function UploadPage() {
               )}
             </span>
           </div>
-          <Button
-            onClick={handleSubmit}
-            disabled={!canSubmit || createJob.isPending}
-            title={!jobName.trim() ? '请先填写任务名称' : undefined}
-          >
-            {createJob.isPending ? <Spinner size="sm" /> : '开始识别'}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {imageUrl && (
+              <>
+                <Button variant="secondary" onClick={handleRecrop}>
+                  {crop ? '✏️ 重新调整裁剪' : '✏️ 框选区域'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    if (!imageUrl || !imageSize || !imageFile) return;
+                    navigate('/materials', { state: buildLegendNavState() });
+                  }}
+                  disabled={!imageUrl || !imageSize}
+                  title="逐个录入底部物料清单项，识别编码+数量"
+                >
+                  🏷️ 录入物料清单
+                </Button>
+              </>
+            )}
+            <Button
+              onClick={handleSubmit}
+              disabled={!canSubmit || createJob.isPending}
+              title={!jobName.trim() ? '请先填写任务名称' : undefined}
+            >
+              {createJob.isPending ? <Spinner size="sm" /> : '开始识别'}
+            </Button>
+          </div>
         </motion.div>
 
         <motion.div variants={staggerItem} className="p-5 rounded-xl" style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)' }}>
@@ -570,28 +590,6 @@ export default function UploadPage() {
                     />
                   )}
                 </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <Button variant="secondary" onClick={handleRecrop}>
-                  {crop ? '✏️ 重新调整裁剪' : '✏️ 框选区域'}
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    if (!imageUrl || !imageSize || !imageFile) return;
-                    navigate('/materials', { state: buildLegendNavState() });
-                  }}
-                  disabled={!imageUrl || !imageSize}
-                  title="逐个录入底部物料清单项，识别编码+数量"
-                >
-                  🏷️ 录入物料清单
-                </Button>
-                {crop && (
-                  <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
-                    裁剪框：{Math.round(crop.w)}×{Math.round(crop.h)}px
-                  </span>
-                )}
               </div>
             </div>
           )}
