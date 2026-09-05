@@ -31,7 +31,7 @@ xcopy /e /i /y "..\frontend\dist\*" "%OUT%\dist" >nul
 echo [ok] frontend dist copied (%OUT%\dist)
 
 copy /y target\release\bead-local-server.exe "%OUT%" >nul
-echo v0.2.0>"%OUT%\VERSION.txt"
+echo v0.2.1>"%OUT%\VERSION.txt"
 copy /y start-local.bat "%OUT%" >nul
 copy /y resources\default_colors.json "%OUT%\data" >nul
 copy /y ..\artifacts\colors\library.json "%OUT%\data" >nul
@@ -47,7 +47,7 @@ if exist "%CONDA_PREFIX%\Lib\site-packages\onnxruntime\capi\onnxruntime.dll" (
 
 
 rem ── 打 zip（自动排除运行数据：db/uploads 不进入发布包；运行目录数据原样保留）──
-set "ZIP=%~dp0bead-local-server-v0.2.0.zip"
+set "ZIP=%~dp0bead-local-server-v0.2.1.zip"
 if exist "%ZIP%" del "%ZIP%"
 if exist "%~dp0.stage-zip" rmdir /s /q "%~dp0.stage-zip"
 mkdir "%~dp0.stage-zip\bead-local-server"
